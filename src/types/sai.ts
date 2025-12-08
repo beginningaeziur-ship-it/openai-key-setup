@@ -4,6 +4,7 @@ export interface UserProfile {
   nickname: string;
   saiNickname: string; // SAI's nickname (default "SAI")
   voicePreference: VoicePreference;
+  scene?: string; // SAI Room background scene
   emergencyContact: {
     nickname: string;
     phone: string;

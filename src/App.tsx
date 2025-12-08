@@ -9,6 +9,7 @@ import { SAIProvider } from "@/contexts/SAIContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
+import SAIRoom from "./pages/SAIRoom";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import Watcher from "./pages/Watcher";
@@ -21,6 +22,7 @@ import WHOModel from "./pages/onboarding/WHOModel";
 import Categories from "./pages/onboarding/Categories";
 import Conditions from "./pages/onboarding/Conditions";
 import Symptoms from "./pages/onboarding/Symptoms";
+import SceneSelect from "./pages/onboarding/SceneSelect";
 import GoalProposal from "./pages/onboarding/GoalProposal";
 
 const queryClient = new QueryClient();
@@ -44,9 +46,11 @@ const App = () => (
             <Route path="/onboarding/categories" element={<Categories />} />
             <Route path="/onboarding/conditions" element={<Conditions />} />
             <Route path="/onboarding/symptoms" element={<Symptoms />} />
+            <Route path="/onboarding/scene" element={<SceneSelect />} />
             <Route path="/onboarding/goals" element={<GoalProposal />} />
             
             {/* Main app */}
+            <Route path="/sai-room" element={<SAIRoom />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/settings" element={<Settings />} />
