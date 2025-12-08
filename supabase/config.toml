@@ -1,1 +1,7 @@
 project_id = "hypccwbfzuefwxlccxye"
+
+[functions.cy-chat]
+verify_jwt = false
+
+[functions.cy-voice]
+verify_jwt = false
