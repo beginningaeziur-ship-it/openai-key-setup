@@ -41,7 +41,7 @@ export function HabitList() {
   const [newHabitCategory, setNewHabitCategory] = useState('health');
   const [targetReps, setTargetReps] = useState([45]); // Default 45 reps
 
-  const cyName = userProfile?.cyNickname || 'Cy';
+  const saiName = userProfile?.saiNickname || 'SAI';
 
   const handleAddHabit = () => {
     if (!newHabitTitle.trim()) return;
@@ -176,7 +176,7 @@ export function HabitList() {
                   />
                   <p className="text-xs text-muted-foreground flex items-start gap-1.5">
                     <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                    Research shows habits form between 30-60 repetitions. {cyName} will remind you less as the habit solidifies.
+                    Research shows habits form between 30-60 repetitions. {saiName} will remind you less as the habit solidifies.
                   </p>
                 </div>
 

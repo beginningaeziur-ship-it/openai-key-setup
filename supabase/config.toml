@@ -1,7 +1,7 @@
 project_id = "hypccwbfzuefwxlccxye"
 
-[functions.cy-chat]
+[functions.sai-chat]
 verify_jwt = false
 
-[functions.cy-voice]
+[functions.sai-voice]
 verify_jwt = false

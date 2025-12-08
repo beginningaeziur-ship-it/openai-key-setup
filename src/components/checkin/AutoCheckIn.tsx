@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 
 interface AutoCheckInProps {
   userName: string;
-  cyName: string;
+  saiName: string;
   onStartChat: () => void;
 }
 
@@ -51,7 +51,7 @@ const getTimeIcon = (time: CheckInTime) => {
   }
 };
 
-export function AutoCheckIn({ userName, cyName, onStartChat }: AutoCheckInProps) {
+export function AutoCheckIn({ userName, saiName, onStartChat }: AutoCheckInProps) {
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [checkInTime, setCheckInTime] = useState<CheckInTime>(getCheckInTime());
@@ -103,7 +103,7 @@ export function AutoCheckIn({ userName, cyName, onStartChat }: AutoCheckInProps)
             {getTimeIcon(checkInTime)}
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium mb-1">{cyName} says:</p>
+            <p className="text-sm font-medium mb-1">{saiName} says:</p>
             <p className="text-muted-foreground">
               "{message.replace('you', userName)}"
             </p>
@@ -124,7 +124,7 @@ export function AutoCheckIn({ userName, cyName, onStartChat }: AutoCheckInProps)
             className="gap-2"
           >
             <MessageCircle className="w-4 h-4" />
-            Talk to {cyName}
+            Talk to {saiName}
           </Button>
           <Button 
             variant="outline" 

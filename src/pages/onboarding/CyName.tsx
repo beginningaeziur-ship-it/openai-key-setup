@@ -9,11 +9,11 @@ import { useSAI } from '@/contexts/SAIContext';
 import type { VoicePreference } from '@/types/sai';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
-export default function CyName() {
+export default function SAIName() {
   const navigate = useNavigate();
   const { userProfile, setUserProfile, setOnboardingStep } = useSAI();
   
-  const [cyNickname, setCyNickname] = useState(userProfile?.cyNickname || 'Cy');
+  const [saiNickname, setSaiNickname] = useState(userProfile?.saiNickname || 'SAI');
   const [voicePreference, setVoicePreference] = useState<VoicePreference>(
     userProfile?.voicePreference || 'echo'
   );
@@ -22,7 +22,7 @@ export default function CyName() {
     setUserProfile({
       ...userProfile,
       nickname: userProfile?.nickname || '',
-      cyNickname,
+      saiNickname,
       voicePreference,
       emergencyContact: userProfile?.emergencyContact || { nickname: '', phone: '' },
     });
@@ -38,27 +38,27 @@ export default function CyName() {
         <div className="space-y-8">
           <div className="text-center space-y-2">
             <h1 className="text-3xl font-display font-bold text-foreground">
-              I'm Cy.
+              I'm SAI.
             </h1>
             <p className="text-lg text-muted-foreground">
-              What would you like to call me?
+              Pronounced like "sigh." What would you like to call me?
             </p>
           </div>
 
           <div className="bg-card rounded-2xl p-6 shadow-sm border border-border space-y-6">
             <div className="space-y-3">
-              <Label htmlFor="cyNickname" className="text-base">
+              <Label htmlFor="saiNickname" className="text-base">
                 My nickname
               </Label>
               <Input
-                id="cyNickname"
-                value={cyNickname}
-                onChange={(e) => setCyNickname(e.target.value)}
-                placeholder="Cy"
+                id="saiNickname"
+                value={saiNickname}
+                onChange={(e) => setSaiNickname(e.target.value)}
+                placeholder="SAI"
                 className="h-12 text-lg rounded-xl"
               />
               <p className="text-sm text-muted-foreground">
-                You can call me anything you'd like — Cy, Coach, Buddy, or something personal to you.
+                You can call me anything you'd like — SAI, Coach, Buddy, or something personal to you.
               </p>
             </div>
           </div>
@@ -88,7 +88,7 @@ export default function CyName() {
             </Button>
             <Button
               onClick={handleNext}
-              disabled={!cyNickname.trim()}
+              disabled={!saiNickname.trim()}
               className="flex-1 h-12 rounded-xl"
             >
               Next

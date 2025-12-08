@@ -9,13 +9,13 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import type { ChatMessage } from '@/types/sai';
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cy-chat`;
-const VOICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cy-voice`;
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sai-chat`;
+const VOICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sai-voice`;
 
 export default function Chat() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { userProfile, selectedCategories, selectedConditions, selectedSymptoms, cyPersonality } = useSAI();
+  const { userProfile, selectedCategories, selectedConditions, selectedSymptoms, saiPersonality } = useSAI();
   
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -27,7 +27,7 @@ export default function Chat() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const cyName = userProfile?.cyNickname || 'Cy';
+  const saiName = userProfile?.saiNickname || 'SAI';
   const userName = userProfile?.nickname || 'Friend';
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export default function Chat() {
       const greeting: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: `Hey ${userName}. I'm ${cyName}, and I'm here for you. How are you feeling right now? Take your time.`,
+        content: `Hey ${userName}. I'm ${saiName}, and I'm here for you. How are you feeling right now? Take your time.`,
         timestamp: new Date(),
       };
       setMessages([greeting]);
@@ -144,11 +144,11 @@ export default function Chat() {
           messages: messages.map(m => ({ role: m.role, content: m.content })).concat([{ role: 'user', content: userMessage.content }]),
           userContext: {
             userName,
-            cyName,
+            saiName,
             categories: selectedCategories,
             conditions: selectedConditions.flatMap(c => c.conditions),
             symptoms: selectedSymptoms.flatMap(s => s.symptoms),
-            personality: cyPersonality,
+            personality: saiPersonality,
           },
         }),
       });
@@ -267,7 +267,7 @@ export default function Chat() {
                 <Heart className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h1 className="font-display font-semibold">{cyName}</h1>
+                <h1 className="font-display font-semibold">{saiName}</h1>
                 <p className="text-xs text-muted-foreground">
                   {isPlaying ? "Speaking..." : "Your ally"}
                 </p>

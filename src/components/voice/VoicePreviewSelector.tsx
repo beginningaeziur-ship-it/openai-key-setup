@@ -5,7 +5,7 @@ import { Volume2, VolumeX, Loader2, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { VoicePreference } from '@/types/sai';
 
-const VOICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cy-voice`;
+const VOICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sai-voice`;
 
 interface VoiceOption {
   id: VoicePreference;
