@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSAI } from '@/contexts/SAIContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { VoicePreviewSelector } from '@/components/voice/VoicePreviewSelector';
+import type { VoicePreference } from '@/types/sai';
+import { useToast } from '@/hooks/use-toast';
 import { 
   ArrowLeft, 
   User, 
@@ -9,7 +13,10 @@ import {
   Mic, 
   Shield, 
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Check
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -22,18 +29,48 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { voiceOptions } from '@/data/saiCategories';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+
+const voiceLabels: Record<VoicePreference, string> = {
+  alloy: 'Sarah',
+  echo: 'George',
+  fable: 'Matilda',
+  onyx: 'Callum',
+  nova: 'Lily',
+  shimmer: 'Jessica',
+};
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { userProfile, resetAll } = useSAI();
+  const { toast } = useToast();
+  const { userProfile, setUserProfile, resetAll } = useSAI();
+  const [voiceOpen, setVoiceOpen] = useState(false);
 
   const handleReset = () => {
     resetAll();
     navigate('/onboarding');
   };
 
-  const voiceLabel = voiceOptions.find(v => v.id === userProfile?.voicePreference)?.label || 'Not set';
+  const handleVoiceChange = (voice: VoicePreference) => {
+    if (userProfile) {
+      setUserProfile({
+        ...userProfile,
+        voicePreference: voice,
+      });
+      toast({
+        description: `Voice changed to ${voiceLabels[voice]}.`,
+      });
+      setVoiceOpen(false);
+    }
+  };
+
+  const voiceLabel = userProfile?.voicePreference 
+    ? voiceLabels[userProfile.voicePreference] 
+    : 'Not set';
 
   return (
     <div className="min-h-screen bg-gradient-calm">
@@ -69,18 +106,37 @@ export default function Settings() {
 
         {/* Voice */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mic className="w-5 h-5" />
-              Voice
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Selected voice</span>
-              <span className="font-medium">{voiceLabel}</span>
-            </div>
-          </CardContent>
+          <Collapsible open={voiceOpen} onOpenChange={setVoiceOpen}>
+            <CardHeader className="pb-3">
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between cursor-pointer">
+                  <CardTitle className="flex items-center gap-2">
+                    <Mic className="w-5 h-5" />
+                    Voice
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">{voiceLabel}</span>
+                    {voiceOpen ? (
+                      <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                    )}
+                  </div>
+                </div>
+              </CollapsibleTrigger>
+              <CardDescription>
+                Change Cy's voice anytime
+              </CardDescription>
+            </CardHeader>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <VoicePreviewSelector
+                  selectedVoice={userProfile?.voicePreference || 'alloy'}
+                  onSelect={handleVoiceChange}
+                />
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
 
         {/* Emergency Contact */}
