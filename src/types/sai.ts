@@ -2,7 +2,7 @@
 
 export interface UserProfile {
   nickname: string;
-  cyNickname: string;
+  saiNickname: string; // SAI's nickname (default "SAI")
   voicePreference: VoicePreference;
   emergencyContact: {
     nickname: string;
@@ -128,9 +128,13 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
-// Cy's personality configuration
-export interface CyPersonality {
+// SAI's personality configuration - built per-user based on their profile
+export interface SAIPersonality {
   tone: 'calm' | 'warm' | 'encouraging' | 'grounding';
   pacing: 'slow' | 'moderate' | 'responsive';
+  sensitivityLevel: 'high' | 'medium' | 'low';
+  validationNeeds: 'high' | 'moderate' | 'low';
+  goalComfort: 'tiny' | 'short-range' | 'long-term';
   adaptations: string[];
+  triggerZones: string[];
 }

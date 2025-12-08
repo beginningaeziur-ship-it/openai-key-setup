@@ -36,14 +36,14 @@ import { cn } from '@/lib/utils';
 export default function Dashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { userProfile, progressMetrics, goals, habits, addGoal, cyPersonality, selectedConditions } = useSAI();
+  const { userProfile, progressMetrics, goals, habits, addGoal, saiPersonality, selectedConditions } = useSAI();
   const [showSupportDialog, setShowSupportDialog] = useState(false);
   const [showGoalDialog, setShowGoalDialog] = useState(false);
   const [newGoalTitle, setNewGoalTitle] = useState('');
   const [newGoalDescription, setNewGoalDescription] = useState('');
   const [alertSending, setAlertSending] = useState(false);
 
-  const cyName = userProfile?.cyNickname || 'Cy';
+  const saiName = userProfile?.saiNickname || 'SAI';
   const userName = userProfile?.nickname || 'Friend';
 
   const getStatusColor = (value: number) => {
@@ -124,7 +124,7 @@ export default function Dashboard() {
         {/* Auto Check-in */}
         <AutoCheckIn 
           userName={userName} 
-          cyName={cyName} 
+          saiName={saiName} 
           onStartChat={() => navigate('/chat')} 
         />
 
@@ -133,7 +133,7 @@ export default function Dashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <h2 className="text-xl font-display font-semibold">Talk to {cyName}</h2>
+                <h2 className="text-xl font-display font-semibold">Talk to {saiName}</h2>
                 <p className="text-muted-foreground">
                   I'm here whenever you need support.
                 </p>
@@ -154,7 +154,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Micro Goals */}
-        <MicroGoalCard userName={userName} cyName={cyName} />
+        <MicroGoalCard userName={userName} saiName={saiName} />
 
         {/* Overall Status */}
         <Card className="sai-slide-up">
@@ -330,7 +330,7 @@ export default function Dashboard() {
               <div className="text-center py-8 text-muted-foreground">
                 <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p>No goals set yet.</p>
-                <p className="text-sm mt-1">Add a goal or chat with {cyName} to create your roadmap.</p>
+                <p className="text-sm mt-1">Add a goal or chat with {saiName} to create your roadmap.</p>
               </div>
             ) : (
               <div className="space-y-4">

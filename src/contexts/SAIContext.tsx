@@ -9,7 +9,7 @@ import type {
   ProgressMetrics,
   Goal,
   Habit,
-  CyPersonality
+  SAIPersonality
 } from '@/types/sai';
 
 interface SAIContextType {
@@ -46,8 +46,8 @@ interface SAIContextType {
   addHabit: (habit: Omit<Habit, 'id'>) => void;
   updateHabit: (id: string, updates: Partial<Habit>) => void;
   
-  // Cy personality
-  cyPersonality: CyPersonality;
+  // SAI personality - per-user profile
+  saiPersonality: SAIPersonality;
   
   // Reset
   resetAll: () => void;
@@ -114,21 +114,46 @@ export function SAIProvider({ children }: { children: ReactNode }) {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Cy personality is derived from user's conditions/symptoms
-  const cyPersonality: CyPersonality = React.useMemo(() => {
+  // SAI personality is derived from user's conditions/symptoms/environment
+  const saiPersonality: SAIPersonality = React.useMemo(() => {
     const hasTrauma = selectedCategories.some(c => 
       ['mental_health', 'authority_trauma', 'self_harm'].includes(c)
     );
     const hasSensory = selectedCategories.includes('sensory') || 
       selectedConditions.some(c => c.conditions.includes('autism'));
+    const hasAddiction = selectedCategories.some(c => 
+      ['substance_addiction', 'behavioral_addiction', 'eating_disorder'].includes(c)
+    );
+    const hasAuthorityTrauma = selectedCategories.includes('authority_trauma');
+    const hasEnvironmentalHardship = selectedCategories.includes('environmental_hardship');
+    const hasCPTSD = selectedConditions.some(c => c.conditions.includes('cptsd') || c.conditions.includes('ptsd'));
+    
+    // Build trigger zones based on categories
+    const triggerZones: string[] = [];
+    if (hasAuthorityTrauma) triggerZones.push('fear of authority', 'commands/directives');
+    if (selectedCategories.includes('self_harm')) triggerZones.push('self-harm urges');
+    if (hasAddiction) triggerZones.push('addiction shame', 'relapse guilt');
+    if (selectedConditions.some(c => c.conditions.includes('eating_disorder'))) {
+      triggerZones.push('body image', 'food control');
+    }
+    
+    // Build adaptations based on profile
+    const adaptations: string[] = [];
+    if (hasTrauma) adaptations.push('trauma-informed language', 'no authority tone');
+    if (hasSensory) adaptations.push('reduced stimulation', 'clear structure', 'literal language');
+    if (hasAddiction) adaptations.push('zero shame approach', 'harm reduction framing');
+    if (hasCPTSD) adaptations.push('grounding first', 'safety before goals', 'more reassurance');
+    if (hasAuthorityTrauma) adaptations.push('non-threatening wording', 'choices not commands');
+    if (hasEnvironmentalHardship) adaptations.push('practical stability focus', 'survival-first');
     
     return {
-      tone: hasTrauma ? 'calm' : 'warm',
+      tone: hasTrauma || hasCPTSD ? 'calm' : 'warm',
       pacing: hasSensory ? 'slow' : 'moderate',
-      adaptations: [
-        ...(hasTrauma ? ['trauma-informed language', 'no authority tone'] : []),
-        ...(hasSensory ? ['reduced stimulation', 'clear structure'] : []),
-      ],
+      sensitivityLevel: hasTrauma || hasCPTSD ? 'high' : hasAddiction ? 'medium' : 'low',
+      validationNeeds: hasTrauma || hasCPTSD ? 'high' : 'moderate',
+      goalComfort: hasCPTSD || hasEnvironmentalHardship ? 'tiny' : hasTrauma ? 'short-range' : 'long-term',
+      adaptations,
+      triggerZones,
     };
   }, [selectedCategories, selectedConditions]);
 
@@ -284,7 +309,7 @@ const addHabit = (habit: Omit<Habit, 'id'>) => {
       habits,
       addHabit,
       updateHabit,
-      cyPersonality,
+      saiPersonality,
       resetAll,
     }}>
       {children}

@@ -98,8 +98,8 @@ export default function Settings() {
               <span className="font-medium">{userProfile?.nickname || 'Not set'}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Cy's nickname</span>
-              <span className="font-medium">{userProfile?.cyNickname || 'Cy'}</span>
+              <span className="text-muted-foreground">SAI's nickname</span>
+              <span className="font-medium">{userProfile?.saiNickname || 'SAI'}</span>
             </div>
           </CardContent>
         </Card>

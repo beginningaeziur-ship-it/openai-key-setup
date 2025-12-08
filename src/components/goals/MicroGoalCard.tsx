@@ -20,10 +20,10 @@ interface MicroGoal {
 
 interface MicroGoalCardProps {
   userName: string;
-  cyName: string;
+  saiName: string;
 }
 
-export function MicroGoalCard({ userName, cyName }: MicroGoalCardProps) {
+export function MicroGoalCard({ userName, saiName }: MicroGoalCardProps) {
   const [microGoals, setMicroGoals] = useState<MicroGoal[]>([
     { id: '1', title: 'Take 3 slow breaths', completed: false, category: 'grounding' },
     { id: '2', title: 'Drink a glass of water', completed: false, category: 'physical' },
