@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.sai-voice]
 verify_jwt = false
+
+[functions.sai-tts]
+verify_jwt = false
