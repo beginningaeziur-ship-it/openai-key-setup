@@ -21,6 +21,7 @@ import WHOModel from "./pages/onboarding/WHOModel";
 import Categories from "./pages/onboarding/Categories";
 import Conditions from "./pages/onboarding/Conditions";
 import Symptoms from "./pages/onboarding/Symptoms";
+import GoalProposal from "./pages/onboarding/GoalProposal";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/onboarding/categories" element={<Categories />} />
             <Route path="/onboarding/conditions" element={<Conditions />} />
             <Route path="/onboarding/symptoms" element={<Symptoms />} />
+            <Route path="/onboarding/goals" element={<GoalProposal />} />
             
             {/* Main app */}
             <Route path="/dashboard" element={<Dashboard />} />

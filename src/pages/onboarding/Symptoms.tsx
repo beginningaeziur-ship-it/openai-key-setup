@@ -5,11 +5,11 @@ import { OnboardingProgress } from '@/components/sai/OnboardingProgress';
 import { SelectableCard } from '@/components/sai/SelectableCard';
 import { useSAI } from '@/contexts/SAIContext';
 import { symptomsList } from '@/data/saiCategories';
-import { ArrowLeft, Check, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 export default function Symptoms() {
   const navigate = useNavigate();
-  const { selectedSymptoms, setSelectedSymptoms, completeOnboarding } = useSAI();
+  const { selectedSymptoms, setSelectedSymptoms } = useSAI();
   
   const [symptoms, setSymptoms] = useState<string[]>(
     selectedSymptoms.flatMap(s => s.symptoms)
@@ -23,17 +23,16 @@ export default function Symptoms() {
     }
   };
 
-  const handleComplete = () => {
+  const handleNext = () => {
     // Store as a general symptom mapping
     setSelectedSymptoms([{ condition: 'general', symptoms }]);
-    completeOnboarding();
-    navigate('/dashboard');
+    navigate('/onboarding/goals');
   };
 
   return (
     <div className="min-h-screen bg-gradient-calm p-6">
       <div className="max-w-2xl mx-auto">
-        <OnboardingProgress currentStep={6} totalSteps={6} />
+        <OnboardingProgress currentStep={6} totalSteps={7} />
         
         <div className="space-y-6">
           <div className="text-center space-y-2">
@@ -76,12 +75,11 @@ export default function Symptoms() {
               Back
             </Button>
             <Button
-              onClick={handleComplete}
+              onClick={handleNext}
               className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90"
             >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Complete Setup
-              <Check className="w-4 h-4 ml-2" />
+              Next
+              <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
         </div>

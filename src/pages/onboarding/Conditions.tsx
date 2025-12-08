@@ -65,7 +65,7 @@ export default function Conditions() {
   return (
     <div className="min-h-screen bg-gradient-calm p-6">
       <div className="max-w-2xl mx-auto">
-        <OnboardingProgress currentStep={5} totalSteps={6} />
+        <OnboardingProgress currentStep={5} totalSteps={7} />
         
         <div className="space-y-6">
           <div className="text-center space-y-2">
