@@ -1,11 +1,26 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSAI } from "@/contexts/SAIContext";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { onboarding } = useSAI();
+
+  useEffect(() => {
+    // Check if user has completed onboarding
+    if (onboarding.completed) {
+      navigate("/dashboard", { replace: true });
+    } else {
+      navigate("/onboarding/welcome", { replace: true });
+    }
+  }, [onboarding.completed, navigate]);
+
+  // Show a brief loading state while redirecting
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-center space-y-4 sai-fade-in">
+        <div className="w-16 h-16 mx-auto rounded-full sai-gradient-calm sai-breathe" />
+        <p className="text-muted-foreground text-lg">Loading SAI...</p>
       </div>
     </div>
   );
