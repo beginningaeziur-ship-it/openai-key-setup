@@ -11,7 +11,8 @@ import {
   Shield, 
   AlertTriangle,
   Settings,
-  RotateCcw
+  RotateCcw,
+  Eye
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -198,12 +199,32 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Support Button */}
-        <Card className="bg-sai-rose/30 border-sai-rose-dark/20">
+        {/* Watcher View Link */}
+        <Card className="border-primary/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <AlertTriangle className="w-6 h-6 text-sai-rose-dark" />
+                <Eye className="w-6 h-6 text-primary" />
+                <div>
+                  <h3 className="font-medium">Professional View</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Anonymized overview for your care team
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline" onClick={() => navigate('/watcher')}>
+                Open Watcher
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Support Button */}
+        <Card className="bg-destructive/10 border-destructive/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-6 h-6 text-destructive" />
                 <div>
                   <h3 className="font-medium">Need Extra Support?</h3>
                   <p className="text-sm text-muted-foreground">
@@ -211,7 +232,7 @@ export default function Dashboard() {
                   </p>
                 </div>
               </div>
-              <Button variant="outline" className="border-sai-rose-dark/30">
+              <Button variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10">
                 Request Support
               </Button>
             </div>

@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
+import Watcher from "./pages/Watcher";
 
 // Onboarding Pages
 import Welcome from "./pages/onboarding/Welcome";
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/watcher" element={<Watcher />} />
             
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
