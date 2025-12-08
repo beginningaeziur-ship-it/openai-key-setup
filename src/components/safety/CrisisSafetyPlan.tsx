@@ -14,8 +14,17 @@ import {
   Sparkles,
   User,
   MessageCircle,
-  Download
+  Download,
+  Share2,
+  Mail,
+  Copy
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -300,6 +309,112 @@ export function CrisisSafetyPlan() {
     toast.success('Safety plan exported as PDF');
   };
 
+  // Generate plain text version for sharing
+  const generatePlainText = (): string => {
+    let text = '🛡️ MY CRISIS SAFETY PLAN\n';
+    text += `Generated: ${new Date().toLocaleDateString()}\n\n`;
+
+    text += '⚠️ WARNING SIGNALS\n';
+    if (safetyPlan.warningSignals.length > 0) {
+      safetyPlan.warningSignals.forEach(signal => {
+        text += `• ${signal}\n`;
+      });
+    } else {
+      text += 'No warning signals added yet.\n';
+    }
+    text += '\n';
+
+    text += '✨ COPING STRATEGIES\n';
+    if (safetyPlan.copingStrategies.length > 0) {
+      safetyPlan.copingStrategies.forEach(s => {
+        text += `• ${s.title} (${categoryLabels[s.category]})`;
+        if (s.description) text += ` - ${s.description}`;
+        text += '\n';
+      });
+    } else {
+      text += 'No coping strategies added yet.\n';
+    }
+    text += '\n';
+
+    text += '📞 EMERGENCY CONTACTS\n';
+    if (safetyPlan.emergencyContacts.length > 0) {
+      safetyPlan.emergencyContacts.forEach(c => {
+        text += `• ${c.name} (${c.relationship}) - ${c.phone}\n`;
+      });
+    } else {
+      text += 'No emergency contacts added yet.\n';
+    }
+    text += '\n';
+
+    text += '🛡️ MAKING MY ENVIRONMENT SAFE\n';
+    if (safetyPlan.safeEnvironmentSteps.length > 0) {
+      safetyPlan.safeEnvironmentSteps.forEach((step, i) => {
+        text += `${i + 1}. ${step}\n`;
+      });
+    } else {
+      text += 'No safety steps added yet.\n';
+    }
+    text += '\n';
+
+    text += '💖 REASONS TO KEEP GOING\n';
+    if (safetyPlan.reasonsToLive.length > 0) {
+      safetyPlan.reasonsToLive.forEach(reason => {
+        text += `• ${reason}\n`;
+      });
+    } else {
+      text += 'No reasons added yet.\n';
+    }
+    text += '\n';
+
+    text += '🆘 PROFESSIONAL CRISIS RESOURCES (24/7)\n';
+    safetyPlan.professionalResources.forEach(resource => {
+      text += `• ${resource}\n`;
+    });
+    text += '\n';
+
+    text += '---\nThis safety plan was created with SAI Ally Guide.';
+    
+    return text;
+  };
+
+  const shareViaEmail = () => {
+    const subject = encodeURIComponent('My Crisis Safety Plan');
+    const body = encodeURIComponent(generatePlainText());
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+    toast.success('Opening email client...');
+  };
+
+  const shareNative = async () => {
+    const text = generatePlainText();
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'My Crisis Safety Plan',
+          text: text,
+        });
+        toast.success('Safety plan shared');
+      } catch (err) {
+        // User cancelled or error
+        if ((err as Error).name !== 'AbortError') {
+          copyToClipboard();
+        }
+      }
+    } else {
+      copyToClipboard();
+    }
+  };
+
+  const copyToClipboard = async () => {
+    const text = generatePlainText();
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Safety plan copied to clipboard');
+    } catch {
+      toast.error('Failed to copy to clipboard');
+    }
+  };
+
   const removeReason = (index: number) => {
     savePlan({
       ...safetyPlan,
@@ -325,15 +440,39 @@ export function CrisisSafetyPlan() {
               <Shield className="w-5 h-5 text-amber-400" />
               Crisis Safety Plan
             </DialogTitle>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={exportToPDF}
-              className="gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Export PDF
-            </Button>
+            <div className="flex gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Share2 className="w-4 h-4" />
+                    Share
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={shareNative} className="gap-2 cursor-pointer">
+                    <Share2 className="w-4 h-4" />
+                    Share via Apps
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={shareViaEmail} className="gap-2 cursor-pointer">
+                    <Mail className="w-4 h-4" />
+                    Share via Email
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={copyToClipboard} className="gap-2 cursor-pointer">
+                    <Copy className="w-4 h-4" />
+                    Copy to Clipboard
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={exportToPDF}
+                className="gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export PDF
+              </Button>
+            </div>
           </div>
           <DialogDescription>
             Your personalized plan for staying safe during difficult moments
