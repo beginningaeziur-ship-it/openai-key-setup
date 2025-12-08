@@ -4,9 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { OnboardingProgress } from '@/components/sai/OnboardingProgress';
-import { SelectableCard } from '@/components/sai/SelectableCard';
+import { VoicePreviewSelector } from '@/components/voice/VoicePreviewSelector';
 import { useSAI } from '@/contexts/SAIContext';
-import { voiceOptions } from '@/data/saiCategories';
 import type { VoicePreference } from '@/types/sai';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
@@ -69,21 +68,13 @@ export default function CyName() {
               Choose my voice
             </h2>
             <p className="text-sm text-muted-foreground text-center">
-              I'll use this voice when we talk. Pick what feels most comfortable.
+              Tap the speaker icon to preview each voice. Pick what feels most comfortable.
             </p>
             
-            <div className="grid gap-3">
-              {voiceOptions.map((voice) => (
-                <SelectableCard
-                  key={voice.id}
-                  id={voice.id}
-                  label={voice.label}
-                  description={voice.description}
-                  selected={voicePreference === voice.id}
-                  onSelect={(id) => setVoicePreference(id as VoicePreference)}
-                />
-              ))}
-            </div>
+            <VoicePreviewSelector
+              selectedVoice={voicePreference}
+              onSelect={(voice) => setVoicePreference(voice)}
+            />
           </div>
 
           <div className="flex gap-3">
