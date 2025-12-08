@@ -10,6 +10,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { HabitList } from '@/components/habits/HabitList';
+import { SafetySensorCard } from '@/components/safety/SafetySensorCard';
+import { MicroGoalCard } from '@/components/goals/MicroGoalCard';
+import { AutoCheckIn } from '@/components/checkin/AutoCheckIn';
+import { RoadmapCard } from '@/components/roadmap/RoadmapCard';
 import { 
   MessageCircle, 
   Target, 
@@ -30,7 +34,7 @@ import { cn } from '@/lib/utils';
 export default function Dashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { userProfile, progressMetrics, goals, habits, addGoal, cyPersonality } = useSAI();
+  const { userProfile, progressMetrics, goals, habits, addGoal, cyPersonality, selectedConditions } = useSAI();
   const [showSupportDialog, setShowSupportDialog] = useState(false);
   const [showGoalDialog, setShowGoalDialog] = useState(false);
   const [newGoalTitle, setNewGoalTitle] = useState('');
@@ -115,6 +119,13 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Auto Check-in */}
+        <AutoCheckIn 
+          userName={userName} 
+          cyName={cyName} 
+          onStartChat={() => navigate('/chat')} 
+        />
+
         {/* Quick Chat CTA */}
         <Card className="bg-primary/10 border-primary/20 sai-fade-in">
           <CardContent className="p-6">
@@ -135,6 +146,9 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Micro Goals */}
+        <MicroGoalCard userName={userName} cyName={cyName} />
 
         {/* Overall Status */}
         <Card className="sai-slide-up">
@@ -332,6 +346,14 @@ export default function Dashboard() {
 
         {/* Habit Tracking */}
         <HabitList />
+
+        {/* Roadmap */}
+        <RoadmapCard goals={goals} />
+
+        {/* Safety Sensors */}
+        <SafetySensorCard 
+          showForConditions={selectedConditions.flatMap(c => c.conditions)} 
+        />
 
         {/* Watcher View Link */}
         <Card className="border-primary/20 sai-fade-in" style={{ animationDelay: '0.35s' }}>
