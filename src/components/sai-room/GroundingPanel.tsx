@@ -22,15 +22,25 @@ interface GroundingPanelProps {
   userName: string;
 }
 
-type GroundingExercise = 'breathing' | '54321' | 'body_scan' | 'safe_place';
+type GroundingExercise = 'breathing' | 'breathing_478' | '54321' | 'body_scan' | 'safe_place';
+type BreathingPattern = 'box' | '478';
 
 const breathingNarrations = {
-  intro: "Let's begin box breathing together. Find a comfortable position. We'll breathe in for 4 counts, hold for 4, breathe out for 4, and rest for 4.",
-  inhale: "Breathe in slowly... 1... 2... 3... 4...",
-  hold: "Hold gently... 1... 2... 3... 4...",
-  exhale: "Breathe out slowly... 1... 2... 3... 4...",
-  rest: "Rest... 1... 2... 3... 4...",
-  complete: "Well done. Take a moment to notice how you feel. You can continue as long as you need."
+  box: {
+    intro: "Let's begin box breathing together. Find a comfortable position. We'll breathe in for 4 counts, hold for 4, breathe out for 4, and rest for 4.",
+    inhale: "Breathe in slowly... 1... 2... 3... 4...",
+    hold: "Hold gently... 1... 2... 3... 4...",
+    exhale: "Breathe out slowly... 1... 2... 3... 4...",
+    rest: "Rest... 1... 2... 3... 4...",
+    complete: "Well done. Take a moment to notice how you feel. You can continue as long as you need."
+  },
+  '478': {
+    intro: "Let's begin 4-7-8 breathing for deeper relaxation. Find a comfortable position. We'll breathe in for 4 counts, hold for 7, and exhale slowly for 8.",
+    inhale: "Breathe in through your nose... 1... 2... 3... 4...",
+    hold: "Hold your breath gently... 1... 2... 3... 4... 5... 6... 7...",
+    exhale: "Exhale slowly through your mouth... 1... 2... 3... 4... 5... 6... 7... 8...",
+    complete: "Wonderful. This technique helps calm your nervous system. Take a moment to notice the relaxation."
+  }
 };
 
 const groundingNarrations = {
@@ -84,6 +94,7 @@ export function GroundingPanel({ onClose, userName }: GroundingPanelProps) {
   const [groundingStep, setGroundingStep] = useState(5);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [cycleCount, setCycleCount] = useState(0);
+  const [breathingPattern, setBreathingPattern] = useState<BreathingPattern>('box');
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { speak, stopAudio, isLoading, isPlaying } = useTTS({ voice: 'echo' });
@@ -98,48 +109,64 @@ export function GroundingPanel({ onClose, userName }: GroundingPanelProps) {
     };
   }, [stopAudio]);
 
-  const startBreathing = async () => {
+  const startBreathing = async (pattern: BreathingPattern = 'box') => {
+    setBreathingPattern(pattern);
     setIsBreathing(true);
     setBreathPhase('intro');
     setCycleCount(0);
     
+    const narrations = breathingNarrations[pattern];
+    
     // Speak intro
     if (voiceEnabled) {
-      await speak(breathingNarrations.intro);
+      await speak(narrations.intro);
     }
     
     // Wait for intro to finish, then start cycle
     setTimeout(() => {
-      runBreathingCycle();
+      runBreathingCycle(pattern);
     }, voiceEnabled ? 8000 : 1000);
   };
 
-  const runBreathingCycle = () => {
-    const phases: Array<'inhale' | 'hold' | 'exhale' | 'rest'> = ['inhale', 'hold', 'exhale', 'rest'];
+  const runBreathingCycle = (pattern: BreathingPattern) => {
+    // Box breathing: 4-4-4-4 (inhale, hold, exhale, rest)
+    // 4-7-8 breathing: 4-7-8 (inhale, hold, exhale) - no rest phase
+    const phases: Array<'inhale' | 'hold' | 'exhale' | 'rest'> = 
+      pattern === '478' ? ['inhale', 'hold', 'exhale'] : ['inhale', 'hold', 'exhale', 'rest'];
+    
+    // Timing in seconds for each phase
+    const timings = pattern === '478' 
+      ? { inhale: 4000, hold: 7000, exhale: 8000 }
+      : { inhale: 4000, hold: 4000, exhale: 4000, rest: 4000 };
+    
     let phaseIndex = 0;
+    const narrations = breathingNarrations[pattern];
 
     const advancePhase = async () => {
       const currentPhase = phases[phaseIndex];
       setBreathPhase(currentPhase);
       
-      if (voiceEnabled) {
-        speak(breathingNarrations[currentPhase]);
+      if (voiceEnabled && narrations[currentPhase]) {
+        speak(narrations[currentPhase]);
       }
       
+      const currentTiming = timings[currentPhase];
       phaseIndex = (phaseIndex + 1) % phases.length;
       
       if (phaseIndex === 0) {
         setCycleCount(prev => prev + 1);
       }
+      
+      // Schedule next phase with appropriate timing
+      intervalRef.current = setTimeout(advancePhase, currentTiming);
     };
 
     advancePhase();
-    intervalRef.current = setInterval(advancePhase, 5000); // 5 seconds per phase
   };
 
   const stopBreathing = () => {
     if (intervalRef.current) {
-      clearInterval(intervalRef.current);
+      clearTimeout(intervalRef.current);
       intervalRef.current = null;
     }
     setIsBreathing(false);
@@ -147,7 +174,7 @@ export function GroundingPanel({ onClose, userName }: GroundingPanelProps) {
     stopAudio();
     
     if (voiceEnabled && cycleCount > 0) {
-      speak(breathingNarrations.complete);
+      speak(breathingNarrations[breathingPattern].complete);
     }
   };
 
@@ -187,7 +214,13 @@ export function GroundingPanel({ onClose, userName }: GroundingPanelProps) {
       id: 'breathing' as GroundingExercise, 
       label: 'Box Breathing', 
       icon: Wind,
-      description: '4 counts in, hold, out, rest'
+      description: '4-4-4-4: Balanced calm'
+    },
+    { 
+      id: 'breathing_478' as GroundingExercise, 
+      label: '4-7-8 Breathing', 
+      icon: Wind,
+      description: 'Deep relaxation pattern'
     },
     { 
       id: '54321' as GroundingExercise, 
@@ -225,6 +258,8 @@ export function GroundingPanel({ onClose, userName }: GroundingPanelProps) {
       startBodyScan();
     } else if (id === 'safe_place') {
       startSafePlace();
+    } else if (id === 'breathing_478') {
+      // Auto-start 4-7-8 breathing when selected
     }
   };
 
@@ -318,9 +353,19 @@ export function GroundingPanel({ onClose, userName }: GroundingPanelProps) {
                 ))}
               </div>
             </div>
-          ) : activeExercise === 'breathing' ? (
-            /* Box Breathing */
+          ) : activeExercise === 'breathing' || activeExercise === 'breathing_478' ? (
+            /* Breathing Exercises (Box or 4-7-8) */
             <div className="flex flex-col items-center py-8">
+              <h3 className="text-lg font-display font-semibold mb-4">
+                {activeExercise === 'breathing_478' ? '4-7-8 Breathing' : 'Box Breathing'}
+              </h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                {activeExercise === 'breathing_478' 
+                  ? 'Inhale 4s → Hold 7s → Exhale 8s (deeper relaxation)'
+                  : 'Inhale 4s → Hold 4s → Exhale 4s → Rest 4s'
+                }
+              </p>
+              
               <div className={cn(
                 'w-40 h-40 rounded-full flex items-center justify-center',
                 'border-4 transition-all duration-1000',
@@ -358,7 +403,7 @@ export function GroundingPanel({ onClose, userName }: GroundingPanelProps) {
                     if (isBreathing) {
                       stopBreathing();
                     } else {
-                      startBreathing();
+                      startBreathing(activeExercise === 'breathing_478' ? '478' : 'box');
                     }
                   }}
                   disabled={isLoading}
