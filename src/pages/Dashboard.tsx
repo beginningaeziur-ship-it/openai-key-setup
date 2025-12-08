@@ -14,6 +14,7 @@ import { SafetySensorCard } from '@/components/safety/SafetySensorCard';
 import { MicroGoalCard } from '@/components/goals/MicroGoalCard';
 import { AutoCheckIn } from '@/components/checkin/AutoCheckIn';
 import { RoadmapCard } from '@/components/roadmap/RoadmapCard';
+import { QuickGroundingButton } from '@/components/grounding/QuickGroundingButton';
 import { 
   MessageCircle, 
   Target, 
@@ -136,13 +137,16 @@ export default function Dashboard() {
                   I'm here whenever you need support.
                 </p>
               </div>
-              <Button 
-                onClick={() => navigate('/chat')}
-                className="h-12 px-6 rounded-xl"
-              >
-                <MessageCircle className="w-5 h-5 mr-2" />
-                Chat Now
-              </Button>
+              <div className="flex gap-2">
+                <QuickGroundingButton userName={userName} variant="outline" />
+                <Button 
+                  onClick={() => navigate('/chat')}
+                  className="h-12 px-6 rounded-xl"
+                >
+                  <MessageCircle className="w-5 h-5 mr-2" />
+                  Chat Now
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

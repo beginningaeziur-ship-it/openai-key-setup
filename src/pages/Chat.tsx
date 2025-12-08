@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useSAI } from '@/contexts/SAIContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Send, Loader2, Heart, Volume2, VolumeX } from 'lucide-react';
+import { QuickGroundingButton } from '@/components/grounding/QuickGroundingButton';
+import { ArrowLeft, Send, Loader2, Heart, Volume2, VolumeX, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import type { ChatMessage } from '@/types/sai';
@@ -328,31 +329,43 @@ export default function Chat() {
 
       {/* Input */}
       <div className="border-t border-border bg-card/80 backdrop-blur-sm p-4">
-        <div className="max-w-2xl mx-auto flex gap-3">
-          <Textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your message..."
-            className="min-h-[48px] max-h-32 resize-none rounded-xl"
-            rows={1}
-          />
-          <Button
-            onClick={sendMessage}
-            disabled={!input.trim() || isLoading}
-            className="h-12 w-12 rounded-xl flex-shrink-0"
-          >
-            {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </Button>
+        <div className="max-w-2xl mx-auto">
+          {/* Grounding button row */}
+          <div className="flex justify-center mb-3">
+            <QuickGroundingButton 
+              userName={userName} 
+              variant="ghost" 
+              size="sm"
+              className="text-muted-foreground hover:text-primary"
+            />
+          </div>
+          
+          <div className="flex gap-3">
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message..."
+              className="min-h-[48px] max-h-32 resize-none rounded-xl"
+              rows={1}
+            />
+            <Button
+              onClick={sendMessage}
+              disabled={!input.trim() || isLoading}
+              className="h-12 w-12 rounded-xl flex-shrink-0"
+            >
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground text-center mt-2">
+            This conversation is not stored. Your privacy is protected.
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground text-center mt-2">
-          This conversation is not stored. Your privacy is protected.
-        </p>
       </div>
     </div>
   );
