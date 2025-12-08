@@ -65,11 +65,26 @@ export interface Goal {
 export interface Habit {
   id: string;
   title: string;
+  category: string;
   repetitions: number;
   targetRepetitions: number; // 30-60 for habit formation
-  reminderFading: boolean;
+  streak: number;
+  reminderFrequency: ReminderFrequency; // Fades as habit forms
+  reminderEnabled: boolean;
+  createdAt: string;
   lastCompleted?: string;
 }
+
+export type ReminderFrequency = 'high' | 'medium' | 'low' | 'minimal' | 'off';
+
+export const getReminderFrequency = (repetitions: number, target: number): ReminderFrequency => {
+  const progress = repetitions / target;
+  if (progress >= 0.9) return 'off'; // Habit formed
+  if (progress >= 0.7) return 'minimal'; // Almost there
+  if (progress >= 0.5) return 'low'; // Halfway
+  if (progress >= 0.25) return 'medium'; // Getting started
+  return 'high'; // Beginning
+};
 
 // What professionals can see (Watcher view)
 export interface WatcherView {
