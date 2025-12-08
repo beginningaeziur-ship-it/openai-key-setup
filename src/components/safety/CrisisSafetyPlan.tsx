@@ -13,7 +13,8 @@ import {
   AlertTriangle,
   Sparkles,
   User,
-  MessageCircle
+  MessageCircle,
+  Download
 } from 'lucide-react';
 import {
   Dialog,
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/dialog';
 import { useSAI } from '@/contexts/SAIContext';
 import { toast } from 'sonner';
+import { jsPDF } from 'jspdf';
 
 export interface CopingStrategy {
   id: string;
@@ -198,6 +200,106 @@ export function CrisisSafetyPlan() {
     toast.success('Reason added');
   };
 
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    const contentWidth = pageWidth - margin * 2;
+    let yPos = 20;
+
+    // Helper function to add section
+    const addSection = (title: string, items: string[], iconColor: [number, number, number] = [59, 130, 246]) => {
+      // Check if we need a new page
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      // Section title
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(iconColor[0], iconColor[1], iconColor[2]);
+      doc.text(title, margin, yPos);
+      yPos += 8;
+
+      // Items
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(60, 60, 60);
+      
+      if (items.length === 0) {
+        doc.setTextColor(150, 150, 150);
+        doc.text('No items added yet', margin + 5, yPos);
+        yPos += 7;
+      } else {
+        items.forEach((item) => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+          const lines = doc.splitTextToSize(`• ${item}`, contentWidth - 10);
+          doc.text(lines, margin + 5, yPos);
+          yPos += lines.length * 6;
+        });
+      }
+      yPos += 8;
+    };
+
+    // Title
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(245, 158, 11); // Amber
+    doc.text('My Crisis Safety Plan', margin, yPos);
+    yPos += 10;
+
+    // Date
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(120, 120, 120);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, yPos);
+    yPos += 15;
+
+    // Warning Signals
+    addSection('⚠️ Warning Signals', safetyPlan.warningSignals, [245, 158, 11]);
+
+    // Coping Strategies
+    const copingItems = safetyPlan.copingStrategies.map(s => 
+      `${s.title} (${categoryLabels[s.category]})${s.description ? ` - ${s.description}` : ''}`
+    );
+    addSection('✨ Coping Strategies', copingItems, [168, 85, 247]);
+
+    // Emergency Contacts
+    const contactItems = safetyPlan.emergencyContacts.map(c => 
+      `${c.name} (${c.relationship}) - ${c.phone}`
+    );
+    addSection('📞 Emergency Contacts', contactItems, [34, 197, 94]);
+
+    // Safe Environment Steps
+    const safeSteps = safetyPlan.safeEnvironmentSteps.map((step, i) => `${i + 1}. ${step}`);
+    addSection('🛡️ Making My Environment Safe', safeSteps, [59, 130, 246]);
+
+    // Reasons to Keep Going
+    addSection('💖 Reasons to Keep Going', safetyPlan.reasonsToLive, [236, 72, 153]);
+
+    // Professional Resources
+    addSection('🆘 Professional Crisis Resources (24/7)', safetyPlan.professionalResources, [239, 68, 68]);
+
+    // Footer
+    if (yPos > 260) {
+      doc.addPage();
+      yPos = 20;
+    }
+    yPos += 10;
+    doc.setFontSize(9);
+    doc.setTextColor(150, 150, 150);
+    doc.text('This safety plan was created with SAI Ally Guide.', margin, yPos);
+    doc.text('Share this document with your care team for coordinated support.', margin, yPos + 5);
+
+    // Save
+    doc.save('my-crisis-safety-plan.pdf');
+    toast.success('Safety plan exported as PDF');
+  };
+
   const removeReason = (index: number) => {
     savePlan({
       ...safetyPlan,
@@ -218,10 +320,21 @@ export function CrisisSafetyPlan() {
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-background border-border">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-foreground">
-            <Shield className="w-5 h-5 text-amber-400" />
-            Crisis Safety Plan
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <Shield className="w-5 h-5 text-amber-400" />
+              Crisis Safety Plan
+            </DialogTitle>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={exportToPDF}
+              className="gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Export PDF
+            </Button>
+          </div>
           <DialogDescription>
             Your personalized plan for staying safe during difficult moments
           </DialogDescription>
