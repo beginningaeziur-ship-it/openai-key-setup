@@ -76,7 +76,7 @@ export default function WHOModel() {
   return (
     <div className="min-h-screen bg-gradient-calm p-6">
       <div className="max-w-2xl mx-auto">
-        <OnboardingProgress currentStep={3} totalSteps={7} />
+        <OnboardingProgress currentStep={3} totalSteps={8} />
         
         <div className="space-y-6">
           <div className="text-center space-y-2">

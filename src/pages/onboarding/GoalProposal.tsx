@@ -238,7 +238,7 @@ export default function GoalProposal() {
     });
     
     completeOnboarding();
-    navigate('/dashboard');
+    navigate('/sai-room');
   };
 
   const selectedCount = goals.filter(g => g.selected).length;
@@ -258,7 +258,7 @@ export default function GoalProposal() {
   return (
     <div className="min-h-screen bg-gradient-calm p-6">
       <div className="max-w-2xl mx-auto">
-        <OnboardingProgress currentStep={7} totalSteps={7} />
+        <OnboardingProgress currentStep={8} totalSteps={8} />
         
         <div className="space-y-6">
           <div className="text-center space-y-3">
@@ -409,7 +409,7 @@ export default function GoalProposal() {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              onClick={() => navigate('/onboarding/symptoms')}
+              onClick={() => navigate('/onboarding/scene')}
               className="flex-1 h-12 rounded-xl"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />

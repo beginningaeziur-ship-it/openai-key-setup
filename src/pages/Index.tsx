@@ -9,7 +9,7 @@ const Index = () => {
   useEffect(() => {
     // Check if user has completed onboarding
     if (onboarding.completed) {
-      navigate("/dashboard", { replace: true });
+      navigate("/sai-room", { replace: true });
     } else {
       navigate("/onboarding/welcome", { replace: true });
     }
