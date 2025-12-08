@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { HabitList } from '@/components/habits/HabitList';
 import { 
   MessageCircle, 
   Target, 
@@ -325,9 +326,12 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-            )}
+          )}
           </CardContent>
         </Card>
+
+        {/* Habit Tracking */}
+        <HabitList />
 
         {/* Watcher View Link */}
         <Card className="border-primary/20 sai-fade-in" style={{ animationDelay: '0.35s' }}>

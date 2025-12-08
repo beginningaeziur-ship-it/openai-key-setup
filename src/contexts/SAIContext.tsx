@@ -222,12 +222,17 @@ export function SAIProvider({ children }: { children: ReactNode }) {
     setGoals(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
   };
 
-  const addHabit = (habit: Omit<Habit, 'id'>) => {
+const addHabit = (habit: Omit<Habit, 'id'>) => {
     const newHabit: Habit = {
       ...habit,
       id: crypto.randomUUID(),
+      createdAt: habit.createdAt || new Date().toISOString(),
     };
     setHabits(prev => [...prev, newHabit]);
+  };
+
+  const removeHabit = (id: string) => {
+    setHabits(prev => prev.filter(h => h.id !== id));
   };
 
   const updateHabit = (id: string, updates: Partial<Habit>) => {
