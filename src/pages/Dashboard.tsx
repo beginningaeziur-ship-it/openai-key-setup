@@ -15,6 +15,7 @@ import { MicroGoalCard } from '@/components/goals/MicroGoalCard';
 import { AutoCheckIn } from '@/components/checkin/AutoCheckIn';
 import { RoadmapCard } from '@/components/roadmap/RoadmapCard';
 import { QuickGroundingButton } from '@/components/grounding/QuickGroundingButton';
+import { CrisisSafetyPlan } from '@/components/safety/CrisisSafetyPlan';
 import { 
   MessageCircle, 
   Target, 
@@ -137,7 +138,8 @@ export default function Dashboard() {
                   I'm here whenever you need support.
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                <CrisisSafetyPlan />
                 <QuickGroundingButton userName={userName} variant="outline" />
                 <Button 
                   onClick={() => navigate('/chat')}
