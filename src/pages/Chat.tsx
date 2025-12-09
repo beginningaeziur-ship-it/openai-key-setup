@@ -7,6 +7,7 @@ import { QuickGroundingButton } from '@/components/grounding/QuickGroundingButto
 import { ArrowLeft, Send, Loader2, Heart, Volume2, VolumeX, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { buildCommunicationStyle } from '@/lib/disabilityResponsePatterns';
 import type { ChatMessage } from '@/types/sai';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sai-chat`;
@@ -149,6 +150,7 @@ export default function Chat() {
             conditions: selectedConditions.flatMap(c => c.conditions),
             symptoms: selectedSymptoms.flatMap(s => s.symptoms),
             personality: saiPersonality,
+            communicationStyle: buildCommunicationStyle(selectedCategories, selectedConditions, selectedSymptoms),
           },
         }),
       });
