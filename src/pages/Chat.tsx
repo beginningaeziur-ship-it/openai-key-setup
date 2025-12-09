@@ -13,7 +13,7 @@ import { checkMessageSafety } from '@/lib/safetyPatterns';
 import type { ChatMessage } from '@/types/sai';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sai-chat`;
-const VOICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sai-tts`;
+const VOICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sai-voice`;
 
 type SAIStatus = 'idle' | 'listening' | 'speaking' | 'thinking';
 
