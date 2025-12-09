@@ -1,18 +1,21 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSAI } from '@/contexts/SAIContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { QuickGroundingButton } from '@/components/grounding/QuickGroundingButton';
-import { ArrowLeft, Send, Loader2, Heart, Volume2, VolumeX, Sparkles } from 'lucide-react';
+import { useVoiceInput } from '@/hooks/useVoiceInput';
+import { ArrowLeft, Send, Loader2, Heart, Volume2, VolumeX, Mic, MicOff, Wind } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { buildCommunicationStyle } from '@/lib/disabilityResponsePatterns';
-import { checkMessageSafety, SAFE_RESPONSES } from '@/lib/safetyPatterns';
+import { checkMessageSafety } from '@/lib/safetyPatterns';
 import type { ChatMessage } from '@/types/sai';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sai-chat`;
-const VOICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sai-voice`;
+const VOICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sai-tts`;
+
+type SAIStatus = 'idle' | 'listening' | 'speaking' | 'thinking';
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -24,6 +27,7 @@ export default function Chat() {
   const [isLoading, setIsLoading] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [saiStatus, setSaiStatus] = useState<SAIStatus>('idle');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -31,6 +35,35 @@ export default function Chat() {
 
   const saiName = userProfile?.saiNickname || 'SAI';
   const userName = userProfile?.nickname || 'Friend';
+
+  // Voice input hook
+  const { isRecording, isProcessing, toggleRecording } = useVoiceInput({
+    onTranscription: (text) => {
+      setInput(prev => prev ? `${prev} ${text}` : text);
+      toast({
+        description: "Got it. Ready to send.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        description: error,
+      });
+    },
+  });
+
+  // Update SAI status based on various states
+  useEffect(() => {
+    if (isRecording) {
+      setSaiStatus('listening');
+    } else if (isPlaying) {
+      setSaiStatus('speaking');
+    } else if (isLoading || isProcessing) {
+      setSaiStatus('thinking');
+    } else {
+      setSaiStatus('idle');
+    }
+  }, [isRecording, isPlaying, isLoading, isProcessing]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -42,7 +75,7 @@ export default function Chat() {
       const greeting: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: `Hey ${userName}. I'm ${saiName}, and I'm here for you. How are you feeling right now? Take your time.`,
+        content: `I'm here, ${userName}. What do you need?`,
         timestamp: new Date(),
       };
       setMessages([greeting]);
@@ -68,13 +101,14 @@ export default function Chat() {
         },
         body: JSON.stringify({
           text: text,
-          voice: 'alloy', // Calm, warm voice
+          voice: userProfile?.voicePreference || 'nova', // Soft, warm voice
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Voice error:', errorData);
+        setIsPlaying(false);
         return;
       }
 
@@ -115,7 +149,7 @@ export default function Chat() {
     }
     setVoiceEnabled(!voiceEnabled);
     toast({
-      description: voiceEnabled ? "Voice disabled" : "Voice enabled",
+      description: voiceEnabled ? "Voice off. Text only." : "Voice on.",
     });
   };
 
@@ -250,7 +284,7 @@ export default function Chat() {
 
     } catch (error) {
       console.error('Chat error:', error);
-      const errorMessage = "I'm having trouble connecting right now. Take a breath — I'll be back in a moment. You're doing okay.";
+      const errorMessage = "I'm here. Connection hiccup. Take a breath.";
       setMessages(prev => [...prev, {
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -273,46 +307,65 @@ export default function Chat() {
     }
   };
 
+  const getStatusText = () => {
+    switch (saiStatus) {
+      case 'listening': return 'Listening...';
+      case 'speaking': return 'Speaking...';
+      case 'thinking': return 'Thinking...';
+      default: return 'Your ally';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/sai-room')}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex items-center gap-3">
               <div className={cn(
-                "w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center",
-                isPlaying && "animate-breathe"
+                "w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center relative",
+                saiStatus !== 'idle' && "animate-breathe"
               )}>
                 <Heart className="w-5 h-5 text-primary" />
+                {/* Status indicator */}
+                <div className={cn(
+                  "absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background",
+                  saiStatus === 'listening' && "bg-sai-hope animate-pulse",
+                  saiStatus === 'speaking' && "bg-primary animate-pulse",
+                  saiStatus === 'thinking' && "bg-sai-gentle animate-pulse",
+                  saiStatus === 'idle' && "bg-progress-stable"
+                )} />
               </div>
               <div>
                 <h1 className="font-display font-semibold">{saiName}</h1>
                 <p className="text-xs text-muted-foreground">
-                  {isPlaying ? "Speaking..." : "Your ally"}
+                  {getStatusText()}
                 </p>
               </div>
             </div>
           </div>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleVoice}
-            className={cn(
-              "rounded-full",
-              !voiceEnabled && "text-muted-foreground"
-            )}
-          >
-            {voiceEnabled ? (
-              <Volume2 className="w-5 h-5" />
-            ) : (
-              <VolumeX className="w-5 h-5" />
-            )}
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleVoice}
+              className={cn(
+                "rounded-full",
+                !voiceEnabled && "text-muted-foreground"
+              )}
+            >
+              {voiceEnabled ? (
+                <Volume2 className="w-5 h-5" />
+              ) : (
+                <VolumeX className="w-5 h-5" />
+              )}
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -353,8 +406,8 @@ export default function Chat() {
       {/* Input */}
       <div className="border-t border-border bg-card/80 backdrop-blur-sm p-4">
         <div className="max-w-2xl mx-auto">
-          {/* Grounding button row */}
-          <div className="flex justify-center mb-3">
+          {/* Quick actions row */}
+          <div className="flex justify-center gap-4 mb-3">
             <QuickGroundingButton 
               userName={userName} 
               variant="ghost" 
@@ -363,19 +416,40 @@ export default function Chat() {
             />
           </div>
           
-          <div className="flex gap-3">
+          <div className="flex gap-2">
+            {/* Voice input button */}
+            <Button
+              variant={isRecording ? "default" : "outline"}
+              size="icon"
+              onClick={toggleRecording}
+              disabled={isProcessing}
+              className={cn(
+                "h-12 w-12 rounded-xl flex-shrink-0 transition-all",
+                isRecording && "bg-sai-hope text-white animate-pulse"
+              )}
+            >
+              {isProcessing ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : isRecording ? (
+                <MicOff className="w-5 h-5" />
+              ) : (
+                <Mic className="w-5 h-5" />
+              )}
+            </Button>
+            
             <Textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type your message..."
+              placeholder={isRecording ? "Listening..." : "Type or tap mic to speak..."}
               className="min-h-[48px] max-h-32 resize-none rounded-xl"
               rows={1}
+              disabled={isRecording}
             />
             <Button
               onClick={sendMessage}
-              disabled={!input.trim() || isLoading}
+              disabled={!input.trim() || isLoading || isRecording}
               className="h-12 w-12 rounded-xl flex-shrink-0"
             >
               {isLoading ? (
@@ -386,7 +460,7 @@ export default function Chat() {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground text-center mt-2">
-            This conversation is not stored. Your privacy is protected.
+            Conversations are private. Not stored.
           </p>
         </div>
       </div>
