@@ -65,15 +65,16 @@ export default function SAIName() {
 
           <div className="space-y-4">
             <h2 className="text-xl font-display font-semibold text-foreground text-center">
-              Choose my voice
+              Choose my voice & enable yours
             </h2>
             <p className="text-sm text-muted-foreground text-center">
-              Tap the speaker icon to preview each voice. Pick what feels most comfortable.
+              Enable your microphone for live conversation, then pick my voice.
             </p>
             
             <VoicePreviewSelector
               selectedVoice={voicePreference}
               onSelect={(voice) => setVoicePreference(voice)}
+              showMicActivation={true}
             />
           </div>
 

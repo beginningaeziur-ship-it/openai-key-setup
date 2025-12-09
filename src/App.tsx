@@ -4,6 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SAIProvider } from "@/contexts/SAIContext";
+import { MicrophoneProvider } from "@/contexts/MicrophoneContext";
+import { GlobalMicButton } from "@/components/voice/GlobalMicButton";
+import { MicrophoneActivationPrompt } from "@/components/voice/MicrophoneWarningDialog";
 
 // Pages
 import Index from "./pages/Index";
@@ -30,37 +33,45 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <SAIProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Main entry - redirects based on onboarding status */}
-            <Route path="/" element={<Index />} />
+      <MicrophoneProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Main entry - redirects based on onboarding status */}
+              <Route path="/" element={<Index />} />
+              
+              {/* Onboarding flow */}
+              <Route path="/onboarding/welcome" element={<Welcome />} />
+              <Route path="/onboarding/cy-name" element={<CyName />} />
+              <Route path="/onboarding/user-info" element={<UserInfo />} />
+              <Route path="/onboarding/who-model" element={<WHOModel />} />
+              <Route path="/onboarding/categories" element={<Categories />} />
+              <Route path="/onboarding/conditions" element={<Conditions />} />
+              <Route path="/onboarding/symptoms" element={<Symptoms />} />
+              <Route path="/onboarding/scene" element={<SceneSelect />} />
+              <Route path="/onboarding/goals" element={<GoalProposal />} />
+              
+              {/* Main app */}
+              <Route path="/sai-room" element={<SAIRoom />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/chat" element={<Chat />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/watcher" element={<Watcher />} />
+              
+              {/* Catch-all */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
             
-            {/* Onboarding flow */}
-            <Route path="/onboarding/welcome" element={<Welcome />} />
-            <Route path="/onboarding/cy-name" element={<CyName />} />
-            <Route path="/onboarding/user-info" element={<UserInfo />} />
-            <Route path="/onboarding/who-model" element={<WHOModel />} />
-            <Route path="/onboarding/categories" element={<Categories />} />
-            <Route path="/onboarding/conditions" element={<Conditions />} />
-            <Route path="/onboarding/symptoms" element={<Symptoms />} />
-            <Route path="/onboarding/scene" element={<SceneSelect />} />
-            <Route path="/onboarding/goals" element={<GoalProposal />} />
+            {/* Global floating mic button - visible on all screens */}
+            <GlobalMicButton variant="floating" />
             
-            {/* Main app */}
-            <Route path="/sai-room" element={<SAIRoom />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/chat" element={<Chat />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/watcher" element={<Watcher />} />
-            
-            {/* Catch-all */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+            {/* Microphone activation prompt - shows warning on first use */}
+            <MicrophoneActivationPrompt />
+          </BrowserRouter>
+        </TooltipProvider>
+      </MicrophoneProvider>
     </SAIProvider>
   </QueryClientProvider>
 );
