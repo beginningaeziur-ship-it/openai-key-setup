@@ -1,13 +1,15 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSAI } from '@/contexts/SAIContext';
 import { Button } from '@/components/ui/button';
 import { SceneBackground, SceneType } from '@/components/sai-room/SceneBackground';
 import { SAIPresence } from '@/components/sai-room/SAIPresence';
-import { BedroomEnvironment } from '@/components/sai-room/BedroomEnvironment';
+import { BedroomWithObjects } from '@/components/sai-room/BedroomWithObjects';
 import { SceneEnvironment } from '@/components/sai-room/SceneEnvironment';
 import { GroundingPanel } from '@/components/sai-room/GroundingPanel';
-import { RoomArrival } from '@/components/sai-room/RoomArrival';
+import { SAIIntroRoom } from '@/components/sai-room/SAIIntroRoom';
+import { SceneSelector } from '@/components/sai-room/SceneSelector';
+import { RoomTutorial } from '@/components/sai-room/RoomTutorial';
 import { CrisisSafetyPlan } from '@/components/safety/CrisisSafetyPlan';
 import { AmbientSoundControl } from '@/components/sai-room/AmbientSoundControl';
 import { useAmbientSound } from '@/hooks/useAmbientSound';
@@ -19,23 +21,38 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+type RoomPhase = 'intro' | 'scene-select' | 'tutorial' | 'room';
+
 export default function SAIRoom() {
   const navigate = useNavigate();
-  const { userProfile, progressMetrics } = useSAI();
+  const { userProfile, setUserProfile, progressMetrics } = useSAI();
   
   const saiName = userProfile?.saiNickname || 'SAI';
   const userName = userProfile?.nickname || 'Friend';
-  const scene = (userProfile?.scene as SceneType) || 'bedroom';
+  const savedScene = (userProfile?.scene as SceneType) || null;
   
+  // Determine initial phase based on what's been completed
+  const getInitialPhase = (): RoomPhase => {
+    const introSeen = localStorage.getItem('sai_intro_completed') === 'true';
+    const tutorialSeen = localStorage.getItem('sai_tutorial_completed') === 'true';
+    
+    if (!introSeen) return 'intro';
+    if (!savedScene) return 'scene-select';
+    if (!tutorialSeen) return 'tutorial';
+    return 'room';
+  };
+
+  const [phase, setPhase] = useState<RoomPhase>(getInitialPhase);
+  const [scene, setScene] = useState<SceneType>(savedScene || 'bedroom');
   const [activeArea, setActiveArea] = useState<string | null>(null);
   const [showGrounding, setShowGrounding] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
-  const [roomReady, setRoomReady] = useState(false);
+  const [roomReady, setRoomReady] = useState(phase === 'room');
 
   // Ambient background sounds for the scene
   const { isPlaying, isMuted, toggleMute, play } = useAmbientSound(scene, {
     volume: 0.12,
-    enabled: roomReady,
+    enabled: phase === 'room' && roomReady,
   });
 
   const overallProgress = Math.round(
@@ -47,8 +64,30 @@ export default function SAIRoom() {
     return `I'm here, ${userName}.`;
   };
 
-  const handleArrivalComplete = useCallback(() => {
-    setRoomReady(true);
+  const handleIntroComplete = useCallback(() => {
+    localStorage.setItem('sai_intro_completed', 'true');
+    setPhase('scene-select');
+  }, []);
+
+  const handleSceneSelect = useCallback((selectedScene: SceneType) => {
+    setScene(selectedScene);
+    // Save scene to user profile
+    if (userProfile) {
+      setUserProfile({ ...userProfile, scene: selectedScene });
+    }
+    setPhase('tutorial');
+  }, [userProfile, setUserProfile]);
+
+  const handleTutorialComplete = useCallback(() => {
+    localStorage.setItem('sai_tutorial_completed', 'true');
+    setPhase('room');
+    setTimeout(() => setRoomReady(true), 500);
+  }, []);
+
+  const handleTutorialSkip = useCallback(() => {
+    localStorage.setItem('sai_tutorial_completed', 'true');
+    setPhase('room');
+    setTimeout(() => setRoomReady(true), 500);
   }, []);
 
   const handleAreaClick = (areaId: string) => {
@@ -76,21 +115,55 @@ export default function SAIRoom() {
     }
   };
 
+  // Phase: SAI Introduction
+  if (phase === 'intro') {
+    return (
+      <SAIIntroRoom
+        saiName={saiName}
+        userName={userName}
+        onComplete={handleIntroComplete}
+      />
+    );
+  }
+
+  // Phase: Scene Selection
+  if (phase === 'scene-select') {
+    return (
+      <SceneSelector
+        saiName={saiName}
+        onSelect={handleSceneSelect}
+      />
+    );
+  }
+
+  // Phase: Room Tutorial
+  if (phase === 'tutorial') {
+    return (
+      <SceneBackground scene={scene}>
+        <BedroomWithObjects
+          activeArea={activeArea}
+          onAreaSelect={() => {}}
+          isVisible={true}
+        />
+        <RoomTutorial
+          saiName={saiName}
+          userName={userName}
+          onComplete={handleTutorialComplete}
+          onSkip={handleTutorialSkip}
+        />
+      </SceneBackground>
+    );
+  }
+
+  // Phase: Main Room
   return (
     <SceneBackground scene={scene} className={cn(
       "transition-opacity duration-1000",
       roomReady ? 'opacity-100' : 'opacity-70'
     )}>
-      {/* Spoken intro + overlay (only first time) */}
-      <RoomArrival 
-        userName={userName}
-        saiName={saiName}
-        onComplete={handleArrivalComplete}
-      />
-
-      {/* Scene-specific environment with hotspots */}
+      {/* Scene-specific environment with lifelike objects */}
       {scene === 'bedroom' ? (
-        <BedroomEnvironment
+        <BedroomWithObjects
           activeArea={activeArea}
           onAreaSelect={handleAreaClick}
           isVisible={roomReady}
@@ -104,7 +177,7 @@ export default function SAIRoom() {
         />
       )}
 
-      {/* Header - fades in when room ready */}
+      {/* Header */}
       <header className={cn(
         "bg-card/30 backdrop-blur-sm border-b border-border/20 sticky top-0 z-20",
         "transition-all duration-1000",
