@@ -4,24 +4,17 @@ import { useSAI } from '@/contexts/SAIContext';
 import { Button } from '@/components/ui/button';
 import { SceneBackground, SceneType } from '@/components/sai-room/SceneBackground';
 import { SAIPresence } from '@/components/sai-room/SAIPresence';
-import { RoomArea } from '@/components/sai-room/RoomArea';
+import { SceneEnvironment } from '@/components/sai-room/SceneEnvironment';
 import { GroundingPanel } from '@/components/sai-room/GroundingPanel';
 import { RoomArrival } from '@/components/sai-room/RoomArrival';
 import { CrisisSafetyPlan } from '@/components/safety/CrisisSafetyPlan';
 import { 
-  Wind, 
-  Wrench, 
-  Target, 
-  Search, 
   Settings, 
   MessageCircle,
   Heart,
-  Eye,
   Keyboard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-type RoomView = 'home' | 'grounding' | 'tools' | 'goals' | 'research' | 'settings';
 
 export default function SAIRoom() {
   const navigate = useNavigate();
@@ -31,7 +24,7 @@ export default function SAIRoom() {
   const userName = userProfile?.nickname || 'Friend';
   const scene = (userProfile?.scene as SceneType) || 'bedroom';
   
-  const [activeView, setActiveView] = useState<RoomView>('home');
+  const [activeArea, setActiveArea] = useState<string | null>(null);
   const [showGrounding, setShowGrounding] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [hasSeenTour, setHasSeenTour] = useState<boolean>(() => {
@@ -64,116 +57,31 @@ export default function SAIRoom() {
     setRoomReady(true);
   }, []);
 
-  // Scene-specific hotspots for immersive room feel
-  const sceneHotspots: Record<SceneType, {
-    id: string;
-    label: string;
-    description: string;
-    icon: typeof Wind;
-    style: React.CSSProperties;
-    onClick: () => void;
-  }[]> = {
-    bedroom: [
-      { id: 'grounding', label: 'Rug', description: 'Sit, breathe, feel the floor', icon: Wind, style: { left: '10%', bottom: '20%' }, onClick: () => setShowGrounding(true) },
-      { id: 'tools', label: 'Nightstand', description: 'Daily tools & reminders', icon: Wrench, style: { right: '10%', bottom: '25%' }, onClick: () => navigate('/dashboard') },
-      { id: 'goals', label: 'Journal', description: 'Your goals & progress', icon: Target, style: { left: '25%', bottom: '35%' }, onClick: () => navigate('/dashboard') },
-      { id: 'research', label: 'Bookshelf', description: 'Info, scripts & advocacy', icon: Search, style: { right: '15%', top: '30%' }, onClick: () => navigate('/chat') },
-      { id: 'settings', label: 'Lamp', description: 'How I talk, how much, how fast', icon: Settings, style: { right: '8%', bottom: '45%' }, onClick: () => navigate('/settings') },
-    ],
-    living_room: [
-      { id: 'grounding', label: 'Fireplace', description: 'Warmth and calm', icon: Wind, style: { left: '15%', bottom: '25%' }, onClick: () => setShowGrounding(true) },
-      { id: 'tools', label: 'Coffee Table', description: 'Daily tools & reminders', icon: Wrench, style: { right: '20%', bottom: '20%' }, onClick: () => navigate('/dashboard') },
-      { id: 'goals', label: 'Notebook', description: 'Your goals & progress', icon: Target, style: { left: '30%', bottom: '30%' }, onClick: () => navigate('/dashboard') },
-      { id: 'research', label: 'Books', description: 'Info, scripts & advocacy', icon: Search, style: { right: '10%', top: '35%' }, onClick: () => navigate('/chat') },
-      { id: 'settings', label: 'Side Lamp', description: 'How I talk, how much, how fast', icon: Settings, style: { right: '5%', bottom: '40%' }, onClick: () => navigate('/settings') },
-    ],
-    forest_cabin: [
-      { id: 'grounding', label: 'Mossy Rock', description: 'Ground yourself here', icon: Wind, style: { left: '12%', bottom: '18%' }, onClick: () => setShowGrounding(true) },
-      { id: 'tools', label: 'Tree Stump', description: 'Daily tools & reminders', icon: Wrench, style: { right: '15%', bottom: '22%' }, onClick: () => navigate('/dashboard') },
-      { id: 'goals', label: 'Carved Tree', description: 'Your goals & progress', icon: Target, style: { left: '28%', bottom: '32%' }, onClick: () => navigate('/dashboard') },
-      { id: 'research', label: 'Old Oak', description: 'Info, scripts & advocacy', icon: Search, style: { right: '12%', top: '32%' }, onClick: () => navigate('/chat') },
-      { id: 'settings', label: 'Lantern', description: 'How I talk, how much, how fast', icon: Settings, style: { right: '6%', bottom: '42%' }, onClick: () => navigate('/settings') },
-    ],
-    mountain: [
-      { id: 'grounding', label: 'Flat Stone', description: 'Sit and breathe', icon: Wind, style: { left: '10%', bottom: '20%' }, onClick: () => setShowGrounding(true) },
-      { id: 'tools', label: 'Campsite', description: 'Daily tools & reminders', icon: Wrench, style: { right: '18%', bottom: '24%' }, onClick: () => navigate('/dashboard') },
-      { id: 'goals', label: 'Trail Marker', description: 'Your goals & progress', icon: Target, style: { left: '22%', bottom: '36%' }, onClick: () => navigate('/dashboard') },
-      { id: 'research', label: 'Lookout', description: 'Info, scripts & advocacy', icon: Search, style: { right: '10%', top: '28%' }, onClick: () => navigate('/chat') },
-      { id: 'settings', label: 'Fire Pit', description: 'How I talk, how much, how fast', icon: Settings, style: { right: '8%', bottom: '48%' }, onClick: () => navigate('/settings') },
-    ],
-    ocean: [
-      { id: 'grounding', label: 'Tide Pool', description: 'Feel the rhythm', icon: Wind, style: { left: '8%', bottom: '15%' }, onClick: () => setShowGrounding(true) },
-      { id: 'tools', label: 'Driftwood', description: 'Daily tools & reminders', icon: Wrench, style: { right: '12%', bottom: '20%' }, onClick: () => navigate('/dashboard') },
-      { id: 'goals', label: 'Sand Drawing', description: 'Your goals & progress', icon: Target, style: { left: '25%', bottom: '28%' }, onClick: () => navigate('/dashboard') },
-      { id: 'research', label: 'Lighthouse', description: 'Info, scripts & advocacy', icon: Search, style: { right: '8%', top: '25%' }, onClick: () => navigate('/chat') },
-      { id: 'settings', label: 'Beach Lantern', description: 'How I talk, how much, how fast', icon: Settings, style: { right: '5%', bottom: '38%' }, onClick: () => navigate('/settings') },
-    ],
-    quiet_woods: [
-      { id: 'grounding', label: 'Forest Floor', description: 'Feel the earth', icon: Wind, style: { left: '10%', bottom: '18%' }, onClick: () => setShowGrounding(true) },
-      { id: 'tools', label: 'Fallen Log', description: 'Daily tools & reminders', icon: Wrench, style: { right: '14%', bottom: '22%' }, onClick: () => navigate('/dashboard') },
-      { id: 'goals', label: 'Old Tree', description: 'Your goals & progress', icon: Target, style: { left: '26%', bottom: '34%' }, onClick: () => navigate('/dashboard') },
-      { id: 'research', label: 'Clearing', description: 'Info, scripts & advocacy', icon: Search, style: { right: '10%', top: '30%' }, onClick: () => navigate('/chat') },
-      { id: 'settings', label: 'Firefly Spot', description: 'How I talk, how much, how fast', icon: Settings, style: { right: '6%', bottom: '44%' }, onClick: () => navigate('/settings') },
-    ],
-    dim_room: [
-      { id: 'grounding', label: 'Cushion', description: 'Soft and quiet', icon: Wind, style: { left: '12%', bottom: '20%' }, onClick: () => setShowGrounding(true) },
-      { id: 'tools', label: 'Side Table', description: 'Daily tools & reminders', icon: Wrench, style: { right: '12%', bottom: '24%' }, onClick: () => navigate('/dashboard') },
-      { id: 'goals', label: 'Notepad', description: 'Your goals & progress', icon: Target, style: { left: '24%', bottom: '32%' }, onClick: () => navigate('/dashboard') },
-      { id: 'research', label: 'Shelf', description: 'Info, scripts & advocacy', icon: Search, style: { right: '10%', top: '28%' }, onClick: () => navigate('/chat') },
-      { id: 'settings', label: 'Dim Lamp', description: 'How I talk, how much, how fast', icon: Settings, style: { right: '6%', bottom: '42%' }, onClick: () => navigate('/settings') },
-    ],
+  const handleAreaClick = (areaId: string) => {
+    setActiveArea(areaId);
+    
+    switch (areaId) {
+      case 'grounding':
+        setShowGrounding(true);
+        break;
+      case 'goals':
+      case 'tools':
+        navigate('/dashboard');
+        break;
+      case 'research':
+        navigate('/chat');
+        break;
+      case 'settings':
+        navigate('/settings');
+        break;
+      case 'comfort':
+        // Could open a calming panel in the future
+        setShowGrounding(true);
+        break;
+      default:
+        break;
+    }
   };
-
-  const roomAreas = [
-    {
-      id: 'grounding',
-      label: 'Grounding Corner',
-      description: 'Breathing, sensing, calming',
-      icon: Wind,
-      iconBgColor: 'bg-sai-calm/20',
-      onClick: () => setShowGrounding(true),
-    },
-    {
-      id: 'tools',
-      label: 'Support Tools',
-      description: 'Routines, check-ins, habits',
-      icon: Wrench,
-      iconBgColor: 'bg-sai-hope/20',
-      onClick: () => navigate('/dashboard'),
-    },
-    {
-      id: 'goals',
-      label: 'Stability Wall',
-      description: `${goals.length} goals · ${overallProgress}% progress`,
-      icon: Target,
-      iconBgColor: 'bg-progress-stable/20',
-      onClick: () => navigate('/dashboard'),
-    },
-    {
-      id: 'research',
-      label: 'Research Desk',
-      description: 'Find resources, learn',
-      icon: Search,
-      iconBgColor: 'bg-sai-gentle/20',
-      onClick: () => navigate('/chat'),
-    },
-    {
-      id: 'settings',
-      label: 'Settings Alcove',
-      description: 'Voice, pacing, preferences',
-      icon: Settings,
-      iconBgColor: 'bg-muted',
-      onClick: () => navigate('/settings'),
-    },
-    {
-      id: 'watcher',
-      label: 'Professional View',
-      description: 'For your care team',
-      icon: Eye,
-      iconBgColor: 'bg-secondary/30',
-      onClick: () => navigate('/watcher'),
-    },
-  ];
 
   return (
     <SceneBackground scene={scene} className={cn(
@@ -227,33 +135,13 @@ export default function SAIRoom() {
         </div>
       )}
 
-      {/* Scene hotspots overlay - dimmed initially, visible when room is ready */}
-      <div className={cn(
-        "absolute inset-0 pointer-events-none z-10",
-        "transition-opacity duration-1000",
-        roomReady ? 'opacity-100' : 'opacity-30'
-      )}>
-        {(sceneHotspots[scene] || []).map((hotspot, index) => (
-          <div
-            key={hotspot.id}
-            style={hotspot.style}
-            className="absolute pointer-events-auto"
-          >
-            <RoomArea
-              id={hotspot.id}
-              label={hotspot.label}
-              description={hotspot.description}
-              icon={hotspot.icon}
-              iconBgColor="bg-card/60"
-              isActive={activeView === hotspot.id}
-              onClick={hotspot.onClick}
-              isVisible={roomReady}
-              animationDelay={0.1 * (index + 1)}
-              className="bg-card/80 border border-border/40 shadow-lg backdrop-blur-sm"
-            />
-          </div>
-        ))}
-      </div>
+      {/* Scene hotspots from SceneEnvironment */}
+      <SceneEnvironment 
+        scene={scene}
+        activeArea={activeArea}
+        handleAreaClick={handleAreaClick}
+        isVisible={roomReady}
+      />
 
       {/* Header - fades in when room ready */}
       <header className={cn(
@@ -321,28 +209,6 @@ export default function SAIRoom() {
           </button>
         </div>
 
-        {/* Room Areas Grid - staggered appearance */}
-        <div className={cn(
-          "grid grid-cols-2 sm:grid-cols-3 gap-4",
-          "transition-opacity duration-1000 delay-700",
-          roomReady ? 'opacity-100' : 'opacity-0'
-        )}>
-          {roomAreas.map((area, index) => (
-            <RoomArea
-              key={area.id}
-              id={area.id}
-              label={area.label}
-              description={area.description}
-              icon={area.icon}
-              iconBgColor={area.iconBgColor}
-              onClick={area.onClick}
-              isActive={activeView === area.id}
-              isVisible={roomReady}
-              animationDelay={0.1 * (index + 1)}
-            />
-          ))}
-        </div>
-
         {/* Quick stats footer */}
         <div className={cn(
           "mt-12 flex justify-center",
@@ -356,10 +222,6 @@ export default function SAIRoom() {
                 overallProgress >= 50 ? 'bg-progress-stable' : 'bg-progress-attention'
               )} />
               <span>Stability: {overallProgress}%</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Target className="w-4 h-4" />
-              <span>{goals.length} active goals</span>
             </div>
           </div>
         </div>
