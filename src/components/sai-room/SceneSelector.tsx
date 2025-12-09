@@ -102,7 +102,7 @@ export const SceneSelector: React.FC<SceneSelectorProps> = ({
             key={scene.id}
             onClick={() => setSelectedScene(scene.id)}
             className={cn(
-              "relative p-6 rounded-2xl border transition-all duration-300",
+              "relative p-4 rounded-xl border transition-all duration-300",
               "text-left group overflow-hidden",
               `bg-gradient-to-br ${scene.gradient}`,
               selectedScene === scene.id
@@ -113,24 +113,24 @@ export const SceneSelector: React.FC<SceneSelectorProps> = ({
           >
             {/* Selection indicator */}
             {selectedScene === scene.id && (
-              <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                <Check className="w-4 h-4 text-primary-foreground" />
+              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                <Check className="w-3 h-3 text-primary-foreground" />
               </div>
             )}
 
             {/* Icon */}
             <div className={cn(
-              "w-12 h-12 rounded-xl flex items-center justify-center mb-4",
+              "w-8 h-8 rounded-lg flex items-center justify-center mb-3",
               "bg-white/10 backdrop-blur-sm",
               selectedScene === scene.id ? "text-primary" : "text-foreground/80"
             )}>
-              {scene.icon}
+              {React.cloneElement(scene.icon as React.ReactElement, { className: 'w-4 h-4' })}
             </div>
 
             {/* Content */}
-            <h3 className="font-semibold text-foreground mb-1">{scene.label}</h3>
-            <p className="text-sm text-foreground/70 mb-3">{scene.description}</p>
-            <p className="text-xs text-foreground/50">{scene.preview}</p>
+            <h3 className="font-semibold text-foreground text-sm mb-0.5">{scene.label}</h3>
+            <p className="text-xs text-foreground/70 mb-2">{scene.description}</p>
+            <p className="text-[10px] text-foreground/50 leading-tight">{scene.preview}</p>
 
             {/* Hover effect */}
             <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />

@@ -23,6 +23,7 @@ interface RoomTutorialProps {
   userName: string;
   onComplete: () => void;
   onSkip: () => void;
+  onHighlightObject?: (objectId: string | null) => void;
 }
 
 const createTutorialSteps = (saiName: string): TutorialStep[] => [
@@ -87,6 +88,7 @@ export const RoomTutorial: React.FC<RoomTutorialProps> = ({
   userName,
   onComplete,
   onSkip,
+  onHighlightObject,
 }) => {
   const tutorialSteps = createTutorialSteps(saiName);
   const [currentStep, setCurrentStep] = useState(0);
@@ -95,6 +97,18 @@ export const RoomTutorial: React.FC<RoomTutorialProps> = ({
   const [voiceEnabled, setVoiceEnabled] = useState(true);
 
   const { speak, stopAudio, isPlaying, isLoading } = useTTS({ voice: 'alloy' });
+
+  // Highlight the current object in the scene
+  useEffect(() => {
+    if (onHighlightObject && !showFollowUp) {
+      onHighlightObject(tutorialSteps[currentStep]?.id || null);
+    }
+    return () => {
+      if (onHighlightObject) {
+        onHighlightObject(null);
+      }
+    };
+  }, [currentStep, showFollowUp, onHighlightObject]);
 
   const speakCurrentStep = useCallback((stepIndex: number) => {
     if (voiceEnabled && tutorialSteps[stepIndex]) {
@@ -119,26 +133,27 @@ export const RoomTutorial: React.FC<RoomTutorialProps> = ({
   useEffect(() => {
     if (currentStep > 0 && !showFollowUp) {
       setStepVisible(false);
-      stopAudio();
       const timer = setTimeout(() => {
         setStepVisible(true);
         setTimeout(() => speakCurrentStep(currentStep), 400);
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [currentStep, showFollowUp, stopAudio]);
+  }, [currentStep, showFollowUp]);
 
   useEffect(() => {
     if (showFollowUp) {
       setStepVisible(false);
-      stopAudio();
+      if (onHighlightObject) {
+        onHighlightObject(null);
+      }
       const timer = setTimeout(() => {
         setStepVisible(true);
         setTimeout(() => speakFollowUp(), 500);
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [showFollowUp, stopAudio, speakFollowUp]);
+  }, [showFollowUp, speakFollowUp, onHighlightObject]);
 
   const handleNext = () => {
     stopAudio();
@@ -151,11 +166,17 @@ export const RoomTutorial: React.FC<RoomTutorialProps> = ({
 
   const handleSkip = () => {
     stopAudio();
+    if (onHighlightObject) {
+      onHighlightObject(null);
+    }
     onSkip();
   };
 
   const handleComplete = () => {
     stopAudio();
+    if (onHighlightObject) {
+      onHighlightObject(null);
+    }
     onComplete();
   };
 
@@ -291,7 +312,7 @@ export const RoomTutorial: React.FC<RoomTutorialProps> = ({
             {step.objectIcon}
           </div>
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Object</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Look at the highlighted</p>
             <p className="font-medium text-foreground">{step.objectLabel}</p>
           </div>
           {/* Speaking indicator */}

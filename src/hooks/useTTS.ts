@@ -73,6 +73,9 @@ export function useTTS(options: UseTTSOptions = {}) {
   const speak = useCallback(async (text: string, queueMode: boolean = false) => {
     if (!text.trim()) return;
 
+    // Always stop any currently playing audio to prevent overlap
+    stopAudio();
+
     setIsLoading(true);
     setError(null);
 
