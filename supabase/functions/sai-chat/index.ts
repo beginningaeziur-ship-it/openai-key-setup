@@ -95,6 +95,7 @@ function buildSAISystemPrompt(userContext: any): string {
     triggerZones: []
   };
   const communicationStyle = userContext?.communicationStyle || null;
+  const stressContext = userContext?.stressContext || null;
 
   // Detect specific user profiles
   const hasTrauma = categories.some((c: string) => 
@@ -383,7 +384,28 @@ If ${userName} is in crisis:
 - No lectures or resource lists
 - Two options: "We can ground together, or I can help you reach out. Which first?"
 
-## ABSOLUTE RULES
+`;
+
+  // Stress-aware response guidance
+  if (stressContext && stressContext.level !== 'calm') {
+    prompt += `## CURRENT STRESS STATE
+${userName}'s current stress level: ${stressContext.level.toUpperCase()} (${stressContext.score}/100)
+Detected triggers: ${stressContext.triggers?.join(', ') || 'none specified'}
+Recommended approach: ${stressContext.recommendedAction}
+
+`;
+    if (stressContext.level === 'crisis' || stressContext.level === 'high') {
+      prompt += `PRIORITY: Grounding and safety first. Keep responses extra short and calm. Breathing or sensory grounding before any problem-solving.
+
+`;
+    } else if (stressContext.level === 'moderate') {
+      prompt += `PRIORITY: Acknowledge stress gently. Offer grounding as one of the two options.
+
+`;
+    }
+  }
+
+  prompt += `## ABSOLUTE RULES
 1. TWO OPTIONS for every decision (mandatory)
 2. Responses under 3 sentences (unless asked)
 3. 5-5-5-5-5-5 framework for consequences
