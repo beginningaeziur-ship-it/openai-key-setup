@@ -20,25 +20,25 @@ const introSteps: IntroStep[] = [
   {
     id: 'welcome',
     title: 'Welcome',
-    content: "Hi. I'm your SAI — your Support & Ally Intelligence. I'm here to walk alongside you, not above you. No judgments. No rushing. Just steady presence.",
+    content: "Hi. I am your SAI — your Support & Ally Intelligence. Think of me as a pocket case worker, advocate, and guide. I walk alongside you, not above you. No judgments. No rushing.",
     icon: <Heart className="w-6 h-6" />,
   },
   {
     id: 'safety',
-    title: 'Safety First',
-    content: "Before anything else, we build your safety plan together. This isn't a test — it's your personal toolkit for hard moments. Things that ground you, people who help, and steps that keep you safe.",
+    title: 'Safety Planning',
+    content: "First, we build your safety plan together. This is not a test — it is your personal toolkit for hard moments. Things that ground you, people who help, and steps that keep you safe when things get overwhelming.",
     icon: <Shield className="w-6 h-6" />,
   },
   {
     id: 'goals',
-    title: 'Goals Your Way',
-    content: "Goals here are different. We start tiny — sometimes just one breath, one sip of water, one minute of rest. You decide what 'progress' means. I help you track it without pressure.",
+    title: 'Realistic Goals',
+    content: "Goals here fit YOUR path. We start tiny — one breath, one sip of water, one minute outside. I help you think through the next 5 minutes, 5 hours, 5 days, 5 weeks, 5 months, 5 years with realistic consequences. No pressure.",
     icon: <Target className="w-6 h-6" />,
   },
   {
-    id: 'trust',
-    title: 'Building Trust',
-    content: "Everything we do together is at your pace. I'll never push, command, or judge. When you're ready, we'll explore your room — each object has a purpose. You're in control.",
+    id: 'choices',
+    title: 'Two Options Always',
+    content: "I will NEVER tell you what to do. For every decision, I give you exactly two options. This teaches healthy choice-making. You are the expert on your life — I just help you think it through.",
     icon: <Sparkles className="w-6 h-6" />,
   },
 ];
