@@ -9,6 +9,8 @@ import { SceneEnvironment } from '@/components/sai-room/SceneEnvironment';
 import { GroundingPanel } from '@/components/sai-room/GroundingPanel';
 import { RoomArrival } from '@/components/sai-room/RoomArrival';
 import { CrisisSafetyPlan } from '@/components/safety/CrisisSafetyPlan';
+import { AmbientSoundControl } from '@/components/sai-room/AmbientSoundControl';
+import { useAmbientSound } from '@/hooks/useAmbientSound';
 import { 
   Settings, 
   MessageCircle,
@@ -29,6 +31,12 @@ export default function SAIRoom() {
   const [showGrounding, setShowGrounding] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [roomReady, setRoomReady] = useState(false);
+
+  // Ambient background sounds for the scene
+  const { isPlaying, isMuted, toggleMute, play } = useAmbientSound(scene, {
+    volume: 0.12,
+    enabled: roomReady,
+  });
 
   const overallProgress = Math.round(
     (progressMetrics.stability + progressMetrics.consistency + 
@@ -112,6 +120,12 @@ export default function SAIRoom() {
           
           <div className="flex items-center gap-2">
             <CrisisSafetyPlan />
+            <AmbientSoundControl
+              isPlaying={isPlaying}
+              isMuted={isMuted}
+              onToggleMute={toggleMute}
+              onPlay={play}
+            />
             <Button 
               variant="ghost" 
               size="icon"
