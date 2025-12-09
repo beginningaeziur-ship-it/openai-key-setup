@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { QuickGroundingButton } from '@/components/grounding/QuickGroundingButton';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
-import { ArrowLeft, Send, Loader2, Heart, Volume2, VolumeX, Mic, MicOff, Wind } from 'lucide-react';
+import { useStressMonitor } from '@/hooks/useStressMonitor';
+import { StressIndicator } from '@/components/stress/StressIndicator';
+import { ArrowLeft, Send, Loader2, Heart, Volume2, VolumeX, Mic, MicOff, Wind, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { buildCommunicationStyle } from '@/lib/disabilityResponsePatterns';
@@ -35,6 +37,14 @@ export default function Chat() {
 
   const saiName = userProfile?.saiNickname || 'SAI';
   const userName = userProfile?.nickname || 'Friend';
+
+  // Stress monitoring
+  const { 
+    state: stressState, 
+    analyzeMessage: analyzeStress, 
+    acknowledgeIntervention,
+    getTrend 
+  } = useStressMonitor(saiName);
 
   // Voice input hook
   const { isRecording, isProcessing, toggleRecording } = useVoiceInput({
@@ -167,6 +177,9 @@ export default function Chat() {
     setInput('');
     setIsLoading(true);
 
+    // Analyze stress level from the message
+    const stressAnalysis = analyzeStress(userMessage.content);
+
     // Client-side safety check for immediate boundary setting
     const safetyCheck = checkMessageSafety(userMessage.content);
     
@@ -185,6 +198,23 @@ export default function Chat() {
         speakText(safetyCheck.safeResponse);
       }
       return;
+    }
+
+    // If stress monitor detected high stress and has intervention message, use it
+    if (stressState.needsIntervention && stressState.interventionMessage) {
+      const interventionResponse: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: stressState.interventionMessage,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, interventionResponse]);
+      acknowledgeIntervention();
+      
+      if (voiceEnabled) {
+        speakText(stressState.interventionMessage);
+      }
+      // Continue to also get AI response, but prepend the stress context
     }
 
     let assistantContent = '';
@@ -206,6 +236,13 @@ export default function Chat() {
             symptoms: selectedSymptoms.flatMap(s => s.symptoms),
             personality: saiPersonality,
             communicationStyle: buildCommunicationStyle(selectedCategories, selectedConditions, selectedSymptoms),
+            // Include stress context for AI awareness
+            stressContext: {
+              level: stressAnalysis.level,
+              score: stressAnalysis.score,
+              triggers: stressAnalysis.triggers,
+              recommendedAction: stressAnalysis.recommendedAction,
+            },
           },
         }),
       });
@@ -349,7 +386,15 @@ export default function Chat() {
             </div>
           </div>
           
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            {/* Stress indicator */}
+            <StressIndicator 
+              level={stressState.currentAnalysis.level}
+              score={stressState.currentAnalysis.score}
+              trend={getTrend()}
+              showDetails={stressState.isElevated}
+            />
+            
             <Button
               variant="ghost"
               size="icon"
