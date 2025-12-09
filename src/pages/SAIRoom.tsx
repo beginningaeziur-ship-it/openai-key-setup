@@ -136,20 +136,35 @@ export default function SAIRoom() {
     );
   }
 
+  // Track highlighted object during tutorial
+  const [tutorialHighlight, setTutorialHighlight] = useState<string | null>(null);
+
   // Phase: Room Tutorial
   if (phase === 'tutorial') {
     return (
       <SceneBackground scene={scene}>
-        <BedroomWithObjects
-          activeArea={activeArea}
-          onAreaSelect={() => {}}
-          isVisible={true}
-        />
+        {scene === 'bedroom' ? (
+          <BedroomWithObjects
+            activeArea={activeArea}
+            onAreaSelect={() => {}}
+            highlightedObject={tutorialHighlight}
+            isVisible={true}
+          />
+        ) : (
+          <SceneEnvironment 
+            scene={scene}
+            activeArea={activeArea}
+            handleAreaClick={() => {}}
+            isVisible={true}
+            highlightedObject={tutorialHighlight}
+          />
+        )}
         <RoomTutorial
           saiName={saiName}
           userName={userName}
           onComplete={handleTutorialComplete}
           onSkip={handleTutorialSkip}
+          onHighlightObject={setTutorialHighlight}
         />
       </SceneBackground>
     );

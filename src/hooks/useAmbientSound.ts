@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SceneType } from '@/components/sai-room/SceneBackground';
 
-// Free ambient sound URLs (royalty-free)
-const ambientSounds: Record<SceneType, string> = {
-  bedroom: 'https://assets.mixkit.co/active_storage/sfx/212/212-preview.mp3', // soft rain
+// Ambient sound URLs - using gentle, non-intrusive sounds (no beeping)
+const ambientSounds: Record<SceneType, string | null> = {
+  bedroom: null, // Bedroom is silent by default - peaceful
   cabin: 'https://assets.mixkit.co/active_storage/sfx/1164/1164-preview.mp3', // fire crackling
-  ocean: 'https://assets.mixkit.co/active_storage/sfx/2432/2432-preview.mp3', // ocean waves
+  ocean: 'https://assets.mixkit.co/active_storage/sfx/2432/2432-preview.mp3', // ocean waves  
   woods: 'https://assets.mixkit.co/active_storage/sfx/2433/2433-preview.mp3', // forest birds
 };
 
