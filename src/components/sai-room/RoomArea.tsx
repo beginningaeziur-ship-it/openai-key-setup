@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
+import { useState } from 'react';
 
 interface RoomAreaProps {
   id: string;
@@ -10,6 +11,8 @@ interface RoomAreaProps {
   onClick: () => void;
   isActive?: boolean;
   className?: string;
+  isVisible?: boolean;
+  animationDelay?: number;
 }
 
 export function RoomArea({
@@ -21,19 +24,43 @@ export function RoomArea({
   onClick,
   isActive,
   className,
+  isVisible = true,
+  animationDelay = 0,
 }: RoomAreaProps) {
+  const [isTapped, setIsTapped] = useState(false);
+
+  const handleClick = () => {
+    setIsTapped(true);
+    setTimeout(() => setIsTapped(false), 300);
+    onClick();
+  };
+
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
+      style={{ animationDelay: `${animationDelay}s` }}
       className={cn(
         'group relative flex flex-col items-center text-center p-4 rounded-2xl',
         'bg-card/40 backdrop-blur-sm border border-border/30',
         'transition-all duration-300 hover:scale-105 hover:bg-card/60',
         'hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10',
+        // Visibility and appear animation
+        isVisible ? 'opacity-100 animate-room-appear' : 'opacity-0',
+        // Gentle glow to show clickability
+        'animate-gentle-glow',
+        // Tap feedback
+        isTapped && 'scale-95',
         isActive && 'border-primary/60 bg-card/70 scale-105 shadow-lg shadow-primary/20',
         className
       )}
     >
+      {/* Subtle glow indicator for clickability */}
+      <div className={cn(
+        'absolute inset-0 rounded-2xl',
+        'bg-gradient-to-t from-primary/5 to-transparent',
+        'opacity-50 group-hover:opacity-100 transition-opacity duration-500'
+      )} />
+
       {/* Glow effect on hover */}
       <div className={cn(
         'absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300',
@@ -47,7 +74,8 @@ export function RoomArea({
         'relative w-14 h-14 rounded-xl flex items-center justify-center mb-3',
         'transition-all duration-300 group-hover:scale-110',
         iconBgColor,
-        isActive && 'scale-110'
+        isActive && 'scale-110',
+        isTapped && 'scale-125'
       )}>
         <Icon className={cn(
           'w-7 h-7 transition-colors duration-300',

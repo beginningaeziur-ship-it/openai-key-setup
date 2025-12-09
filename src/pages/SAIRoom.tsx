@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSAI } from '@/contexts/SAIContext';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { SceneBackground, SceneType } from '@/components/sai-room/SceneBackgroun
 import { SAIPresence } from '@/components/sai-room/SAIPresence';
 import { RoomArea } from '@/components/sai-room/RoomArea';
 import { GroundingPanel } from '@/components/sai-room/GroundingPanel';
+import { RoomArrival } from '@/components/sai-room/RoomArrival';
 import { CrisisSafetyPlan } from '@/components/safety/CrisisSafetyPlan';
 import { 
   Wind, 
@@ -37,6 +38,11 @@ export default function SAIRoom() {
     if (typeof window === 'undefined') return true;
     return localStorage.getItem('sai_seen_room_tour') === 'true';
   });
+  const [hasSeenArrival, setHasSeenArrival] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return sessionStorage.getItem('sai_seen_arrival') === 'true';
+  });
+  const [roomReady, setRoomReady] = useState(hasSeenArrival);
 
   const overallProgress = Math.round(
     (progressMetrics.stability + progressMetrics.consistency + 
@@ -44,13 +50,19 @@ export default function SAIRoom() {
   );
 
   const getWelcomeMessage = () => {
-    return `Hey ${userName}. This is your space. We move at your pace, not anyone else's.`;
+    return `I'm here, ${userName}.`;
   };
 
   const handleDismissTour = () => {
     localStorage.setItem('sai_seen_room_tour', 'true');
     setHasSeenTour(true);
   };
+
+  const handleArrivalComplete = useCallback(() => {
+    sessionStorage.setItem('sai_seen_arrival', 'true');
+    setHasSeenArrival(true);
+    setRoomReady(true);
+  }, []);
 
   // Scene-specific hotspots for immersive room feel
   const sceneHotspots: Record<SceneType, {
@@ -164,31 +176,43 @@ export default function SAIRoom() {
   ];
 
   return (
-    <SceneBackground scene={scene}>
-      {/* One-time intro overlay */}
-      {!hasSeenTour && (
+    <SceneBackground scene={scene} className={cn(
+      "transition-opacity duration-1000",
+      roomReady ? 'opacity-100' : 'opacity-70'
+    )}>
+      {/* Smooth arrival overlay */}
+      {!hasSeenArrival && (
+        <RoomArrival 
+          userName={userName}
+          saiName={saiName}
+          onComplete={handleArrivalComplete}
+        />
+      )}
+
+      {/* One-time intro overlay (after arrival) */}
+      {roomReady && !hasSeenTour && (
         <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="max-w-lg w-full bg-card border border-border/40 rounded-xl p-5 space-y-4 shadow-lg animate-fade-in">
             <h2 className="text-xl font-semibold">
-              Welcome to your space, {userName}.
+              This is your space, {userName}.
             </h2>
 
             <p className="text-sm text-foreground/80">
-              This is your SAI room. It's your home base, not a test.
+              Your SAI room. It's your home base, not a test.
             </p>
 
             <p className="text-sm text-foreground/70">
-              I've started some basic goals for you: stability, health, and daily functioning. 
-              They're guideposts, not demands. We can adjust them as I learn how you move through the world.
+              I've set up some basic goals: stability, health, and daily functioning. 
+              They're guideposts, not demands.
             </p>
 
             <p className="text-sm text-foreground/70">
-              Around this room there's a Grounding corner, Tools, Goals, a Research area, and Settings. 
-              Each one is here to support your disabilities, trauma, and life load without judging you or running your life.
+              Around this room: Grounding, Tools, Goals, Research, and Settings. 
+              Each one supports you without judgment.
             </p>
 
             <p className="text-sm text-foreground/70">
-              You stay in control. I'll stay steady and adapt to you.
+              You stay in control. I'll stay steady.
             </p>
 
             <div className="flex justify-end gap-2 pt-2">
@@ -203,9 +227,13 @@ export default function SAIRoom() {
         </div>
       )}
 
-      {/* Scene hotspots overlay */}
-      <div className="absolute inset-0 pointer-events-none z-10">
-        {(sceneHotspots[scene] || []).map(hotspot => (
+      {/* Scene hotspots overlay - dimmed initially, visible when room is ready */}
+      <div className={cn(
+        "absolute inset-0 pointer-events-none z-10",
+        "transition-opacity duration-1000",
+        roomReady ? 'opacity-100' : 'opacity-30'
+      )}>
+        {(sceneHotspots[scene] || []).map((hotspot, index) => (
           <div
             key={hotspot.id}
             style={hotspot.style}
@@ -219,14 +247,20 @@ export default function SAIRoom() {
               iconBgColor="bg-card/60"
               isActive={activeView === hotspot.id}
               onClick={hotspot.onClick}
+              isVisible={roomReady}
+              animationDelay={0.1 * (index + 1)}
               className="bg-card/80 border border-border/40 shadow-lg backdrop-blur-sm"
             />
           </div>
         ))}
       </div>
 
-      {/* Header */}
-      <header className="bg-card/30 backdrop-blur-sm border-b border-border/20 sticky top-0 z-20">
+      {/* Header - fades in when room ready */}
+      <header className={cn(
+        "bg-card/30 backdrop-blur-sm border-b border-border/20 sticky top-0 z-20",
+        "transition-all duration-1000",
+        roomReady ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
+      )}>
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center sai-breathe">
@@ -249,7 +283,11 @@ export default function SAIRoom() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className={cn(
+        "max-w-4xl mx-auto px-4 py-8",
+        "transition-all duration-1000 delay-300",
+        roomReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+      )}>
         {/* SAI Presence - Center of the room */}
         <div className="flex flex-col items-center mb-12">
           <SAIPresence 
@@ -259,11 +297,15 @@ export default function SAIRoom() {
         </div>
 
         {/* Talk Area - Primary CTA */}
-        <div className="flex flex-col items-center gap-4 mb-12">
+        <div className={cn(
+          "flex flex-col items-center gap-4 mb-12",
+          "transition-all duration-700 delay-500",
+          roomReady ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+        )}>
           <Button
             onClick={() => navigate('/chat')}
             size="lg"
-            className="h-14 px-8 rounded-2xl text-lg shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
+            className="h-14 px-8 rounded-2xl text-lg shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all animate-gentle-glow"
           >
             <MessageCircle className="w-6 h-6 mr-3" />
             Talk to {saiName}
@@ -279,9 +321,13 @@ export default function SAIRoom() {
           </button>
         </div>
 
-        {/* Room Areas Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {roomAreas.map((area) => (
+        {/* Room Areas Grid - staggered appearance */}
+        <div className={cn(
+          "grid grid-cols-2 sm:grid-cols-3 gap-4",
+          "transition-opacity duration-1000 delay-700",
+          roomReady ? 'opacity-100' : 'opacity-0'
+        )}>
+          {roomAreas.map((area, index) => (
             <RoomArea
               key={area.id}
               id={area.id}
@@ -291,12 +337,18 @@ export default function SAIRoom() {
               iconBgColor={area.iconBgColor}
               onClick={area.onClick}
               isActive={activeView === area.id}
+              isVisible={roomReady}
+              animationDelay={0.1 * (index + 1)}
             />
           ))}
         </div>
 
         {/* Quick stats footer */}
-        <div className="mt-12 flex justify-center">
+        <div className={cn(
+          "mt-12 flex justify-center",
+          "transition-all duration-1000 delay-1000",
+          roomReady ? 'opacity-100' : 'opacity-0'
+        )}>
           <div className="flex items-center gap-6 text-sm text-foreground/60">
             <div className="flex items-center gap-2">
               <div className={cn(
