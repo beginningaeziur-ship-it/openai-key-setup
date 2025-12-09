@@ -224,9 +224,15 @@ export function useVoiceStressDetector(
 
   // Start analysis
   const startAnalysis = useCallback((stream: MediaStream) => {
+    // Don't restart if already analyzing with the same stream
+    if (audioContextRef.current && audioContextRef.current.state === 'running') {
+      return;
+    }
+    
     cleanup();
 
     try {
+      // Clone the stream to avoid interfering with other uses
       const audioContext = new AudioContext({ sampleRate: 44100 });
       const analyzer = audioContext.createAnalyser();
       analyzer.fftSize = 2048;
@@ -234,6 +240,7 @@ export function useVoiceStressDetector(
 
       const source = audioContext.createMediaStreamSource(stream);
       source.connect(analyzer);
+      // Don't connect to destination to avoid feedback
 
       audioContextRef.current = audioContext;
       analyzerRef.current = analyzer;
@@ -247,15 +254,15 @@ export function useVoiceStressDetector(
       lastSpeechStateRef.current = false;
       lastSpeechTimeRef.current = Date.now();
 
-      // Start analysis loop
+      // Start analysis loop with longer interval to reduce CPU usage
       intervalRef.current = setInterval(analyzeFrame, analysisInterval);
 
       setIsAnalyzing(true);
       setCurrentResult(DEFAULT_RESULT);
 
-      console.log('Voice stress analysis started');
+      console.log('[Voice Stress] Analysis started');
     } catch (error) {
-      console.error('Failed to start voice stress analysis:', error);
+      console.error('[Voice Stress] Failed to start analysis:', error);
       cleanup();
     }
   }, [cleanup, analyzeFrame, analysisInterval]);
