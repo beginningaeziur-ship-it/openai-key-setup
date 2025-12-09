@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface UseTTSOptions {
   voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
@@ -104,6 +105,14 @@ export function useTTS(options: UseTTSOptions = {}) {
       const message = err instanceof Error ? err.message : 'Failed to generate speech';
       setError(message);
       console.error('TTS error:', err);
+      
+      // Check for quota exceeded error
+      if (message.includes('insufficient_quota') || message.includes('exceeded your current quota')) {
+        toast.error('Voice is unavailable', {
+          description: 'The OpenAI API key has run out of credits. Please update it in settings.',
+          duration: 6000,
+        });
+      }
     } finally {
       setIsLoading(false);
     }
