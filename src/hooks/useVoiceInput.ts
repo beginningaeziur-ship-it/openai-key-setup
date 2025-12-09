@@ -1,131 +1,159 @@
-import { useState, useRef, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 interface UseVoiceInputOptions {
   onTranscription?: (text: string) => void;
   onError?: (error: string) => void;
 }
 
+// Use browser's native Web Speech API - no API key needed
+interface SpeechRecognitionType extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+  onresult: ((event: SpeechRecognitionEventType) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventType) => void) | null;
+  onend: (() => void) | null;
+}
+
+interface SpeechRecognitionEventType {
+  resultIndex: number;
+  results: SpeechRecognitionResultListType;
+}
+
+interface SpeechRecognitionResultListType {
+  length: number;
+  item: (index: number) => SpeechRecognitionResultType;
+  [index: number]: SpeechRecognitionResultType;
+}
+
+interface SpeechRecognitionResultType {
+  isFinal: boolean;
+  length: number;
+  item: (index: number) => SpeechRecognitionAlternativeType;
+  [index: number]: SpeechRecognitionAlternativeType;
+}
+
+interface SpeechRecognitionAlternativeType {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionErrorEventType {
+  error: string;
+  message: string;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognitionType;
+    webkitSpeechRecognition: new () => SpeechRecognitionType;
+  }
+}
+
 export function useVoiceInput(options: UseVoiceInputOptions = {}) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSupported, setIsSupported] = useState(true);
   
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const recognitionRef = useRef<SpeechRecognitionType | null>(null);
+  const transcriptRef = useRef<string>('');
+
+  useEffect(() => {
+    // Check if Web Speech API is supported
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setIsSupported(false);
+      setError('Voice input is not supported in this browser');
+    }
+  }, []);
 
   const startRecording = useCallback(async () => {
     try {
       setError(null);
+      transcriptRef.current = '';
       
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          sampleRate: 16000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        throw new Error('Voice input is not supported in this browser. Please use Chrome, Edge, or Safari.');
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event: SpeechRecognitionEventType) => {
+        let finalTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            finalTranscript += result[0].transcript;
+          }
         }
-      });
 
-      // Try webm first, fall back to other formats
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : 'audio/mp4';
-
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType,
-        audioBitsPerSecond: 128000,
-      });
-
-      chunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunksRef.current.push(event.data);
+        if (finalTranscript) {
+          transcriptRef.current += finalTranscript;
         }
       };
 
-      mediaRecorder.onstop = async () => {
-        // Stop all tracks
-        stream.getTracks().forEach(track => track.stop());
-
-        if (chunksRef.current.length === 0) {
-          setError('No audio recorded');
-          options.onError?.('No audio recorded');
-          return;
+      recognition.onerror = (event: SpeechRecognitionErrorEventType) => {
+        console.error('Speech recognition error:', event.error);
+        
+        let errorMessage = 'Voice input failed';
+        switch (event.error) {
+          case 'not-allowed':
+            errorMessage = 'Microphone access denied. Please allow microphone access.';
+            break;
+          case 'no-speech':
+            errorMessage = 'No speech detected. Please try again.';
+            break;
+          case 'network':
+            errorMessage = 'Network error. Please check your connection.';
+            break;
+          case 'aborted':
+            // User stopped, not an error
+            return;
         }
+        
+        setError(errorMessage);
+        options.onError?.(errorMessage);
+        setIsRecording(false);
+      };
 
+      recognition.onend = () => {
         setIsProcessing(true);
-
-        try {
-          const audioBlob = new Blob(chunksRef.current, { type: mimeType });
-          
-          // Convert to base64
-          const reader = new FileReader();
-          reader.onloadend = async () => {
-            const base64Audio = (reader.result as string).split(',')[1];
-            
-            try {
-              const { data, error: fnError } = await supabase.functions.invoke('sai-stt', {
-                body: { audio: base64Audio },
-              });
-
-              if (fnError) {
-                throw new Error(fnError.message);
-              }
-
-              if (data?.error) {
-                throw new Error(data.error);
-              }
-
-              if (data?.text) {
-                options.onTranscription?.(data.text);
-              }
-            } catch (err) {
-              const message = err instanceof Error ? err.message : 'Failed to transcribe audio';
-              setError(message);
-              options.onError?.(message);
-              console.error('STT error:', err);
-            } finally {
-              setIsProcessing(false);
-            }
-          };
-
-          reader.onerror = () => {
-            setError('Failed to read audio');
-            options.onError?.('Failed to read audio');
-            setIsProcessing(false);
-          };
-
-          reader.readAsDataURL(audioBlob);
-        } catch (err) {
-          const message = err instanceof Error ? err.message : 'Failed to process audio';
-          setError(message);
-          options.onError?.(message);
+        
+        // Small delay to ensure all results are captured
+        setTimeout(() => {
+          if (transcriptRef.current.trim()) {
+            options.onTranscription?.(transcriptRef.current.trim());
+          }
           setIsProcessing(false);
-        }
+          setIsRecording(false);
+        }, 100);
       };
 
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(100); // Collect data every 100ms
+      recognitionRef.current = recognition;
+      recognition.start();
       setIsRecording(true);
 
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to access microphone';
+      const message = err instanceof Error ? err.message : 'Failed to start voice input';
       setError(message);
       options.onError?.(message);
-      console.error('Microphone error:', err);
+      console.error('Voice input error:', err);
     }
   }, [options]);
 
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current = null;
-      setIsRecording(false);
+    if (recognitionRef.current && isRecording) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
     }
   }, [isRecording]);
 
@@ -141,6 +169,7 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}) {
     isRecording,
     isProcessing,
     error,
+    isSupported,
     startRecording,
     stopRecording,
     toggleRecording,
