@@ -77,7 +77,7 @@ export function useTTS(options: UseTTSOptions = {}) {
     setError(null);
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('sai-tts', {
+      const { data, error: fnError } = await supabase.functions.invoke('sai-voice', {
         body: { 
           text, 
           voice: options.voice || 'echo' 
