@@ -67,11 +67,15 @@ export default function Chat() {
   // Start/stop voice stress analysis based on audio stream
   useEffect(() => {
     if (audioStream && isMicEnabled && !isMicMuted) {
-      startVoiceAnalysis(audioStream);
+      // Small delay to prevent rapid on/off cycles
+      const timer = setTimeout(() => {
+        startVoiceAnalysis(audioStream);
+      }, 500);
+      return () => clearTimeout(timer);
     } else {
       stopVoiceAnalysis();
     }
-  }, [audioStream, isMicEnabled, isMicMuted, startVoiceAnalysis, stopVoiceAnalysis]);
+  }, [audioStream, isMicEnabled, isMicMuted]);
 
   // Voice input hook
   const { isRecording, isProcessing, toggleRecording } = useVoiceInput({
@@ -125,7 +129,15 @@ export default function Chat() {
   }, []);
 
   const speakText = async (text: string) => {
-    if (!voiceEnabled || isPlaying) return;
+    if (!voiceEnabled) return;
+    
+    // Stop any currently playing audio first
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
+      audioRef.current = null;
+    }
     
     try {
       setIsPlaying(true);
@@ -138,12 +150,12 @@ export default function Chat() {
         },
         body: JSON.stringify({
           text: text,
-          voice: userProfile?.voicePreference || 'nova', // Soft, warm voice
+          voice: userProfile?.voicePreference || 'nova',
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         console.error('Voice error:', errorData);
         setIsPlaying(false);
         return;
@@ -151,34 +163,59 @@ export default function Chat() {
 
       const { audioContent } = await response.json();
       
-      // Play the audio
+      if (!audioContent) {
+        console.error('No audio content received');
+        setIsPlaying(false);
+        return;
+      }
+      
+      // Create and play the audio
       const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
       audioRef.current = audio;
       
+      // Set up event handlers before playing
       audio.onended = () => {
         setIsPlaying(false);
-        audioRef.current = null;
+        if (audioRef.current === audio) {
+          audioRef.current = null;
+        }
       };
       
-      audio.onerror = () => {
+      audio.onerror = (e) => {
+        console.error('Audio playback error:', e);
         setIsPlaying(false);
-        audioRef.current = null;
+        if (audioRef.current === audio) {
+          audioRef.current = null;
+        }
       };
       
-      await audio.play();
+      // Wait for audio to be ready before playing
+      audio.oncanplaythrough = async () => {
+        try {
+          await audio.play();
+        } catch (playError) {
+          console.error('Audio play failed:', playError);
+          setIsPlaying(false);
+        }
+      };
+      
+      audio.load();
     } catch (error) {
       console.error('Voice playback error:', error);
       setIsPlaying(false);
     }
   };
 
-  const stopAudio = () => {
+  const stopAudio = useCallback(() => {
     if (audioRef.current) {
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
+      audioRef.current.oncanplaythrough = null;
       audioRef.current.pause();
       audioRef.current = null;
-      setIsPlaying(false);
     }
-  };
+    setIsPlaying(false);
+  }, []);
 
   const toggleVoice = () => {
     if (isPlaying) {
