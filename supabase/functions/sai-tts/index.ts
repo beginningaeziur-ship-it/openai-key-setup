@@ -36,9 +36,9 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'tts-1',
         input: text,
-        voice: voice || 'echo', // Default to 'echo' - warm and steady
+        voice: voice || 'nova', // Default to 'nova' - soft, warm, trauma-safe
         response_format: 'mp3',
-        speed: 0.9, // Slightly slower for calming effect
+        speed: 0.92, // Slightly slower for calming effect
       }),
     })
 

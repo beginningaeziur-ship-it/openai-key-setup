@@ -1,8 +1,10 @@
-import { cn } from '@/lib/utils';
-import { Sparkles, Mic, MicOff } from 'lucide-react';
-import { useSAI } from '@/contexts/SAIContext';
+import React, { useState } from "react";
+import { Mic, MicOff, Volume2, VolumeX, Wind, Target, Pause } from "lucide-react";
+import { useSAI } from "@/contexts/SAIContext";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
-type SAIStatus = 'idle' | 'listening' | 'speaking' | 'thinking';
+export type SAIStatus = 'idle' | 'listening' | 'speaking' | 'thinking';
 
 interface SAIPresenceProps {
   saiName: string;
@@ -12,131 +14,174 @@ interface SAIPresenceProps {
   status?: SAIStatus;
   voiceOn?: boolean;
   onVoiceToggle?: (enabled: boolean) => void;
+  onQuickAction?: (action: 'grounding' | 'planning' | 'quiet') => void;
 }
 
 export function SAIPresence({ 
   saiName, 
   message, 
-  isSpeaking, 
+  isSpeaking = false, 
   className,
   status = 'idle',
-  voiceOn = false,
-  onVoiceToggle
+  voiceOn = true,
+  onVoiceToggle,
+  onQuickAction
 }: SAIPresenceProps) {
   const { selectedCategories, selectedConditions, selectedSymptoms } = useSAI();
 
   // Auto-shift tone based on disability profile
   const getTone = () => {
-    // Extract condition names from ConditionSelection objects
     const conditionNames = selectedConditions.flatMap(c => c.conditions);
-    // Extract symptom names from SymptomMapping objects
     const symptomNames = selectedSymptoms.flatMap(s => s.symptoms);
 
-    if (symptomNames.some(s => s.toLowerCase().includes('panic')) || symptomNames.some(s => s.toLowerCase().includes('anxiety'))) return 'calming';
+    if (symptomNames.some(s => s.toLowerCase().includes('panic')) || 
+        symptomNames.some(s => s.toLowerCase().includes('anxiety'))) return 'calming';
     if (conditionNames.some(c => c.toLowerCase().includes('autism'))) return 'literal';
-    if (conditionNames.some(c => c.toLowerCase().includes('cptsd') || c.toLowerCase().includes('ptsd'))) return 'gentle';
+    if (conditionNames.some(c => c.toLowerCase().includes('cptsd') || 
+        c.toLowerCase().includes('ptsd'))) return 'gentle';
     if (conditionNames.some(c => c.toLowerCase().includes('adhd'))) return 'direct';
 
     return 'neutral';
   };
 
   const tone = getTone();
+  const currentStatus = isSpeaking ? 'speaking' : status;
 
   const getStatusText = () => {
-    switch (status) {
-      case 'listening': return "I'm listening…";
-      case 'speaking': return "Just a sec…";
-      case 'thinking': return "Let me think…";
+    switch (currentStatus) {
+      case 'listening': return "Listening...";
+      case 'speaking': return "Speaking...";
+      case 'thinking': return "Thinking...";
       default: return message || "I'm here.";
     }
   };
 
   const toneStyles: Record<string, string> = {
     neutral: 'text-foreground/80',
-    gentle: 'text-foreground/70 italic',
-    literal: 'text-foreground font-semibold',
+    gentle: 'text-foreground/70',
+    literal: 'text-foreground font-medium',
     calming: 'text-foreground/60',
     direct: 'text-foreground/90 font-medium',
   };
 
-  const currentStatus = isSpeaking ? 'speaking' : status;
-
   return (
     <div className={cn('flex flex-col items-center gap-4', className)}>
-      {/* SAI Avatar */}
+      {/* SAI Avatar with breathing glow */}
       <div className="relative">
-        {/* Breathing glow */}
+        {/* Outer breathing glow */}
         <div className={cn(
-          'absolute inset-0 rounded-full bg-primary/30 blur-xl transition-all duration-1000',
-          currentStatus === 'speaking' ? 'scale-150 opacity-60' : 
-          currentStatus === 'listening' ? 'scale-125 opacity-50 animate-pulse' :
-          currentStatus === 'thinking' ? 'scale-110 opacity-40' :
-          'scale-100 opacity-40 animate-breathe'
+          'absolute inset-0 rounded-full bg-primary/20 blur-xl transition-all duration-1000',
+          currentStatus === 'speaking' ? 'scale-150 opacity-50' : 
+          currentStatus === 'listening' ? 'scale-130 opacity-40 animate-pulse' :
+          currentStatus === 'thinking' ? 'scale-110 opacity-30' :
+          'scale-100 opacity-30 animate-breathe'
         )} />
         
         {/* Avatar circle */}
         <div className={cn(
           'relative w-24 h-24 rounded-full flex items-center justify-center',
-          'bg-gradient-to-br from-primary/40 to-primary/20',
-          'border-2 border-primary/50 shadow-lg shadow-primary/20',
-          'transition-all duration-300',
-          currentStatus === 'speaking' && 'border-primary scale-110',
-          currentStatus === 'listening' && 'border-primary/70 scale-105'
+          'bg-gradient-to-br from-primary/30 to-primary/10',
+          'border-2 border-primary/30 shadow-lg shadow-primary/10',
+          'transition-all duration-500',
+          currentStatus === 'speaking' && 'border-primary/60 scale-105 shadow-primary/30',
+          currentStatus === 'listening' && 'border-sai-hope/50 scale-105'
         )}>
-          <Sparkles className={cn(
-            'w-10 h-10 text-primary transition-all duration-300',
-            currentStatus === 'speaking' && 'animate-pulse',
-            currentStatus === 'thinking' && 'animate-spin-slow'
-          )} />
+          <div className={cn(
+            'w-16 h-16 rounded-full flex items-center justify-center',
+            'bg-gradient-to-br from-primary/40 to-primary/20',
+            'transition-transform duration-500',
+            currentStatus !== 'idle' && 'scale-110'
+          )}>
+            <span className="text-2xl font-display font-bold text-primary">
+              {saiName.charAt(0)}
+            </span>
+          </div>
         </div>
 
         {/* Status indicator */}
-        {currentStatus !== 'idle' && (
-          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className={cn(
-                  'w-1.5 h-1.5 rounded-full bg-primary',
-                  currentStatus === 'speaking' && 'animate-bounce',
-                  currentStatus === 'listening' && 'animate-pulse',
-                  currentStatus === 'thinking' && 'animate-ping'
-                )}
-                style={{ animationDelay: `${i * 0.15}s` }}
-              />
-            ))}
-          </div>
-        )}
+        <div className={cn(
+          'absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-background',
+          'transition-colors duration-300',
+          currentStatus === 'idle' && 'bg-progress-stable',
+          currentStatus === 'listening' && 'bg-sai-hope animate-pulse',
+          currentStatus === 'speaking' && 'bg-primary animate-pulse',
+          currentStatus === 'thinking' && 'bg-sai-gentle animate-pulse'
+        )} />
       </div>
 
       {/* SAI Name */}
-      <span className="text-lg font-display font-semibold text-foreground">
-        {saiName}
-      </span>
-
-      {/* Status/Message panel */}
-      <div className="w-full max-w-sm p-4 bg-card/40 border border-border/30 rounded-xl shadow-inner backdrop-blur-sm">
-        <div className="flex items-center justify-between gap-3">
-          <p className={cn('text-sm flex-1', toneStyles[tone])}>
-            {getStatusText()}
-          </p>
-
-          {onVoiceToggle && (
-            <button
-              onClick={() => onVoiceToggle(!voiceOn)}
-              className={cn(
-                'p-2 rounded-lg border transition-all duration-200',
-                voiceOn 
-                  ? 'bg-primary/20 border-primary/40 text-primary hover:bg-primary/30' 
-                  : 'bg-background/40 border-border/30 text-muted-foreground hover:bg-background/60'
-              )}
-              aria-label={voiceOn ? 'Turn off voice' : 'Turn on voice'}
-            >
-              {voiceOn ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
-            </button>
-          )}
-        </div>
+      <div className="text-center">
+        <h2 className="text-xl font-display font-semibold text-foreground">
+          {saiName}
+        </h2>
+        <p className={cn('text-sm mt-1', toneStyles[tone])}>
+          {getStatusText()}
+        </p>
       </div>
+
+      {/* Voice toggle */}
+      {onVoiceToggle && (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onVoiceToggle(!voiceOn)}
+            className={cn(
+              'rounded-full h-9 px-4 gap-2',
+              voiceOn ? 'border-primary/40 text-primary' : 'text-muted-foreground'
+            )}
+          >
+            {voiceOn ? (
+              <>
+                <Volume2 className="h-4 w-4" />
+                <span className="text-xs">Voice on</span>
+              </>
+            ) : (
+              <>
+                <VolumeX className="h-4 w-4" />
+                <span className="text-xs">Voice off</span>
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {/* Quick action buttons */}
+      {onQuickAction && (
+        <div className={cn(
+          'flex gap-2 mt-2',
+          'bg-card/40 border border-border/30 rounded-xl p-3',
+          'backdrop-blur-sm'
+        )}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onQuickAction('grounding')}
+            className="gap-2 text-muted-foreground hover:text-primary"
+          >
+            <Wind className="h-4 w-4" />
+            <span className="text-xs">Ground</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onQuickAction('planning')}
+            className="gap-2 text-muted-foreground hover:text-primary"
+          >
+            <Target className="h-4 w-4" />
+            <span className="text-xs">Plan</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onQuickAction('quiet')}
+            className="gap-2 text-muted-foreground hover:text-primary"
+          >
+            <Pause className="h-4 w-4" />
+            <span className="text-xs">Quiet</span>
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
