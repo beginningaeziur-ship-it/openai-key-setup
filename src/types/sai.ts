@@ -4,6 +4,7 @@ export interface UserProfile {
   nickname: string;
   saiNickname: string; // SAI's nickname (default "SAI")
   voicePreference: VoicePreference;
+  voiceMode: VoiceMode; // on, off, soft, direct
   scene?: string; // SAI Room background scene
   emergencyContact: {
     nickname: string;
@@ -12,6 +13,9 @@ export interface UserProfile {
 }
 
 export type VoicePreference = 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
+
+// Voice modes for SAI responses
+export type VoiceMode = 'on' | 'off' | 'soft' | 'direct';
 
 export interface WHOFunctionalModel {
   bodyFunctions: string[];
