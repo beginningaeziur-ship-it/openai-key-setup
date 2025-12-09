@@ -9,6 +9,7 @@ interface MicrophoneContextType {
   hasPermission: boolean | null;
   isSupported: boolean;
   lastTranscript: string;
+  audioStream: MediaStream | null;
   
   // Actions
   enableMicrophone: () => Promise<boolean>;
@@ -56,9 +57,11 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
   const [hasSeenWarning, setHasSeenWarning] = useState<boolean>(() => {
     return localStorage.getItem('sai_mic_warning_seen') === 'true';
   });
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   
   const recognitionRef = useRef<SpeechRecognitionType | null>(null);
   const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   
   const isSupported = typeof window !== 'undefined' && 
     !!(window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -158,9 +161,18 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Request microphone permission
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop()); // We just need permission
+      // Request microphone permission and keep the stream for audio analysis
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        } 
+      });
+      
+      // Store stream for voice stress analysis
+      streamRef.current = stream;
+      setAudioStream(stream);
       
       setHasPermission(true);
       setIsMicEnabled(true);
@@ -185,6 +197,12 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
 
   const disableMicrophone = useCallback(() => {
     stopListening();
+    // Stop and release the audio stream
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+      setAudioStream(null);
+    }
     setIsMicEnabled(false);
     localStorage.setItem('sai_mic_enabled', 'false');
     toast.info('Microphone disabled');
@@ -257,6 +275,7 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
       hasPermission,
       isSupported,
       lastTranscript,
+      audioStream,
       enableMicrophone,
       disableMicrophone,
       toggleMute,

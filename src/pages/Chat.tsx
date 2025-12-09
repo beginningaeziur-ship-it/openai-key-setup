@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSAI } from '@/contexts/SAIContext';
+import { useMicrophone } from '@/contexts/MicrophoneContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { QuickGroundingButton } from '@/components/grounding/QuickGroundingButton';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 import { useStressMonitor } from '@/hooks/useStressMonitor';
+import { useVoiceStressDetector } from '@/hooks/useVoiceStressDetector';
 import { StressIndicator } from '@/components/stress/StressIndicator';
 import { ArrowLeft, Send, Loader2, Heart, Volume2, VolumeX, Mic, MicOff, Wind, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -23,6 +25,7 @@ export default function Chat() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { userProfile, selectedCategories, selectedConditions, selectedSymptoms, saiPersonality } = useSAI();
+  const { audioStream, isMicEnabled, isMicMuted } = useMicrophone();
   
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -38,13 +41,37 @@ export default function Chat() {
   const saiName = userProfile?.saiNickname || 'SAI';
   const userName = userProfile?.nickname || 'Friend';
 
-  // Stress monitoring
+  // Stress monitoring (text-based)
   const { 
     state: stressState, 
     analyzeMessage: analyzeStress, 
+    updateVoiceMetrics,
     acknowledgeIntervention,
     getTrend 
   } = useStressMonitor(saiName);
+
+  // Voice stress detection (audio-based)
+  const { 
+    isAnalyzing: isVoiceAnalyzing,
+    startAnalysis: startVoiceAnalysis,
+    stopAnalysis: stopVoiceAnalysis,
+    currentResult: voiceStressResult,
+    averageStressScore: voiceStressScore,
+  } = useVoiceStressDetector({
+    onMetricsUpdate: (metrics) => {
+      // Feed voice metrics into the main stress monitor
+      updateVoiceMetrics(metrics);
+    },
+  });
+
+  // Start/stop voice stress analysis based on audio stream
+  useEffect(() => {
+    if (audioStream && isMicEnabled && !isMicMuted) {
+      startVoiceAnalysis(audioStream);
+    } else {
+      stopVoiceAnalysis();
+    }
+  }, [audioStream, isMicEnabled, isMicMuted, startVoiceAnalysis, stopVoiceAnalysis]);
 
   // Voice input hook
   const { isRecording, isProcessing, toggleRecording } = useVoiceInput({
@@ -387,6 +414,28 @@ export default function Chat() {
           </div>
           
           <div className="flex items-center gap-2">
+            {/* Voice stress indicator */}
+            {isVoiceAnalyzing && voiceStressResult && (
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/50 text-xs">
+                <div className={cn(
+                  "w-2 h-2 rounded-full",
+                  voiceStressResult.isBreathingRapid && "bg-orange-400 animate-pulse",
+                  voiceStressResult.isPitchElevated && "bg-amber-400",
+                  voiceStressResult.isSpeechFast && "bg-yellow-400",
+                  !voiceStressResult.isBreathingRapid && !voiceStressResult.isPitchElevated && !voiceStressResult.isSpeechFast && "bg-emerald-400"
+                )} />
+                <span className="text-muted-foreground">
+                  {voiceStressResult.metrics.breathing === 'rapid' || voiceStressResult.metrics.breathing === 'gasping' 
+                    ? 'Breathe...' 
+                    : voiceStressResult.metrics.speed === 'very-fast' 
+                    ? 'Slow down...'
+                    : voiceStressResult.metrics.pitch === 'shaky'
+                    ? 'I hear you...'
+                    : 'Listening'}
+                </span>
+              </div>
+            )}
+            
             {/* Stress indicator */}
             <StressIndicator 
               level={stressState.currentAnalysis.level}
