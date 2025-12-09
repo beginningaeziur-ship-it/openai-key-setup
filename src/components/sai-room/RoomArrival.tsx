@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
+import { playElevenLabsVoice } from '@/voice/elevenlabs';
 
 interface RoomArrivalProps {
   userName: string;
@@ -8,27 +9,46 @@ interface RoomArrivalProps {
 }
 
 export function RoomArrival({ userName, saiName, onComplete }: RoomArrivalProps) {
-  const [phase, setPhase] = useState<'welcome' | 'intro' | 'fading' | 'complete'>('welcome');
+  const [phase, setPhase] = useState<'entering' | 'greeting' | 'tour' | 'fading' | 'complete'>('entering');
+
+  const speakGreeting = useCallback(async () => {
+    await playElevenLabsVoice(
+      `You made it, ${userName}. I'm ${saiName}. This is your space. You're safe here. We move at your pace.`
+    );
+  }, [userName, saiName]);
+
+  const speakTour = useCallback(async () => {
+    await playElevenLabsVoice(
+      `Each object in this room has a purpose. Tap anything when you're ready.`
+    );
+  }, []);
 
   useEffect(() => {
-    // Phase 1: Show welcome message
-    const welcomeTimer = setTimeout(() => setPhase('intro'), 2500);
-    
-    // Phase 2: Show intro message
-    const introTimer = setTimeout(() => setPhase('fading'), 5000);
-    
-    // Phase 3: Fade out and complete
-    const fadeTimer = setTimeout(() => {
+    const runSequence = async () => {
+      // Phase 1: Entering fade-in
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Phase 2: Greeting with voice
+      setPhase('greeting');
+      await speakGreeting();
+      
+      // Phase 3: Tour hint with voice
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setPhase('tour');
+      await speakTour();
+      
+      // Phase 4: Fade out
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setPhase('fading');
+      
+      // Phase 5: Complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
       setPhase('complete');
       onComplete();
-    }, 6500);
-
-    return () => {
-      clearTimeout(welcomeTimer);
-      clearTimeout(introTimer);
-      clearTimeout(fadeTimer);
     };
-  }, [onComplete]);
+
+    runSequence();
+  }, [speakGreeting, speakTour, onComplete]);
 
   if (phase === 'complete') return null;
 
@@ -36,14 +56,19 @@ export function RoomArrival({ userName, saiName, onComplete }: RoomArrivalProps)
     <div 
       className={cn(
         "fixed inset-0 z-50 flex items-center justify-center p-6",
-        "bg-background/95 backdrop-blur-md",
+        "bg-black/50 backdrop-blur-sm",
         "transition-opacity duration-1000 ease-out",
         phase === 'fading' && 'opacity-0 pointer-events-none'
       )}
     >
-      <div className="max-w-md w-full text-center space-y-8">
+      {/* Soft ambient glow */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" />
+      </div>
+
+      <div className="relative max-w-md w-full bg-card/90 backdrop-blur-md border border-border/40 rounded-2xl p-8 text-center shadow-2xl">
         {/* SAI gentle presence indicator */}
-        <div className="flex justify-center">
+        <div className="flex justify-center mb-6">
           <div 
             className={cn(
               "w-20 h-20 rounded-full",
@@ -62,39 +87,58 @@ export function RoomArrival({ userName, saiName, onComplete }: RoomArrivalProps)
           </div>
         </div>
 
-        {/* Welcome text - first line */}
-        <div 
-          className={cn(
-            "transition-all duration-1000 ease-out",
-            phase === 'welcome' ? 'opacity-100 translate-y-0' : 'opacity-60 -translate-y-2'
+        {/* Welcome heading */}
+        <h2 className="text-xl font-semibold text-foreground mb-4">
+          Welcome, {userName}
+        </h2>
+
+        {/* Phase-specific message */}
+        <div className="space-y-3 text-sm text-foreground/80 min-h-[60px]">
+          {phase === 'entering' && (
+            <p className="animate-fade-in text-muted-foreground">
+              Entering your space...
+            </p>
           )}
-        >
-          <p className="text-xl text-foreground/90 leading-relaxed font-light">
-            You made it.
-          </p>
-          <p className="text-lg text-foreground/70 mt-3 leading-relaxed">
-            This is your space. Nothing here demands anything from you.
-          </p>
+          
+          {phase === 'greeting' && (
+            <p className="animate-fade-in">
+              This is your <strong className="text-primary">{saiName}</strong> Room.
+              <br />
+              Take your time. Nothing here demands anything from you.
+            </p>
+          )}
+          
+          {phase === 'tour' && (
+            <p className="animate-fade-in">
+              Each object has a purpose.
+              <br />
+              Tap anything when you're ready.
+            </p>
+          )}
+          
+          {phase === 'fading' && (
+            <p className="animate-fade-in text-muted-foreground">
+              Opening your room...
+            </p>
+          )}
         </div>
 
-        {/* Intro text - second line */}
-        <div 
-          className={cn(
-            "transition-all duration-1000 ease-out delay-300",
-            (phase === 'intro' || phase === 'fading') 
-              ? 'opacity-100 translate-y-0' 
-              : 'opacity-0 translate-y-4'
-          )}
-        >
-          <p className="text-base text-muted-foreground leading-relaxed">
-            I'm {saiName}. I stay steady and quiet with you.
-          </p>
-          <p className="text-base text-muted-foreground mt-2 leading-relaxed">
-            We move at your pace.
-          </p>
+        {/* Progress indicator */}
+        <div className="mt-6 flex justify-center gap-2">
+          {['entering', 'greeting', 'tour', 'fading'].map((p, i) => (
+            <div 
+              key={p}
+              className={cn(
+                "w-2 h-2 rounded-full transition-all duration-500",
+                ['entering', 'greeting', 'tour', 'fading'].indexOf(phase) >= i 
+                  ? 'bg-primary/60' 
+                  : 'bg-primary/20'
+              )}
+            />
+          ))}
         </div>
 
-        {/* Subtle skip hint */}
+        {/* Skip button */}
         <button
           onClick={() => {
             setPhase('complete');
@@ -102,11 +146,11 @@ export function RoomArrival({ userName, saiName, onComplete }: RoomArrivalProps)
           }}
           className={cn(
             "text-xs text-muted-foreground/50 hover:text-muted-foreground/70",
-            "transition-all duration-500 mt-8",
+            "transition-all duration-500 mt-6",
             "focus:outline-none"
           )}
         >
-          tap to continue
+          tap to skip
         </button>
       </div>
     </div>
