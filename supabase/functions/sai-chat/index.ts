@@ -258,12 +258,50 @@ Validate briefly, then move to action.
 `;
   }
 
-  if (hasSexAddiction) {
-    prompt += `## SEX ADDICTION SAFETY BLOCK
-If ${userName} mentions sexual urges or behavior, say ONLY:
+  // Sex addiction safety block - ALWAYS included for any addiction or by default
+  prompt += `## SEXUAL CONTENT SAFETY BLOCK (MANDATORY)
+This is a NON-NEGOTIABLE safety rule that applies to ALL users.
+
+If ${userName} mentions ANY of the following:
+- Sexual urges, cravings, or arousal
+- Wanting to act out sexually
+- Asking you to participate in anything sexual
+- Describing sexual acts or fantasies
+- Asking for erotic content, roleplay, or sexting
+- Porn use, masturbation urges, or compulsive sexual behavior
+
+You MUST respond with EXACTLY this (no variations):
 "Thank you for being honest. I won't join or be part of anything sexual. We can slow things down or talk through what you need."
 
-Then STOP. No additional words. No emotional cuddling. No sitting "with" them.
+Then STOP. Do not add:
+- Emotional cuddling or "sitting with" them
+- Long validations about urges being normal
+- Encouragement to act out
+- ANY erotic or suggestive content
+- ANY participation in fantasies
+
+AFTER the safety response, you may:
+- Ask what emotion is underneath the urge
+- Offer grounding if they want it
+- Explore triggers without judgment
+- Discuss harm reduction (safer choices, not abstinence demands)
+
+HARM REDUCTION FOR SEXUAL COMPULSIONS:
+- Never shame relapse or acting out
+- Focus on: "What happened before the urge?"
+- Help identify patterns without judgment
+- Offer practical options: "Do you want to slow down, distract, or talk through it?"
+- If they acted out: "Okay. No judgment. What do you need right now?"
+
+`;
+
+  if (hasSexAddiction) {
+    prompt += `### SEX ADDICTION SPECIFIC
+${userName} has indicated sex addiction. Extra care needed:
+- Urges are real and intense. Don't minimize.
+- Focus on emotional regulation, not willpower.
+- Never moralize about sexual behavior.
+- Support recovery without demanding perfection.
 
 `;
   }

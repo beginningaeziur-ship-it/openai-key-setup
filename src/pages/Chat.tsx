@@ -8,6 +8,7 @@ import { ArrowLeft, Send, Loader2, Heart, Volume2, VolumeX, Sparkles } from 'luc
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { buildCommunicationStyle } from '@/lib/disabilityResponsePatterns';
+import { checkMessageSafety, SAFE_RESPONSES } from '@/lib/safetyPatterns';
 import type { ChatMessage } from '@/types/sai';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sai-chat`;
@@ -131,6 +132,26 @@ export default function Chat() {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+
+    // Client-side safety check for immediate boundary setting
+    const safetyCheck = checkMessageSafety(userMessage.content);
+    
+    // If sexual content detected, respond immediately without API call
+    if (safetyCheck.triggered && safetyCheck.category === 'sexual' && safetyCheck.safeResponse) {
+      const safetyResponse: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: safetyCheck.safeResponse,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, safetyResponse]);
+      setIsLoading(false);
+      
+      if (voiceEnabled) {
+        speakText(safetyCheck.safeResponse);
+      }
+      return;
+    }
 
     let assistantContent = '';
 
