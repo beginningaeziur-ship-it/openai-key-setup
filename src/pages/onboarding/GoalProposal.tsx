@@ -7,6 +7,7 @@ import { useSAI } from '@/contexts/SAIContext';
 import { ArrowLeft, Sparkles, Target, Check, X, Edit3, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { generateGoalsFromProfile, type GeneratedGoal } from '@/lib/goalGenerator';
 
 interface ProposedGoal {
   id: string;
@@ -31,155 +32,22 @@ export default function GoalProposal() {
     saiPersonality
   } = useSAI();
 
-  // Generate personalized goals based on user profile
+  // Generate personalized goals based on user profile using the goal generator
+  const generatedGoals = useMemo(() => {
+    return generateGoalsFromProfile(selectedCategories, selectedConditions, selectedSymptoms, whoModel);
+  }, [selectedCategories, selectedConditions, selectedSymptoms, whoModel]);
+
   const suggestedGoals = useMemo(() => {
-    const goals: ProposedGoal[] = [];
-    
-    // Stability goal - for everyone, but especially trauma/addiction
-    const hasTrauma = selectedCategories.some(c => 
-      ['mental_health', 'authority_trauma', 'self_harm'].includes(c)
-    );
-    const hasAddiction = selectedCategories.some(c => 
-      ['substance_addiction', 'behavioral_addiction', 'eating_disorder'].includes(c)
-    );
-    
-    goals.push({
-      id: 'stability',
-      category: 'stability',
-      title: hasTrauma ? 'Build emotional safety day by day' : 'Feel more stable day to day',
-      description: hasTrauma 
-        ? 'Create grounding routines and safe spaces to manage overwhelming moments'
-        : 'Develop consistent rhythms that help you feel more in control',
-      icon: '🌿',
+    return generatedGoals.longTermGoals.map(g => ({
+      id: g.id,
+      category: g.category,
+      title: g.title,
+      description: g.description,
+      icon: g.icon,
       selected: true,
       customized: false,
-    });
-
-    // Housing/Safety goal - for environmental hardship
-    const hasHousingIssues = selectedCategories.includes('environmental_hardship') ||
-      whoModel?.environmentalBarriers.some(b => 
-        ['homelessness', 'unsafe_relationships', 'domestic_violence'].includes(b)
-      );
-    
-    if (hasHousingIssues) {
-      goals.push({
-        id: 'housing',
-        category: 'safety',
-        title: 'Work toward safer or more secure housing',
-        description: 'Take steps to improve your living situation, whether finding resources, building stability, or planning next moves',
-        icon: '🏠',
-        selected: true,
-        customized: false,
-      });
-    }
-
-    // Health goal - for chronic illness, medical instability
-    const hasHealthConditions = selectedCategories.some(c => 
-      ['chronic_illness', 'neurological', 'physical'].includes(c)
-    ) || selectedSymptoms.some(s => s.symptoms.includes('medical_instability'));
-    
-    if (hasHealthConditions) {
-      goals.push({
-        id: 'health',
-        category: 'health',
-        title: 'Manage health and symptoms more effectively',
-        description: 'Build routines and awareness to better handle your physical health needs',
-        icon: '💊',
-        selected: true,
-        customized: false,
-      });
-    }
-
-    // Trauma regulation goal - for PTSD/CPTSD/mental health
-    if (hasTrauma || selectedConditions.some(c => 
-      c.conditions.some(cond => ['ptsd', 'cptsd', 'anxiety', 'panic_disorder', 'dissociative'].includes(cond))
-    )) {
-      goals.push({
-        id: 'regulation',
-        category: 'emotional',
-        title: 'Develop better emotional regulation tools',
-        description: 'Learn and practice techniques to manage triggers, flashbacks, and overwhelming emotions',
-        icon: '🧘',
-        selected: true,
-        customized: false,
-      });
-    }
-
-    // Addiction support goal
-    if (hasAddiction) {
-      const addictionType = selectedCategories.includes('eating_disorder') 
-        ? 'eating patterns'
-        : selectedCategories.includes('behavioral_addiction')
-          ? 'behavioral patterns'
-          : 'substance use';
-      
-      goals.push({
-        id: 'addiction',
-        category: 'recovery',
-        title: `Build sustainable recovery from ${addictionType}`,
-        description: 'Create harm-reduction strategies, identify triggers, and develop healthier coping options',
-        icon: '🌱',
-        selected: true,
-        customized: false,
-      });
-    }
-
-    // Daily functioning goal - for executive dysfunction, developmental
-    const hasFunctioningIssues = selectedCategories.some(c => 
-      ['developmental'].includes(c)
-    ) || selectedSymptoms.some(s => 
-      s.symptoms.some(sym => ['executive_dysfunction', 'memory_problems'].includes(sym))
-    ) || whoModel?.activityLimitations.some(l => 
-      ['organizing', 'starting_tasks', 'completing_tasks', 'appointments'].includes(l)
-    );
-    
-    if (hasFunctioningIssues) {
-      goals.push({
-        id: 'functioning',
-        category: 'daily_life',
-        title: 'Build routines that don\'t crush your energy',
-        description: 'Create sustainable systems for daily tasks that work with your brain, not against it',
-        icon: '📋',
-        selected: true,
-        customized: false,
-      });
-    }
-
-    // Justice/Re-entry navigation - for authority trauma
-    const hasJusticeInvolvement = selectedCategories.includes('authority_trauma') ||
-      selectedConditions.some(c => 
-        c.conditions.some(cond => ['criminal_justice', 'probation_stress', 'reentry'].includes(cond))
-      ) || whoModel?.participationRestrictions.some(r => 
-        ['parole'].includes(r)
-      );
-    
-    if (hasJusticeInvolvement) {
-      goals.push({
-        id: 'reentry',
-        category: 'navigation',
-        title: 'Navigate justice system requirements',
-        description: 'Manage appointments, requirements, and re-entry challenges without overwhelm',
-        icon: '⚖️',
-        selected: true,
-        customized: false,
-      });
-    }
-
-    // Ensure we have at least 2 goals
-    if (goals.length < 2) {
-      goals.push({
-        id: 'wellbeing',
-        category: 'wellbeing',
-        title: 'Improve overall wellbeing',
-        description: 'Take small, consistent steps toward feeling better in mind and body',
-        icon: '✨',
-        selected: true,
-        customized: false,
-      });
-    }
-
-    return goals.slice(0, 4); // Max 4 goals
-  }, [selectedCategories, selectedConditions, selectedSymptoms, whoModel]);
+    }));
+  }, [generatedGoals]);
 
   const [goals, setGoals] = useState<ProposedGoal[]>(suggestedGoals);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -226,16 +94,51 @@ export default function GoalProposal() {
   };
 
   const handleComplete = () => {
-    // Add selected goals to the SAI context
+    // Add selected long-term goals
+    const selectedGoalIds = new Set(goals.filter(g => g.selected).map(g => g.id));
+    
     goals.filter(g => g.selected).forEach(goal => {
       addGoal({
         type: 'long_term',
         category: goal.category,
         title: goal.title,
         progress: 0,
-        targetDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(), // 6 months
+        targetDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
       });
     });
+
+    // Add mid-point goals for selected long-term goals
+    generatedGoals.midpointGoals
+      .filter(g => g.parentGoalId && selectedGoalIds.has(g.parentGoalId))
+      .forEach(goal => {
+        addGoal({
+          type: 'midpoint',
+          category: goal.category,
+          title: goal.title,
+          progress: 0,
+          targetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        });
+      });
+
+    // Add micro goals for selected long-term goals (first micro per mid-goal)
+    const addedMidGoalIds = new Set(
+      generatedGoals.midpointGoals
+        .filter(g => g.parentGoalId && selectedGoalIds.has(g.parentGoalId))
+        .map(g => g.id)
+    );
+
+    generatedGoals.microGoals
+      .filter(g => g.parentGoalId && addedMidGoalIds.has(g.parentGoalId))
+      .slice(0, 5) // Limit initial micro goals to not overwhelm
+      .forEach(goal => {
+        addGoal({
+          type: 'micro',
+          category: goal.category,
+          title: goal.title,
+          progress: 0,
+          targetDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        });
+      });
     
     completeOnboarding();
     navigate('/sai-room');
