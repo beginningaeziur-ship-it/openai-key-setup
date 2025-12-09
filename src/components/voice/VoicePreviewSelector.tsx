@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Volume2, VolumeX, Loader2, Check } from 'lucide-react';
+import { Volume2, VolumeX, Loader2, Check, Mic, MicOff, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useMicrophone } from '@/contexts/MicrophoneContext';
 import type { VoicePreference } from '@/types/sai';
 
 const VOICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sai-voice`;
@@ -56,10 +57,12 @@ const voiceOptions: VoiceOption[] = [
 interface VoicePreviewSelectorProps {
   selectedVoice: VoicePreference;
   onSelect: (voice: VoicePreference) => void;
+  showMicActivation?: boolean;
 }
 
-export function VoicePreviewSelector({ selectedVoice, onSelect }: VoicePreviewSelectorProps) {
+export function VoicePreviewSelector({ selectedVoice, onSelect, showMicActivation = false }: VoicePreviewSelectorProps) {
   const { toast } = useToast();
+  const { isMicEnabled, isMicMuted, enableMicrophone, toggleMute, isListening } = useMicrophone();
   const [playingVoice, setPlayingVoice] = useState<VoicePreference | null>(null);
   const [loadingVoice, setLoadingVoice] = useState<VoicePreference | null>(null);
   const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
@@ -138,8 +141,100 @@ export function VoicePreviewSelector({ selectedVoice, onSelect }: VoicePreviewSe
     onSelect(voice.id);
   };
 
+  const handleMicToggle = async () => {
+    if (!isMicEnabled) {
+      await enableMicrophone();
+    } else {
+      toggleMute();
+    }
+  };
+
+  const isMicActive = isMicEnabled && !isMicMuted;
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Microphone activation section */}
+      {showMicActivation && (
+        <div className={cn(
+          "p-4 rounded-xl border-2 transition-all",
+          isMicActive 
+            ? "border-green-500/50 bg-green-500/10" 
+            : "border-border bg-muted/30"
+        )}>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "w-10 h-10 rounded-full flex items-center justify-center",
+                isMicActive ? "bg-green-500/20" : "bg-muted"
+              )}>
+                {isMicActive ? (
+                  <Mic className="w-5 h-5 text-green-500" />
+                ) : (
+                  <MicOff className="w-5 h-5 text-muted-foreground" />
+                )}
+              </div>
+              <div>
+                <p className="font-medium text-sm">
+                  {isMicActive ? 'Microphone Active' : 'Enable Your Microphone'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {isMicActive 
+                    ? 'SAI is listening - speak naturally' 
+                    : 'For live conversation with SAI'}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant={isMicActive ? "secondary" : "default"}
+              size="sm"
+              onClick={handleMicToggle}
+              className="rounded-full"
+            >
+              {isMicActive ? (
+                <>
+                  <MicOff className="w-4 h-4 mr-1" />
+                  Mute
+                </>
+              ) : (
+                <>
+                  <Mic className="w-4 h-4 mr-1" />
+                  Enable
+                </>
+              )}
+            </Button>
+          </div>
+          
+          {/* Warning notice */}
+          {!isMicEnabled && (
+            <div className="mt-3 flex items-start gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                Your mic will stay active unless manually muted. 
+                Use the mic button on any screen to mute.
+              </p>
+            </div>
+          )}
+          
+          {/* Listening indicator */}
+          {isListening && (
+            <div className="mt-3 flex items-center gap-2">
+              <div className="flex gap-1">
+                <div className="w-1 h-3 bg-green-500 rounded-full animate-pulse" />
+                <div className="w-1 h-4 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '0.1s' }} />
+                <div className="w-1 h-2 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+              </div>
+              <span className="text-xs text-green-600 dark:text-green-400">Listening...</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Voice selection header */}
+      <div>
+        <p className="text-sm font-medium mb-3">Choose SAI's voice:</p>
+      </div>
+      
+      {/* Voice options */}
       {voiceOptions.map((voice) => {
         const isSelected = selectedVoice === voice.id;
         const isPlaying = playingVoice === voice.id;
