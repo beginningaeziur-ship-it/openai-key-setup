@@ -4,6 +4,7 @@ import { useSAI } from '@/contexts/SAIContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { VoicePreviewSelector } from '@/components/voice/VoicePreviewSelector';
+import { VoiceCalibration } from '@/components/settings/VoiceCalibration';
 import type { VoicePreference } from '@/types/sai';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -138,6 +139,9 @@ export default function Settings() {
             </CollapsibleContent>
           </Collapsible>
         </Card>
+
+        {/* Voice Calibration */}
+        <VoiceCalibration />
 
         {/* Emergency Contact */}
         <Card>
