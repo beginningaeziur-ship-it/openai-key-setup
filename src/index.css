@@ -346,4 +346,20 @@
   .sai-glass {
     @apply backdrop-blur-md bg-card/80 border border-border/50;
   }
+
+  /* Room hotspot interactive effects */
+  .room-hotspot {
+    @apply bg-card/80 border border-border/40 shadow-lg backdrop-blur-sm;
+    transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .room-hotspot:hover {
+    transform: scale(1.08);
+    filter: brightness(1.25);
+    box-shadow: 0 8px 32px hsl(var(--primary) / 0.3);
+  }
+
+  .room-hotspot:active {
+    transform: scale(1.02);
+  }
 }

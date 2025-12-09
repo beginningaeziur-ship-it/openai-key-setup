@@ -4,6 +4,7 @@ import { useSAI } from '@/contexts/SAIContext';
 import { Button } from '@/components/ui/button';
 import { SceneBackground, SceneType } from '@/components/sai-room/SceneBackground';
 import { SAIPresence } from '@/components/sai-room/SAIPresence';
+import { BedroomEnvironment } from '@/components/sai-room/BedroomEnvironment';
 import { SceneEnvironment } from '@/components/sai-room/SceneEnvironment';
 import { GroundingPanel } from '@/components/sai-room/GroundingPanel';
 import { RoomArrival } from '@/components/sai-room/RoomArrival';
@@ -18,7 +19,7 @@ import { cn } from '@/lib/utils';
 
 export default function SAIRoom() {
   const navigate = useNavigate();
-  const { userProfile, progressMetrics, goals } = useSAI();
+  const { userProfile, progressMetrics } = useSAI();
   
   const saiName = userProfile?.saiNickname || 'SAI';
   const userName = userProfile?.nickname || 'Friend';
@@ -27,15 +28,7 @@ export default function SAIRoom() {
   const [activeArea, setActiveArea] = useState<string | null>(null);
   const [showGrounding, setShowGrounding] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
-  const [hasSeenTour, setHasSeenTour] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return true;
-    return localStorage.getItem('sai_seen_room_tour') === 'true';
-  });
-  const [hasSeenArrival, setHasSeenArrival] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return true;
-    return sessionStorage.getItem('sai_seen_arrival') === 'true';
-  });
-  const [roomReady, setRoomReady] = useState(hasSeenArrival);
+  const [roomReady, setRoomReady] = useState(false);
 
   const overallProgress = Math.round(
     (progressMetrics.stability + progressMetrics.consistency + 
@@ -46,14 +39,7 @@ export default function SAIRoom() {
     return `I'm here, ${userName}.`;
   };
 
-  const handleDismissTour = () => {
-    localStorage.setItem('sai_seen_room_tour', 'true');
-    setHasSeenTour(true);
-  };
-
   const handleArrivalComplete = useCallback(() => {
-    sessionStorage.setItem('sai_seen_arrival', 'true');
-    setHasSeenArrival(true);
     setRoomReady(true);
   }, []);
 
@@ -75,7 +61,6 @@ export default function SAIRoom() {
         navigate('/settings');
         break;
       case 'comfort':
-        // Could open a calming panel in the future
         setShowGrounding(true);
         break;
       default:
@@ -88,60 +73,28 @@ export default function SAIRoom() {
       "transition-opacity duration-1000",
       roomReady ? 'opacity-100' : 'opacity-70'
     )}>
-      {/* Smooth arrival overlay */}
-      {!hasSeenArrival && (
-        <RoomArrival 
-          userName={userName}
-          saiName={saiName}
-          onComplete={handleArrivalComplete}
+      {/* Spoken intro + overlay (only first time) */}
+      <RoomArrival 
+        userName={userName}
+        saiName={saiName}
+        onComplete={handleArrivalComplete}
+      />
+
+      {/* Scene-specific environment with hotspots */}
+      {scene === 'bedroom' ? (
+        <BedroomEnvironment
+          activeArea={activeArea}
+          onAreaSelect={handleAreaClick}
+          isVisible={roomReady}
+        />
+      ) : (
+        <SceneEnvironment 
+          scene={scene}
+          activeArea={activeArea}
+          handleAreaClick={handleAreaClick}
+          isVisible={roomReady}
         />
       )}
-
-      {/* One-time intro overlay (after arrival) */}
-      {roomReady && !hasSeenTour && (
-        <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="max-w-lg w-full bg-card border border-border/40 rounded-xl p-5 space-y-4 shadow-lg animate-fade-in">
-            <h2 className="text-xl font-semibold">
-              This is your space, {userName}.
-            </h2>
-
-            <p className="text-sm text-foreground/80">
-              Your SAI room. It's your home base, not a test.
-            </p>
-
-            <p className="text-sm text-foreground/70">
-              I've set up some basic goals: stability, health, and daily functioning. 
-              They're guideposts, not demands.
-            </p>
-
-            <p className="text-sm text-foreground/70">
-              Around this room: Grounding, Tools, Goals, Research, and Settings. 
-              Each one supports you without judgment.
-            </p>
-
-            <p className="text-sm text-foreground/70">
-              You stay in control. I'll stay steady.
-            </p>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={handleDismissTour}>
-                Skip
-              </Button>
-              <Button onClick={handleDismissTour}>
-                Got it
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Scene hotspots from SceneEnvironment */}
-      <SceneEnvironment 
-        scene={scene}
-        activeArea={activeArea}
-        handleAreaClick={handleAreaClick}
-        isVisible={roomReady}
-      />
 
       {/* Header - fades in when room ready */}
       <header className={cn(

@@ -1,154 +1,95 @@
-import { useState, useEffect, useCallback } from 'react';
-import { cn } from '@/lib/utils';
-import { playElevenLabsVoice } from '@/voice/elevenlabs';
+import React, { useEffect, useState } from "react";
+import { playElevenLabsVoice } from "@/voice/elevenlabs";
+import { cn } from "@/lib/utils";
 
 interface RoomArrivalProps {
   userName: string;
   saiName: string;
-  onComplete: () => void;
+  onComplete?: () => void;
 }
 
 export function RoomArrival({ userName, saiName, onComplete }: RoomArrivalProps) {
-  const [phase, setPhase] = useState<'entering' | 'greeting' | 'tour' | 'fading' | 'complete'>('entering');
-
-  const speakGreeting = useCallback(async () => {
-    await playElevenLabsVoice(
-      `You made it, ${userName}. I'm ${saiName}. This is your space. You're safe here. We move at your pace.`
-    );
-  }, [userName, saiName]);
-
-  const speakTour = useCallback(async () => {
-    await playElevenLabsVoice(
-      `Each object in this room has a purpose. Tap anything when you're ready.`
-    );
-  }, []);
+  const [showIntro, setShowIntro] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("sai_room_intro_seen") !== "true";
+  });
 
   useEffect(() => {
-    const runSequence = async () => {
-      // Phase 1: Entering fade-in
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Phase 2: Greeting with voice
-      setPhase('greeting');
-      await speakGreeting();
-      
-      // Phase 3: Tour hint with voice
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setPhase('tour');
-      await speakTour();
-      
-      // Phase 4: Fade out
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setPhase('fading');
-      
-      // Phase 5: Complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setPhase('complete');
-      onComplete();
+    if (!showIntro) {
+      onComplete?.();
+      return;
+    }
+
+    // SAI speaks the greeting softly
+    playElevenLabsVoice(
+      `You made it, ${userName}. I'm ${saiName}. This is your space. You're safe here. We move at your pace.`
+    );
+
+    // After greeting, SAI gives the verbal tutorial
+    const tourTimer = setTimeout(() => {
+      playElevenLabsVoice(
+        `Let me give you a quick tour. Each object in this room has a purpose. Tap anything when you're ready.`
+      );
+    }, 3500);
+
+    // Mark intro as seen after a few seconds
+    const completeTimer = setTimeout(() => {
+      localStorage.setItem("sai_room_intro_seen", "true");
+      setShowIntro(false);
+      onComplete?.();
+    }, 7000);
+
+    return () => {
+      clearTimeout(tourTimer);
+      clearTimeout(completeTimer);
     };
+  }, [showIntro, userName, saiName, onComplete]);
 
-    runSequence();
-  }, [speakGreeting, speakTour, onComplete]);
-
-  if (phase === 'complete') return null;
+  if (!showIntro) return null;
 
   return (
-    <div 
-      className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center p-6",
-        "bg-black/50 backdrop-blur-sm",
-        "transition-opacity duration-1000 ease-out",
-        phase === 'fading' && 'opacity-0 pointer-events-none'
-      )}
-    >
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
       {/* Soft ambient glow */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" />
       </div>
 
-      <div className="relative max-w-md w-full bg-card/90 backdrop-blur-md border border-border/40 rounded-2xl p-8 text-center shadow-2xl">
-        {/* SAI gentle presence indicator */}
+      <div className={cn(
+        "relative bg-card/90 backdrop-blur-md p-8 rounded-2xl max-w-md text-center",
+        "shadow-2xl border border-border/40"
+      )}>
+        {/* SAI presence indicator */}
         <div className="flex justify-center mb-6">
-          <div 
-            className={cn(
-              "w-20 h-20 rounded-full",
-              "bg-gradient-to-br from-primary/30 to-primary/10",
-              "flex items-center justify-center",
-              "animate-arrival-breathe"
-            )}
-          >
-            <div 
-              className={cn(
-                "w-12 h-12 rounded-full",
-                "bg-gradient-to-br from-primary/50 to-primary/20",
-                "animate-arrival-glow"
-              )}
-            />
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-primary/40 animate-arrival-breathe" />
+            </div>
+            <div className="absolute inset-0 rounded-full bg-primary/20 animate-arrival-glow" />
           </div>
         </div>
 
-        {/* Welcome heading */}
-        <h2 className="text-xl font-semibold text-foreground mb-4">
+        <h2 className="text-xl font-semibold mb-3 text-foreground">
           Welcome, {userName}
         </h2>
 
-        {/* Phase-specific message */}
-        <div className="space-y-3 text-sm text-foreground/80 min-h-[60px]">
-          {phase === 'entering' && (
-            <p className="animate-fade-in text-muted-foreground">
-              Entering your space...
-            </p>
-          )}
-          
-          {phase === 'greeting' && (
-            <p className="animate-fade-in">
-              This is your <strong className="text-primary">{saiName}</strong> Room.
-              <br />
-              Take your time. Nothing here demands anything from you.
-            </p>
-          )}
-          
-          {phase === 'tour' && (
-            <p className="animate-fade-in">
-              Each object has a purpose.
-              <br />
-              Tap anything when you're ready.
-            </p>
-          )}
-          
-          {phase === 'fading' && (
-            <p className="animate-fade-in text-muted-foreground">
-              Opening your room...
-            </p>
-          )}
-        </div>
+        <p className="text-sm text-foreground/80 leading-relaxed">
+          This is your <strong className="text-primary">{saiName}</strong> Room.
+          <br />
+          Nothing here is a test. There's no rush.
+        </p>
 
-        {/* Progress indicator */}
-        <div className="mt-6 flex justify-center gap-2">
-          {['entering', 'greeting', 'tour', 'fading'].map((p, i) => (
-            <div 
-              key={p}
-              className={cn(
-                "w-2 h-2 rounded-full transition-all duration-500",
-                ['entering', 'greeting', 'tour', 'fading'].indexOf(phase) >= i 
-                  ? 'bg-primary/60' 
-                  : 'bg-primary/20'
-              )}
-            />
-          ))}
-        </div>
+        <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
+          I'll talk you through the space once, then stay mostly quiet unless you talk to me or tap something.
+        </p>
 
         {/* Skip button */}
         <button
           onClick={() => {
-            setPhase('complete');
-            onComplete();
+            localStorage.setItem("sai_room_intro_seen", "true");
+            setShowIntro(false);
+            onComplete?.();
           }}
-          className={cn(
-            "text-xs text-muted-foreground/50 hover:text-muted-foreground/70",
-            "transition-all duration-500 mt-6",
-            "focus:outline-none"
-          )}
+          className="text-xs text-muted-foreground/50 hover:text-muted-foreground/70 transition-colors mt-6"
         >
           tap to skip
         </button>
