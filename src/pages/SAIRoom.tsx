@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSAI } from '@/contexts/SAIContext';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,11 @@ import { RoomTutorial } from '@/components/sai-room/RoomTutorial';
 import { CrisisSafetyPlan } from '@/components/safety/CrisisSafetyPlan';
 import { AmbientSoundControl } from '@/components/sai-room/AmbientSoundControl';
 import { useAmbientSound } from '@/hooks/useAmbientSound';
+import { FireplacePanel } from '@/components/room-panels/FireplacePanel';
+import { LampPanel } from '@/components/room-panels/LampPanel';
+import { RugPanel } from '@/components/room-panels/RugPanel';
+import { BookshelfPanel } from '@/components/room-panels/BookshelfPanel';
+import { CoffeeTablePanel } from '@/components/room-panels/CoffeeTablePanel';
 import { 
   Settings, 
   MessageCircle,
@@ -50,6 +55,13 @@ export default function SAIRoom() {
   const [showGrounding, setShowGrounding] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [roomReady, setRoomReady] = useState(phase === 'room');
+  
+  // Panel states
+  const [showFireplace, setShowFireplace] = useState(false);
+  const [showLamp, setShowLamp] = useState(false);
+  const [showRug, setShowRug] = useState(false);
+  const [showBookshelf, setShowBookshelf] = useState(false);
+  const [showCoffeeTable, setShowCoffeeTable] = useState(false);
 
   // Ambient background sounds for the scene
   const { isPlaying, isMuted, toggleMute, play } = useAmbientSound(scene, {
@@ -97,20 +109,22 @@ export default function SAIRoom() {
     
     switch (areaId) {
       case 'grounding':
-        setShowGrounding(true);
+        setShowRug(true);
         break;
       case 'goals':
-      case 'tools':
         navigate('/dashboard');
         break;
+      case 'tools':
+        setShowCoffeeTable(true);
+        break;
       case 'research':
-        navigate('/chat');
+        setShowBookshelf(true);
         break;
       case 'settings':
-        navigate('/settings');
+        setShowLamp(true);
         break;
       case 'comfort':
-        setShowGrounding(true);
+        setShowFireplace(true);
         break;
       default:
         break;
@@ -274,7 +288,35 @@ export default function SAIRoom() {
         </div>
       </main>
 
-      {/* Grounding Panel */}
+      {/* Room Panels */}
+      <FireplacePanel
+        open={showFireplace}
+        onClose={() => setShowFireplace(false)}
+        userName={userName}
+      />
+      
+      <LampPanel
+        open={showLamp}
+        onClose={() => setShowLamp(false)}
+      />
+      
+      <RugPanel
+        open={showRug}
+        onClose={() => setShowRug(false)}
+        userName={userName}
+      />
+      
+      <BookshelfPanel
+        open={showBookshelf}
+        onClose={() => setShowBookshelf(false)}
+      />
+      
+      <CoffeeTablePanel
+        open={showCoffeeTable}
+        onClose={() => setShowCoffeeTable(false)}
+      />
+
+      {/* Legacy Grounding Panel */}
       {showGrounding && (
         <GroundingPanel 
           onClose={() => setShowGrounding(false)}

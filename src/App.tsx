@@ -9,6 +9,8 @@ import { VoiceSettingsProvider } from "@/contexts/VoiceSettingsContext";
 import { EmotionalStateProvider } from "@/contexts/EmotionalStateContext";
 import { SupportMapProvider } from "@/contexts/SupportMapContext";
 import { SelfStartProvider } from "@/contexts/SelfStartContext";
+import { SpeechOnlyProvider } from "@/contexts/SpeechOnlyContext";
+import { ServiceDogProvider } from "@/contexts/ServiceDogContext";
 import { TourProvider } from "@/components/tour/TourProvider";
 import { GlobalMicButton } from "@/components/voice/GlobalMicButton";
 import { MicrophoneActivationPrompt } from "@/components/voice/MicrophoneWarningDialog";
@@ -40,13 +42,15 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-  <SAIProvider>
+    <SAIProvider>
       <EmotionalStateProvider>
         <SupportMapProvider>
           <MicrophoneProvider>
             <VoiceSettingsProvider>
-              <SelfStartProvider>
-                <TooltipProvider>
+              <SpeechOnlyProvider>
+                <ServiceDogProvider>
+                  <SelfStartProvider>
+                    <TooltipProvider>
                   <Toaster />
                   <Sonner />
                   <BrowserRouter>
@@ -92,8 +96,10 @@ const App = () => (
                       <MicrophoneActivationPrompt />
                     </TourProvider>
                   </BrowserRouter>
-                </TooltipProvider>
-              </SelfStartProvider>
+                    </TooltipProvider>
+                  </SelfStartProvider>
+                </ServiceDogProvider>
+              </SpeechOnlyProvider>
             </VoiceSettingsProvider>
           </MicrophoneProvider>
         </SupportMapProvider>
