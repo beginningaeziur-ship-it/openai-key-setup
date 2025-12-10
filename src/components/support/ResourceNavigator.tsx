@@ -41,10 +41,10 @@ interface ResourceNavigatorProps {
 }
 
 export function ResourceNavigator({ open, onOpenChange }: ResourceNavigatorProps) {
-  const { narrateScreen, isMuted } = useSAINarrator();
+  const { narrateScreen } = useSAINarrator();
   const { userProfile } = useSAI();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [zipCode, setZipCode] = useState(userProfile?.zipCode || '');
+  const [zipCode, setZipCode] = useState(userProfile?.zipCode ?? '');
   const [needsZip, setNeedsZip] = useState(false);
 
   // Narrate when opened
