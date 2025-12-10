@@ -116,10 +116,10 @@ export function CompanionCheckIn({
 
   return (
     <div className={cn(
-      'fixed bottom-20 right-4 z-40 w-80 animate-in slide-in-from-right-5 fade-in-0',
+      'fixed top-20 right-4 z-40 w-72 animate-in slide-in-from-right-5 fade-in-0',
       className
     )}>
-      <Card className="p-4 shadow-lg border-primary/20 bg-card/95 backdrop-blur-sm">
+      <Card className="p-3 shadow-lg border-primary/20 bg-card/95 backdrop-blur-sm">
         {/* Close button */}
         <Button
           variant="ghost"
@@ -184,7 +184,7 @@ export function CompanionButton({ onClick }: { onClick?: () => void }) {
       size="icon"
       onClick={onClick}
       className={cn(
-        'fixed bottom-20 left-4 z-40 h-12 w-12 rounded-full shadow-lg',
+        'fixed top-20 left-4 z-30 h-10 w-10 rounded-full shadow-lg',
         'bg-sai-calm/80 hover:bg-sai-calm border border-sai-calm-dark/30',
         isDistressed && 'animate-pulse'
       )}
