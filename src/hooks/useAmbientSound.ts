@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import type { SceneType } from '@/components/sai-room/SceneBackground';
 
 // Calming ambient sound URLs - using gentle, continuous sounds
 const ambientSounds: Record<SceneType, string> = {
-  bedroom: 'https://assets.mixkit.co/active_storage/sfx/212/212-preview.mp3', // Soft wind/white noise
+  bedroom: 'https://assets.mixkit.co/active_storage/sfx/2515/2515-preview.mp3', // Rain sound
   cabin: 'https://assets.mixkit.co/active_storage/sfx/1164/1164-preview.mp3', // Fire crackling
   ocean: 'https://assets.mixkit.co/active_storage/sfx/2432/2432-preview.mp3', // Ocean waves  
   woods: 'https://assets.mixkit.co/active_storage/sfx/2433/2433-preview.mp3', // Forest birds/nature
@@ -91,11 +91,19 @@ export function useAmbientSound(
     }
   };
 
+  const setVolume = useCallback((newVolume: number) => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : newVolume;
+    }
+  }, [isMuted]);
+
   return {
     isPlaying,
     isMuted,
+    volume,
     toggleMute,
     play,
     pause,
+    setVolume,
   };
 }
