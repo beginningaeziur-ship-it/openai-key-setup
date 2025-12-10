@@ -33,7 +33,7 @@ export default function SAIName() {
   return (
     <div className="min-h-screen bg-gradient-calm p-6">
       <div className="max-w-lg mx-auto">
-        <OnboardingProgress currentStep={1} totalSteps={8} />
+        <OnboardingProgress currentStep={1} totalSteps={9} />
         
         <div className="space-y-8">
           <div className="text-center space-y-2">
