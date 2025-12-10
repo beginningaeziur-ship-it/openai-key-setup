@@ -65,6 +65,10 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
   const streamRef = useRef<MediaStream | null>(null);
   const isActiveRef = useRef<boolean>(false); // Track if we should be listening
   const isRestartingRef = useRef<boolean>(false); // Prevent restart loops
+  const lastStartTimeRef = useRef<number>(0); // Track when recognition started
+  const restartCountRef = useRef<number>(0); // Track restart attempts
+  const MAX_RESTART_ATTEMPTS = 5; // Max restarts before giving up
+  const MIN_LISTEN_DURATION = 3000; // Minimum ms before allowing restart
   
   const isSupported = typeof window !== 'undefined' && 
     !!(window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -102,6 +106,10 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
   const startListening = useCallback(() => {
     if (!isSupported) return;
     if (isRestartingRef.current) return; // Prevent concurrent starts
+    if (!document.hasFocus()) {
+      console.log('[SAI Mic] Page not focused, skipping start');
+      return;
+    }
     
     clearRestartTimeout();
     
@@ -134,6 +142,9 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
       recognition.lang = 'en-US';
       
       recognition.onresult = (event: any) => {
+        // Reset restart count on successful result
+        restartCountRef.current = 0;
+        
         let finalTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i];
@@ -157,6 +168,7 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
           localStorage.setItem('sai_mic_enabled', 'false');
           isActiveRef.current = false;
           setIsListening(false);
+          restartCountRef.current = 0;
           toast.error('Microphone access denied', {
             description: 'Please allow microphone access in your browser settings.',
           });
@@ -164,37 +176,57 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
           // Intentional abort, don't restart
           setIsListening(false);
         } else if (event.error === 'no-speech') {
-          // No speech detected, this is normal - will auto-restart via onend
-          console.log('[SAI Mic] No speech detected, will restart...');
+          // No speech detected - this is normal, don't count as failure
+          console.log('[SAI Mic] No speech detected');
         } else if (event.error === 'network') {
           console.error('[SAI Mic] Network error - speech recognition requires internet');
+          isActiveRef.current = false;
           toast.error('Network error', {
             description: 'Voice recognition requires an internet connection.',
           });
         } else {
-          // Other error, try to recover
-          console.log('[SAI Mic] Other error, will try to restart:', event.error);
+          // Other error, increment restart count
+          restartCountRef.current++;
+          console.log('[SAI Mic] Error, restart count:', restartCountRef.current);
           setIsListening(false);
         }
       };
       
       recognition.onend = () => {
-        console.log('[SAI Mic] Recognition ended, isActive:', isActiveRef.current);
+        const listenDuration = Date.now() - lastStartTimeRef.current;
+        console.log('[SAI Mic] Recognition ended after', listenDuration, 'ms, isActive:', isActiveRef.current);
         isRestartingRef.current = false;
         setIsListening(false);
         
-        // Only restart if we should still be active
-        if (isActiveRef.current) {
+        // Only restart if we should still be active and haven't exceeded max attempts
+        if (isActiveRef.current && document.hasFocus()) {
+          if (restartCountRef.current >= MAX_RESTART_ATTEMPTS) {
+            console.log('[SAI Mic] Max restart attempts reached, stopping');
+            isActiveRef.current = false;
+            toast.error('Voice recognition stopped', {
+              description: 'Too many errors. Please click the mic button to try again.',
+            });
+            return;
+          }
+          
+          // If it ran for a decent time, reset restart count
+          if (listenDuration > MIN_LISTEN_DURATION) {
+            restartCountRef.current = 0;
+          }
+          
+          // Delay restart based on how quickly it failed
+          const delay = listenDuration < 1000 ? 3000 : 1000;
           restartTimeoutRef.current = setTimeout(() => {
-            if (isActiveRef.current) {
+            if (isActiveRef.current && document.hasFocus()) {
               console.log('[SAI Mic] Restarting recognition...');
               startListening();
             }
-          }, 1000); // Longer delay to prevent rapid cycling
+          }, delay);
         }
       };
       
       recognitionRef.current = recognition;
+      lastStartTimeRef.current = Date.now();
       recognition.start();
       setIsListening(true);
       isRestartingRef.current = false;
@@ -203,9 +235,13 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
       console.error('[SAI Mic] Failed to start speech recognition:', err);
       isRestartingRef.current = false;
       setIsListening(false);
-      toast.error('Voice recognition failed', {
-        description: 'Could not start speech recognition. Try refreshing the page.',
-      });
+      restartCountRef.current++;
+      
+      if (restartCountRef.current >= MAX_RESTART_ATTEMPTS) {
+        toast.error('Voice recognition failed', {
+          description: 'Could not start speech recognition. Try refreshing the page.',
+        });
+      }
     }
   }, [isSupported, clearRestartTimeout]);
 
@@ -251,6 +287,7 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
       setIsMicEnabled(true);
       setIsMicMuted(false);
       isActiveRef.current = true;
+      restartCountRef.current = 0; // Reset restart count on fresh enable
       localStorage.setItem('sai_mic_enabled', 'true');
       localStorage.setItem('sai_mic_muted', 'false');
       
@@ -335,6 +372,7 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
       stopListening();
     } else if (isMicEnabled && hasPermission) {
       isActiveRef.current = true;
+      restartCountRef.current = 0; // Reset on unmute
       startListening();
     }
   }, [isMicMuted, isMicEnabled, hasPermission, stopListening, startListening]);
