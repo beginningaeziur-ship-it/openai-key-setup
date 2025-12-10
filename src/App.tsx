@@ -26,6 +26,7 @@ import WHOModel from "./pages/onboarding/WHOModel";
 import Categories from "./pages/onboarding/Categories";
 import Conditions from "./pages/onboarding/Conditions";
 import Symptoms from "./pages/onboarding/Symptoms";
+import Preferences from "./pages/onboarding/Preferences";
 import SceneSelect from "./pages/onboarding/SceneSelect";
 import GoalProposal from "./pages/onboarding/GoalProposal";
 
@@ -52,6 +53,7 @@ const App = () => (
                 <Route path="/onboarding/categories" element={<Categories />} />
                 <Route path="/onboarding/conditions" element={<Conditions />} />
                 <Route path="/onboarding/symptoms" element={<Symptoms />} />
+                <Route path="/onboarding/preferences" element={<Preferences />} />
                 <Route path="/onboarding/scene" element={<SceneSelect />} />
                 <Route path="/onboarding/goals" element={<GoalProposal />} />
                 

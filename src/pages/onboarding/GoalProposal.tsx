@@ -161,7 +161,7 @@ export default function GoalProposal() {
   return (
     <div className="min-h-screen bg-gradient-calm p-6">
       <div className="max-w-2xl mx-auto">
-        <OnboardingProgress currentStep={8} totalSteps={8} />
+        <OnboardingProgress currentStep={9} totalSteps={9} />
         
         <div className="space-y-6">
           <div className="text-center space-y-3">

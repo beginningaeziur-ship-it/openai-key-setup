@@ -20,7 +20,7 @@ export default function SceneSelect() {
       ...userProfile!,
       scene: selectedScene,
     });
-    setOnboardingStep(8);
+    setOnboardingStep(9);
     navigate('/onboarding/goals');
   };
 
@@ -28,7 +28,7 @@ export default function SceneSelect() {
     <SceneBackground scene={selectedScene}>
       <div className="min-h-screen p-6">
         <div className="max-w-2xl mx-auto">
-          <OnboardingProgress currentStep={7} totalSteps={8} />
+          <OnboardingProgress currentStep={8} totalSteps={9} />
           
           <div className="space-y-6">
             <div className="text-center space-y-2">
@@ -78,7 +78,7 @@ export default function SceneSelect() {
             <div className="flex gap-3">
               <Button
                 variant="outline"
-                onClick={() => navigate('/onboarding/symptoms')}
+                onClick={() => navigate('/onboarding/preferences')}
                 className="flex-1 h-12 rounded-xl bg-background/50"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />

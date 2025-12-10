@@ -26,13 +26,13 @@ export default function Symptoms() {
   const handleNext = () => {
     // Store as a general symptom mapping
     setSelectedSymptoms([{ condition: 'general', symptoms }]);
-    navigate('/onboarding/scene');
+    navigate('/onboarding/preferences');
   };
 
   return (
     <div className="min-h-screen bg-gradient-calm p-6">
       <div className="max-w-2xl mx-auto">
-        <OnboardingProgress currentStep={6} totalSteps={8} />
+        <OnboardingProgress currentStep={6} totalSteps={9} />
         
         <div className="space-y-6">
           <div className="text-center space-y-2">

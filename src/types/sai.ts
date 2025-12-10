@@ -1,11 +1,23 @@
 // SAI Ally Guide Types - Privacy-first design
 
+// Three-choice preference type
+export type ThreeChoicePreference = 'gentle' | 'standard' | 'challenge';
+
+// User preferences from three-choice onboarding
+export interface UserPreferences {
+  pace: ThreeChoicePreference;
+  intensity: ThreeChoicePreference;
+  supportStyle: ThreeChoicePreference;
+  goalSize: ThreeChoicePreference;
+}
+
 export interface UserProfile {
   nickname: string;
   saiNickname: string; // SAI's nickname (default "SAI")
   voicePreference: VoicePreference;
   voiceMode: VoiceMode; // on, off, soft, direct
   scene?: string; // SAI Room background scene
+  preferences?: UserPreferences; // Three-choice preferences
   emergencyContact: {
     nickname: string;
     phone: string;
