@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { SceneBackground, SceneType } from '@/components/sai-room/SceneBackground';
 import { SAIPresence } from '@/components/sai-room/SAIPresence';
 import { PhotoBedroomScene } from '@/components/sai-room/PhotoBedroomScene';
-import { CabinWithObjects } from '@/components/sai-room/CabinWithObjects';
+import { PhotoCabinScene } from '@/components/sai-room/PhotoCabinScene';
 import { OceanWithObjects } from '@/components/sai-room/OceanWithObjects';
 import { WoodsWithObjects } from '@/components/sai-room/WoodsWithObjects';
 import { GroundingPanel } from '@/components/sai-room/GroundingPanel';
@@ -123,6 +123,7 @@ export default function SAIRoom() {
     
     switch (id) {
       case 'bed': setShowBed(true); break;
+      case 'couch': setShowBed(true); break; // Couch uses bed panel for rest
       case 'fireplace': setShowFireplace(true); break;
       case 'bookshelf': setShowBookshelf(true); break;
       case 'lamp': setShowLamp(true); break;
@@ -130,6 +131,7 @@ export default function SAIRoom() {
       case 'rug': setShowRug(true); break;
       case 'window': setShowWindow(true); break;
       case 'wall-art': setShowWallArt(true); break;
+      case 'coffee-table': setShowCoffeeTable(true); break;
       case 'grounding': setShowRug(true); break;
       case 'tools': setShowCoffeeTable(true); break;
       case 'research': setShowBookshelf(true); break;
@@ -173,16 +175,36 @@ export default function SAIRoom() {
     );
   }
 
-  // Phase: Tutorial - now uses BedroomTour with photo background
+  // Render the appropriate scene based on selection
+  const renderScene = (onClick: (id: string) => void, highlighted: string | null, active: string | null, visible: boolean) => {
+    switch (scene) {
+      case 'cabin':
+        return (
+          <PhotoCabinScene
+            onHotspotClick={onClick}
+            highlightedHotspot={highlighted}
+            activeHotspot={active}
+            isVisible={visible}
+          />
+        );
+      case 'bedroom':
+      default:
+        return (
+          <PhotoBedroomScene
+            onHotspotClick={onClick}
+            highlightedHotspot={highlighted}
+            activeHotspot={active}
+            isVisible={visible}
+          />
+        );
+    }
+  };
+
+  // Phase: Tutorial - now uses photo background
   if (phase === 'tutorial') {
     return (
       <SceneBackground scene={scene}>
-        <PhotoBedroomScene
-          onHotspotClick={() => {}}
-          highlightedHotspot={tourHighlight}
-          activeHotspot={null}
-          isVisible={true}
-        />
+        {renderScene(() => {}, tourHighlight, null, true)}
         <BedroomTour
           saiName={saiName}
           userName={userName}
@@ -200,13 +222,8 @@ export default function SAIRoom() {
       "transition-opacity duration-1000",
       roomReady ? 'opacity-100' : 'opacity-70'
     )}>
-      {/* Photo Bedroom Scene with interactive hotspots */}
-      <PhotoBedroomScene
-        onHotspotClick={handleHotspotClick}
-        highlightedHotspot={showTour ? tourHighlight : null}
-        activeHotspot={activeArea}
-        isVisible={roomReady}
-      />
+      {/* Scene with interactive hotspots */}
+      {renderScene(handleHotspotClick, showTour ? tourHighlight : null, activeArea, roomReady)}
 
       {/* First-time room tour */}
       {showTour && (
