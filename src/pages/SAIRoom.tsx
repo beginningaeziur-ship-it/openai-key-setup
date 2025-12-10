@@ -4,7 +4,7 @@ import { useSAI } from '@/contexts/SAIContext';
 import { Button } from '@/components/ui/button';
 import { SceneBackground, SceneType } from '@/components/sai-room/SceneBackground';
 import { SAIPresence } from '@/components/sai-room/SAIPresence';
-import { CozyBedroomScene } from '@/components/sai-room/CozyBedroomScene';
+import { PhotoBedroomScene } from '@/components/sai-room/PhotoBedroomScene';
 import { CabinWithObjects } from '@/components/sai-room/CabinWithObjects';
 import { OceanWithObjects } from '@/components/sai-room/OceanWithObjects';
 import { WoodsWithObjects } from '@/components/sai-room/WoodsWithObjects';
@@ -173,11 +173,11 @@ export default function SAIRoom() {
     );
   }
 
-  // Phase: Tutorial - now uses BedroomTour
+  // Phase: Tutorial - now uses BedroomTour with photo background
   if (phase === 'tutorial') {
     return (
       <SceneBackground scene={scene}>
-        <CozyBedroomScene
+        <PhotoBedroomScene
           onHotspotClick={() => {}}
           highlightedHotspot={tourHighlight}
           activeHotspot={null}
@@ -200,8 +200,8 @@ export default function SAIRoom() {
       "transition-opacity duration-1000",
       roomReady ? 'opacity-100' : 'opacity-70'
     )}>
-      {/* Cozy Bedroom Scene with interactive hotspots */}
-      <CozyBedroomScene
+      {/* Photo Bedroom Scene with interactive hotspots */}
+      <PhotoBedroomScene
         onHotspotClick={handleHotspotClick}
         highlightedHotspot={showTour ? tourHighlight : null}
         activeHotspot={activeArea}
