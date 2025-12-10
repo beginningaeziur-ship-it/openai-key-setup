@@ -6,7 +6,7 @@ import { SceneBackground, SceneType } from '@/components/sai-room/SceneBackgroun
 import { SAIPresence } from '@/components/sai-room/SAIPresence';
 import { PhotoBedroomScene } from '@/components/sai-room/PhotoBedroomScene';
 import { PhotoCabinScene } from '@/components/sai-room/PhotoCabinScene';
-import { OceanWithObjects } from '@/components/sai-room/OceanWithObjects';
+import { PhotoOceanScene } from '@/components/sai-room/PhotoOceanScene';
 import { WoodsWithObjects } from '@/components/sai-room/WoodsWithObjects';
 import { GroundingPanel } from '@/components/sai-room/GroundingPanel';
 import { SAIIntroRoom } from '@/components/sai-room/SAIIntroRoom';
@@ -122,8 +122,8 @@ export default function SAIRoom() {
     setActiveArea(id);
     
     switch (id) {
+      // Bedroom hotspots
       case 'bed': setShowBed(true); break;
-      case 'couch': setShowBed(true); break; // Couch uses bed panel for rest
       case 'fireplace': setShowFireplace(true); break;
       case 'bookshelf': setShowBookshelf(true); break;
       case 'lamp': setShowLamp(true); break;
@@ -132,6 +132,17 @@ export default function SAIRoom() {
       case 'window': setShowWindow(true); break;
       case 'wall-art': setShowWallArt(true); break;
       case 'coffee-table': setShowCoffeeTable(true); break;
+      // Cabin hotspots
+      case 'couch': setShowBed(true); break; // Couch uses bed panel for rest
+      // Ocean hotspots
+      case 'horizon': setShowWindow(true); break; // View/breathe
+      case 'waves': setShowRug(true); break; // Grounding rhythm
+      case 'boulders': setShowFireplace(true); break; // Strength/stability
+      case 'palm-tree': setShowBed(true); break; // Shelter/rest
+      case 'sand': setShowRug(true); break; // Grounding
+      case 'sunset': setShowWallArt(true); break; // Reflect
+      case 'shoreline': setShowCoffeeTable(true); break; // Tasks/goals
+      // Generic aliases
       case 'grounding': setShowRug(true); break;
       case 'tools': setShowCoffeeTable(true); break;
       case 'research': setShowBookshelf(true); break;
@@ -181,6 +192,15 @@ export default function SAIRoom() {
       case 'cabin':
         return (
           <PhotoCabinScene
+            onHotspotClick={onClick}
+            highlightedHotspot={highlighted}
+            activeHotspot={active}
+            isVisible={visible}
+          />
+        );
+      case 'ocean':
+        return (
+          <PhotoOceanScene
             onHotspotClick={onClick}
             highlightedHotspot={highlighted}
             activeHotspot={active}
