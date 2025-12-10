@@ -7,7 +7,7 @@ import { SAIPresence } from '@/components/sai-room/SAIPresence';
 import { PhotoBedroomScene } from '@/components/sai-room/PhotoBedroomScene';
 import { PhotoCabinScene } from '@/components/sai-room/PhotoCabinScene';
 import { PhotoOceanScene } from '@/components/sai-room/PhotoOceanScene';
-import { WoodsWithObjects } from '@/components/sai-room/WoodsWithObjects';
+import { PhotoWoodsScene } from '@/components/sai-room/PhotoWoodsScene';
 import { GroundingPanel } from '@/components/sai-room/GroundingPanel';
 import { SAIIntroRoom } from '@/components/sai-room/SAIIntroRoom';
 import { SceneSelector } from '@/components/sai-room/SceneSelector';
@@ -133,15 +133,23 @@ export default function SAIRoom() {
       case 'wall-art': setShowWallArt(true); break;
       case 'coffee-table': setShowCoffeeTable(true); break;
       // Cabin hotspots
-      case 'couch': setShowBed(true); break; // Couch uses bed panel for rest
+      case 'couch': setShowBed(true); break;
       // Ocean hotspots
-      case 'horizon': setShowWindow(true); break; // View/breathe
-      case 'waves': setShowRug(true); break; // Grounding rhythm
-      case 'boulders': setShowFireplace(true); break; // Strength/stability
-      case 'palm-tree': setShowBed(true); break; // Shelter/rest
-      case 'sand': setShowRug(true); break; // Grounding
-      case 'sunset': setShowWallArt(true); break; // Reflect
-      case 'shoreline': setShowCoffeeTable(true); break; // Tasks/goals
+      case 'horizon': setShowWindow(true); break;
+      case 'waves': setShowRug(true); break;
+      case 'boulders': setShowFireplace(true); break;
+      case 'palm-tree': setShowBed(true); break;
+      case 'sand': setShowRug(true); break;
+      case 'sunset': setShowWallArt(true); break;
+      case 'shoreline': setShowCoffeeTable(true); break;
+      // Woods/Forest hotspots
+      case 'tent': setShowBed(true); break;
+      case 'lake': setShowWindow(true); break;
+      case 'mountains': setShowWallArt(true); break;
+      case 'pine-tree': setShowFireplace(true); break;
+      case 'moon': setShowNightstand(true); break;
+      case 'forest-floor': setShowRug(true); break;
+      case 'mist': setShowRug(true); break;
       // Generic aliases
       case 'grounding': setShowRug(true); break;
       case 'tools': setShowCoffeeTable(true); break;
@@ -201,6 +209,15 @@ export default function SAIRoom() {
       case 'ocean':
         return (
           <PhotoOceanScene
+            onHotspotClick={onClick}
+            highlightedHotspot={highlighted}
+            activeHotspot={active}
+            isVisible={visible}
+          />
+        );
+      case 'woods':
+        return (
+          <PhotoWoodsScene
             onHotspotClick={onClick}
             highlightedHotspot={highlighted}
             activeHotspot={active}
