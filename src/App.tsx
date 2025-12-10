@@ -7,11 +7,13 @@ import { SAIProvider } from "@/contexts/SAIContext";
 import { MicrophoneProvider } from "@/contexts/MicrophoneContext";
 import { VoiceSettingsProvider } from "@/contexts/VoiceSettingsContext";
 import { EmotionalStateProvider } from "@/contexts/EmotionalStateContext";
+import { SupportMapProvider } from "@/contexts/SupportMapContext";
+import { SelfStartProvider } from "@/contexts/SelfStartContext";
 import { TourProvider } from "@/components/tour/TourProvider";
 import { GlobalMicButton } from "@/components/voice/GlobalMicButton";
 import { MicrophoneActivationPrompt } from "@/components/voice/MicrophoneWarningDialog";
 import { CompanionCheckIn } from "@/components/companion/CompanionCheckIn";
-
+import { PendingRoutinePopup } from "@/components/routines/PendingRoutinePopup";
 // Pages
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -38,56 +40,63 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <SAIProvider>
+  <SAIProvider>
       <EmotionalStateProvider>
-        <MicrophoneProvider>
-          <VoiceSettingsProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <TourProvider>
-                  <Routes>
-                    {/* Main entry - redirects based on onboarding status */}
-                    <Route path="/" element={<Index />} />
-                    
-                    {/* Onboarding flow */}
-                    <Route path="/onboarding/welcome" element={<Welcome />} />
-                    <Route path="/onboarding/cy-name" element={<CyName />} />
-                    <Route path="/onboarding/user-info" element={<UserInfo />} />
-                    <Route path="/onboarding/who-model" element={<WHOModel />} />
-                    <Route path="/onboarding/categories" element={<Categories />} />
-                    <Route path="/onboarding/conditions" element={<Conditions />} />
-                    <Route path="/onboarding/symptoms" element={<Symptoms />} />
-                    <Route path="/onboarding/preferences" element={<Preferences />} />
-                    <Route path="/onboarding/scene" element={<SceneSelect />} />
-                    <Route path="/onboarding/goals" element={<GoalProposal />} />
-                    <Route path="/onboarding/water-profile" element={<WaterProfileExplanation />} />
-                    
-                    {/* Main app */}
-                    <Route path="/sai-room" element={<SAIRoom />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/chat" element={<Chat />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/watcher" element={<Watcher />} />
-                    
-                    {/* Catch-all */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                  
-                  {/* Global floating mic button - visible on all screens */}
-                  <GlobalMicButton variant="floating" />
-                  
-                  {/* Companion check-in - appears periodically */}
-                  <CompanionCheckIn />
-                  
-                  {/* Microphone activation prompt - shows warning on first use */}
-                  <MicrophoneActivationPrompt />
-                </TourProvider>
-              </BrowserRouter>
-            </TooltipProvider>
-          </VoiceSettingsProvider>
-        </MicrophoneProvider>
+        <SupportMapProvider>
+          <MicrophoneProvider>
+            <VoiceSettingsProvider>
+              <SelfStartProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
+                  <BrowserRouter>
+                    <TourProvider>
+                      <Routes>
+                        {/* Main entry - redirects based on onboarding status */}
+                        <Route path="/" element={<Index />} />
+                        
+                        {/* Onboarding flow */}
+                        <Route path="/onboarding/welcome" element={<Welcome />} />
+                        <Route path="/onboarding/cy-name" element={<CyName />} />
+                        <Route path="/onboarding/user-info" element={<UserInfo />} />
+                        <Route path="/onboarding/who-model" element={<WHOModel />} />
+                        <Route path="/onboarding/categories" element={<Categories />} />
+                        <Route path="/onboarding/conditions" element={<Conditions />} />
+                        <Route path="/onboarding/symptoms" element={<Symptoms />} />
+                        <Route path="/onboarding/preferences" element={<Preferences />} />
+                        <Route path="/onboarding/scene" element={<SceneSelect />} />
+                        <Route path="/onboarding/goals" element={<GoalProposal />} />
+                        <Route path="/onboarding/water-profile" element={<WaterProfileExplanation />} />
+                        
+                        {/* Main app */}
+                        <Route path="/sai-room" element={<SAIRoom />} />
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/chat" element={<Chat />} />
+                        <Route path="/settings" element={<Settings />} />
+                        <Route path="/watcher" element={<Watcher />} />
+                        
+                        {/* Catch-all */}
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                      
+                      {/* Global floating mic button */}
+                      <GlobalMicButton variant="floating" />
+                      
+                      {/* Companion check-in */}
+                      <CompanionCheckIn />
+                      
+                      {/* Pending routine popups */}
+                      <PendingRoutinePopup />
+                      
+                      {/* Microphone activation prompt */}
+                      <MicrophoneActivationPrompt />
+                    </TourProvider>
+                  </BrowserRouter>
+                </TooltipProvider>
+              </SelfStartProvider>
+            </VoiceSettingsProvider>
+          </MicrophoneProvider>
+        </SupportMapProvider>
       </EmotionalStateProvider>
     </SAIProvider>
   </QueryClientProvider>
