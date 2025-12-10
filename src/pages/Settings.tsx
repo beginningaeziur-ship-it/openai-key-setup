@@ -22,7 +22,9 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronUp,
-  MicOff
+  MicOff,
+  HelpCircle,
+  RotateCcw
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -41,6 +43,8 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { useTourContext } from '@/components/tour/TourProvider';
+import { resetAllTours } from '@/components/tour/GuidedTour';
 
 const voiceLabels: Record<VoicePreference, string> = {
   alloy: 'Sarah',
@@ -55,6 +59,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { userProfile, setUserProfile, resetAll } = useSAI();
+  const { startTour } = useTourContext();
   const { 
     isMicEnabled, 
     isMicMuted, 
@@ -335,6 +340,43 @@ export default function Settings() {
                 </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Guided Tours */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5" />
+              Guided Tours
+            </CardTitle>
+            <CardDescription>
+              Learn how to use each part of the app
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => startTour('settings')}
+            >
+              <HelpCircle className="w-4 h-4 mr-2" />
+              Show Settings Tour
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                resetAllTours();
+                toast({
+                  title: 'Tours reset',
+                  description: 'All guided tours will show again when you visit each page.',
+                });
+              }}
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Reset All Tours
+            </Button>
           </CardContent>
         </Card>
 
