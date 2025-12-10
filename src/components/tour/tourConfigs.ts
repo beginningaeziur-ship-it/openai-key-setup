@@ -153,9 +153,11 @@ export const tours: Record<string, TourConfig> = {
 };
 
 // Get tour by page path
+// Note: sai-room tour is now handled by BedroomTour component, not this system
 export function getTourForPath(path: string): TourConfig | null {
   if (path === '/dashboard') return dashboardTour;
-  if (path === '/sai-room') return saiRoomTour;
+  // Disabled: sai-room tour is handled inline by BedroomTour component
+  // if (path === '/sai-room') return saiRoomTour;
   if (path === '/chat') return chatTour;
   if (path === '/settings') return settingsTour;
   return null;

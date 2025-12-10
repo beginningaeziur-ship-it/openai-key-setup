@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ThreeChoicePrompt } from '@/components/sai/ThreeChoicePrompt';
@@ -17,11 +18,18 @@ interface CompanionCheckInProps {
 const CHECK_IN_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const STORAGE_KEY = 'sai_last_companion_checkin';
 
+// Routes where check-ins should be disabled
+const DISABLED_ROUTES = [
+  '/',
+  '/onboarding',
+];
+
 export function CompanionCheckIn({ 
   onNeedGrounding, 
   onRequestSlowDown,
   className 
 }: CompanionCheckInProps) {
+  const location = useLocation();
   const [isVisible, setIsVisible] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
   const { 
@@ -32,12 +40,29 @@ export function CompanionCheckIn({
     setNeedsGrounding 
   } = useEmotionalState();
   const { speak, voiceEnabled } = useVoiceSettings();
-  const { userProfile } = useSAI();
+  const { userProfile, onboarding } = useSAI();
 
   const saiName = userProfile?.saiNickname || 'SAI';
+  
+  // Check if we're on a route where check-ins should be disabled
+  const isOnDisabledRoute = DISABLED_ROUTES.some(route => 
+    location.pathname === route || location.pathname.startsWith('/onboarding')
+  );
+  
+  // Also check if tour/tutorial is in progress
+  const isTutorialActive = localStorage.getItem('sai_tutorial_completed') !== 'true';
+  const isRoomTourActive = localStorage.getItem('sai_room_tour_completed') !== 'true';
+  
+  const shouldDisableCheckIns = isOnDisabledRoute || !onboarding.completed || isTutorialActive || isRoomTourActive;
 
   // Check if it's time for a check-in
   useEffect(() => {
+    // Don't show check-ins during onboarding or tour
+    if (shouldDisableCheckIns) {
+      setIsVisible(false);
+      return;
+    }
+    
     const checkInterval = () => {
       const lastCheckIn = localStorage.getItem(STORAGE_KEY);
       const now = Date.now();
@@ -60,7 +85,7 @@ export function CompanionCheckIn({
       clearTimeout(timer);
       clearInterval(interval);
     };
-  }, [isDismissed]);
+  }, [isDismissed, shouldDisableCheckIns]);
 
   const handleChoice = useCallback((choice: string) => {
     recordCheckIn();
