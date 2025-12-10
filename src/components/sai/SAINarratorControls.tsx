@@ -21,7 +21,7 @@ export function SAINarratorControls({
   compact = false,
 }: SAINarratorControlsProps) {
   const { isMuted, isNarrating, toggleMute, repeatNarration, isListening } = useSAINarrator();
-  const { isEnabled: micEnabled, toggleMicrophone } = useMicrophone();
+  const { isMicEnabled, toggleMute: toggleMicMute, isMicMuted } = useMicrophone();
 
   return (
     <div className={cn(
@@ -66,24 +66,24 @@ export function SAINarratorControls({
       )}
 
       {/* Mic Button */}
-      {showMic && (
+      {showMic && isMicEnabled && (
         <Button
           variant="ghost"
           size={compact ? 'sm' : 'default'}
-          onClick={toggleMicrophone}
+          onClick={toggleMicMute}
           className={cn(
             'hover:bg-foreground/10 transition-all',
             isListening && 'animate-pulse bg-primary/20',
-            !micEnabled ? 'text-muted-foreground' : 'text-foreground/70 hover:text-foreground'
+            isMicMuted ? 'text-muted-foreground' : 'text-foreground/70 hover:text-foreground'
           )}
-          title={micEnabled ? 'Microphone on' : 'Microphone off'}
+          title={isMicMuted ? 'Unmute mic' : 'Mute mic'}
         >
-          {micEnabled ? (
-            <Mic className={cn('h-4 w-4', !compact && 'mr-1', isListening && 'text-primary')} />
-          ) : (
+          {isMicMuted ? (
             <MicOff className={cn('h-4 w-4', !compact && 'mr-1')} />
+          ) : (
+            <Mic className={cn('h-4 w-4', !compact && 'mr-1', isListening && 'text-primary')} />
           )}
-          {!compact && <span className="text-sm">{micEnabled ? 'Mic On' : 'Mic Off'}</span>}
+          {!compact && <span className="text-sm">{isMicMuted ? 'Mic Off' : 'Mic On'}</span>}
         </Button>
       )}
     </div>

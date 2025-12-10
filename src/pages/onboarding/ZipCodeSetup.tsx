@@ -12,7 +12,7 @@ export default function ZipCodeSetup() {
   const [zipCode, setZipCode] = useState(userProfile?.zipCode || '');
 
   const handleContinue = () => {
-    if (zipCode.length >= 5) {
+    if (zipCode.length >= 5 && userProfile) {
       setUserProfile({
         ...userProfile,
         zipCode,

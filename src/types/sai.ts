@@ -18,6 +18,7 @@ export interface UserProfile {
   voiceMode: VoiceMode; // on, off, soft, direct
   scene?: string; // SAI Room background scene
   preferences?: UserPreferences; // Three-choice preferences
+  zipCode?: string; // For local resource lookup
   emergencyContact: {
     nickname: string;
     phone: string;

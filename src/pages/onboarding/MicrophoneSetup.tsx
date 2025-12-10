@@ -8,12 +8,14 @@ import { cn } from '@/lib/utils';
 
 export default function MicrophoneSetup() {
   const navigate = useNavigate();
-  const { isEnabled, requestPermission } = useMicrophone();
-  const [permissionState, setPermissionState] = useState<'idle' | 'granted' | 'denied'>('idle');
+  const { isMicEnabled, enableMicrophone } = useMicrophone();
+  const [permissionState, setPermissionState] = useState<'idle' | 'granted' | 'denied'>(
+    isMicEnabled ? 'granted' : 'idle'
+  );
 
   const handleEnableMic = async () => {
     try {
-      const granted = await requestPermission();
+      const granted = await enableMicrophone();
       setPermissionState(granted ? 'granted' : 'denied');
     } catch {
       setPermissionState('denied');

@@ -36,7 +36,7 @@ const SAINarratorContext = createContext<SAINarratorContextType | null>(null);
 
 export function SAINarratorProvider({ children }: { children: React.ReactNode }) {
   const { speak, stopSpeaking, voiceEnabled } = useVoiceSettings();
-  const { startListening: startMic, stopListening: stopMic, isListening: micListening } = useMicrophone();
+  const { isMicEnabled, isMicMuted, isListening: micListening, enableMicrophone, setMuted } = useMicrophone();
   
   const [state, setState] = useState<NarrationState>({
     currentScreen: '',
@@ -132,7 +132,10 @@ export function SAINarratorProvider({ children }: { children: React.ReactNode })
 
   const startListeningWindow = useCallback((durationMs: number = 10000) => {
     setState(prev => ({ ...prev, isListening: true }));
-    startMic?.();
+    // Unmute the mic if it's muted
+    if (isMicEnabled && isMicMuted) {
+      setMuted(false);
+    }
     
     // Auto-stop after duration
     if (listeningTimeoutRef.current) {
@@ -141,16 +144,15 @@ export function SAINarratorProvider({ children }: { children: React.ReactNode })
     listeningTimeoutRef.current = setTimeout(() => {
       stopListening();
     }, durationMs);
-  }, [startMic]);
+  }, [isMicEnabled, isMicMuted, setMuted]);
 
   const stopListening = useCallback(() => {
     setState(prev => ({ ...prev, isListening: false }));
-    stopMic?.();
     if (listeningTimeoutRef.current) {
       clearTimeout(listeningTimeoutRef.current);
       listeningTimeoutRef.current = null;
     }
-  }, [stopMic]);
+  }, []);
 
   return (
     <SAINarratorContext.Provider value={{
