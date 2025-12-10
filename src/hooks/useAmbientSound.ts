@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SceneType } from '@/components/sai-room/SceneBackground';
 
-// Ambient sound URLs - using gentle, non-intrusive sounds (no beeping)
-const ambientSounds: Record<SceneType, string | null> = {
-  bedroom: null, // Bedroom is silent by default - peaceful
-  cabin: 'https://assets.mixkit.co/active_storage/sfx/1164/1164-preview.mp3', // fire crackling
-  ocean: 'https://assets.mixkit.co/active_storage/sfx/2432/2432-preview.mp3', // ocean waves  
-  woods: 'https://assets.mixkit.co/active_storage/sfx/2433/2433-preview.mp3', // forest birds
+// Calming ambient sound URLs - using gentle, continuous sounds
+const ambientSounds: Record<SceneType, string> = {
+  bedroom: 'https://assets.mixkit.co/active_storage/sfx/212/212-preview.mp3', // Soft wind/white noise
+  cabin: 'https://assets.mixkit.co/active_storage/sfx/1164/1164-preview.mp3', // Fire crackling
+  ocean: 'https://assets.mixkit.co/active_storage/sfx/2432/2432-preview.mp3', // Ocean waves  
+  woods: 'https://assets.mixkit.co/active_storage/sfx/2433/2433-preview.mp3', // Forest birds/nature
 };
 
 interface UseAmbientSoundOptions {
@@ -21,12 +21,13 @@ export function useAmbientSound(
   const { volume = 0.15, enabled = true } = options;
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(() => {
+    return localStorage.getItem('sai_ambient_muted') === 'true';
+  });
 
   useEffect(() => {
     if (!enabled) return;
 
-    // Create or update audio element
     const soundUrl = ambientSounds[scene];
     if (!soundUrl) return;
 
@@ -67,7 +68,9 @@ export function useAmbientSound(
   }, [volume, isMuted]);
 
   const toggleMute = () => {
-    setIsMuted(prev => !prev);
+    const newMuted = !isMuted;
+    setIsMuted(newMuted);
+    localStorage.setItem('sai_ambient_muted', String(newMuted));
   };
 
   const play = async () => {
