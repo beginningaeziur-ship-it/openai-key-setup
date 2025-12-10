@@ -118,8 +118,15 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
 
     try {
       isRestartingRef.current = true;
+      console.log('[SAI Mic] Creating speech recognition instance...');
       
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        console.error('[SAI Mic] SpeechRecognition API not available');
+        isRestartingRef.current = false;
+        return;
+      }
+      
       const recognition = new SpeechRecognition();
       
       recognition.continuous = true;
@@ -141,7 +148,7 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
       };
       
       recognition.onerror = (event: any) => {
-        console.error('[SAI Mic] Error:', event.error);
+        console.error('[SAI Mic] Recognition error:', event.error, event);
         isRestartingRef.current = false;
         
         if (event.error === 'not-allowed') {
@@ -150,19 +157,29 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
           localStorage.setItem('sai_mic_enabled', 'false');
           isActiveRef.current = false;
           setIsListening(false);
-          toast.error('Microphone access denied');
+          toast.error('Microphone access denied', {
+            description: 'Please allow microphone access in your browser settings.',
+          });
         } else if (event.error === 'aborted') {
           // Intentional abort, don't restart
           setIsListening(false);
         } else if (event.error === 'no-speech') {
           // No speech detected, this is normal - will auto-restart via onend
+          console.log('[SAI Mic] No speech detected, will restart...');
+        } else if (event.error === 'network') {
+          console.error('[SAI Mic] Network error - speech recognition requires internet');
+          toast.error('Network error', {
+            description: 'Voice recognition requires an internet connection.',
+          });
         } else {
           // Other error, try to recover
+          console.log('[SAI Mic] Other error, will try to restart:', event.error);
           setIsListening(false);
         }
       };
       
       recognition.onend = () => {
+        console.log('[SAI Mic] Recognition ended, isActive:', isActiveRef.current);
         isRestartingRef.current = false;
         setIsListening(false);
         
@@ -170,6 +187,7 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
         if (isActiveRef.current) {
           restartTimeoutRef.current = setTimeout(() => {
             if (isActiveRef.current) {
+              console.log('[SAI Mic] Restarting recognition...');
               startListening();
             }
           }, 1000); // Longer delay to prevent rapid cycling
@@ -180,17 +198,25 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
       recognition.start();
       setIsListening(true);
       isRestartingRef.current = false;
-      console.log('[SAI Mic] Started listening');
+      console.log('[SAI Mic] Speech recognition started successfully');
     } catch (err) {
-      console.error('[SAI Mic] Failed to start:', err);
+      console.error('[SAI Mic] Failed to start speech recognition:', err);
       isRestartingRef.current = false;
       setIsListening(false);
+      toast.error('Voice recognition failed', {
+        description: 'Could not start speech recognition. Try refreshing the page.',
+      });
     }
   }, [isSupported, clearRestartTimeout]);
 
   // Enable microphone and get audio stream
   const enableMicrophone = useCallback(async (): Promise<boolean> => {
+    console.log('[SAI Mic] Attempting to enable microphone...');
+    console.log('[SAI Mic] isSupported:', isSupported);
+    console.log('[SAI Mic] Browser:', navigator.userAgent);
+    
     if (!isSupported) {
+      console.error('[SAI Mic] Speech recognition not supported');
       toast.error('Voice input not supported', {
         description: 'Please use Chrome, Edge, or Safari for voice features.',
       });
@@ -204,6 +230,8 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
         streamRef.current = null;
       }
 
+      console.log('[SAI Mic] Requesting microphone permission...');
+      
       // Request microphone permission and keep the stream for audio analysis
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
@@ -212,6 +240,8 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
           autoGainControl: true,
         } 
       });
+      
+      console.log('[SAI Mic] Microphone permission granted, tracks:', stream.getAudioTracks().length);
       
       // Store stream for voice stress analysis
       streamRef.current = stream;
@@ -227,20 +257,34 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
       // Start listening after a short delay
       setTimeout(() => {
         if (isActiveRef.current) {
+          console.log('[SAI Mic] Starting speech recognition...');
           startListening();
         }
-      }, 100);
+      }, 300);
       
       toast.success('Microphone enabled', {
         description: 'SAI is now listening. Mute anytime with the mic button.',
       });
       
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error('[SAI Mic] Permission denied:', err);
+      console.error('[SAI Mic] Error name:', err?.name);
+      console.error('[SAI Mic] Error message:', err?.message);
+      
       setHasPermission(false);
+      
+      let errorMessage = 'Please allow microphone access to enable voice features.';
+      if (err?.name === 'NotAllowedError') {
+        errorMessage = 'Microphone access was denied. Please check your browser settings.';
+      } else if (err?.name === 'NotFoundError') {
+        errorMessage = 'No microphone found. Please connect a microphone.';
+      } else if (err?.name === 'NotReadableError') {
+        errorMessage = 'Microphone is in use by another application.';
+      }
+      
       toast.error('Microphone access denied', {
-        description: 'Please allow microphone access to enable voice features.',
+        description: errorMessage,
       });
       return false;
     }
