@@ -46,12 +46,7 @@ interface SpeechRecognitionErrorEventType {
   message: string;
 }
 
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognitionType;
-    webkitSpeechRecognition: new () => SpeechRecognitionType;
-  }
-}
+// SpeechRecognition types are declared globally in MicrophoneContext.tsx
 
 export function useVoiceInput(options: UseVoiceInputOptions = {}) {
   const [isRecording, setIsRecording] = useState(false);

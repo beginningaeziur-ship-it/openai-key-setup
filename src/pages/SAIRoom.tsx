@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { SceneBackground, SceneType } from '@/components/sai-room/SceneBackground';
 import { SAIPresence } from '@/components/sai-room/SAIPresence';
 import { BedroomWithObjects } from '@/components/sai-room/BedroomWithObjects';
-import { SceneEnvironment } from '@/components/sai-room/SceneEnvironment';
+import { CabinWithObjects } from '@/components/sai-room/CabinWithObjects';
+import { OceanWithObjects } from '@/components/sai-room/OceanWithObjects';
+import { WoodsWithObjects } from '@/components/sai-room/WoodsWithObjects';
 import { GroundingPanel } from '@/components/sai-room/GroundingPanel';
 import { SAIIntroRoom } from '@/components/sai-room/SAIIntroRoom';
 import { SceneSelector } from '@/components/sai-room/SceneSelector';
@@ -139,26 +141,29 @@ export default function SAIRoom() {
   // Track highlighted object during tutorial
   const [tutorialHighlight, setTutorialHighlight] = useState<string | null>(null);
 
+  // Render scene based on type
+  const renderScene = (isInteractive: boolean = true) => {
+    const props = {
+      activeArea,
+      onAreaSelect: isInteractive ? handleAreaClick : () => {},
+      highlightedObject: tutorialHighlight,
+      isVisible: true,
+    };
+
+    switch (scene) {
+      case 'bedroom': return <BedroomWithObjects {...props} />;
+      case 'cabin': return <CabinWithObjects {...props} />;
+      case 'ocean': return <OceanWithObjects {...props} />;
+      case 'woods': return <WoodsWithObjects {...props} />;
+      default: return <BedroomWithObjects {...props} />;
+    }
+  };
+
   // Phase: Room Tutorial
   if (phase === 'tutorial') {
     return (
       <SceneBackground scene={scene}>
-        {scene === 'bedroom' ? (
-          <BedroomWithObjects
-            activeArea={activeArea}
-            onAreaSelect={() => {}}
-            highlightedObject={tutorialHighlight}
-            isVisible={true}
-          />
-        ) : (
-          <SceneEnvironment 
-            scene={scene}
-            activeArea={activeArea}
-            handleAreaClick={() => {}}
-            isVisible={true}
-            highlightedObject={tutorialHighlight}
-          />
-        )}
+        {renderScene(false)}
         <RoomTutorial
           saiName={saiName}
           userName={userName}
@@ -177,20 +182,7 @@ export default function SAIRoom() {
       roomReady ? 'opacity-100' : 'opacity-70'
     )}>
       {/* Scene-specific environment with lifelike objects */}
-      {scene === 'bedroom' ? (
-        <BedroomWithObjects
-          activeArea={activeArea}
-          onAreaSelect={handleAreaClick}
-          isVisible={roomReady}
-        />
-      ) : (
-        <SceneEnvironment 
-          scene={scene}
-          activeArea={activeArea}
-          handleAreaClick={handleAreaClick}
-          isVisible={roomReady}
-        />
-      )}
+      {renderScene(true)}
 
       {/* Header */}
       <header className={cn(
