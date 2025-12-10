@@ -362,4 +362,58 @@
   .room-hotspot:active {
     transform: scale(1.02);
   }
+
+  /* Room object glow effects */
+  @keyframes object-glow {
+    0%, 100% {
+      filter: drop-shadow(0 0 8px hsl(var(--primary) / 0.3));
+    }
+    50% {
+      filter: drop-shadow(0 0 16px hsl(var(--primary) / 0.5));
+    }
+  }
+
+  @keyframes warm-glow {
+    0%, 100% {
+      filter: drop-shadow(0 0 12px hsl(var(--sai-warm) / 0.4));
+    }
+    50% {
+      filter: drop-shadow(0 0 24px hsl(var(--sai-warm) / 0.6));
+    }
+  }
+
+  @keyframes sai-entrance {
+    0% {
+      opacity: 0;
+      transform: scale(0.9) translateY(20px);
+      filter: blur(4px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      filter: blur(0);
+    }
+  }
+
+  .animate-object-glow {
+    animation: object-glow 3s ease-in-out infinite;
+  }
+
+  .animate-warm-glow {
+    animation: warm-glow 4s ease-in-out infinite;
+  }
+
+  .animate-sai-entrance {
+    animation: sai-entrance 1s ease-out forwards;
+  }
+
+  /* Hover glow for room objects */
+  .room-object-hover {
+    transition: all 0.3s ease;
+  }
+
+  .room-object-hover:hover {
+    filter: drop-shadow(0 0 20px hsl(var(--primary) / 0.5)) brightness(1.1);
+    transform: scale(1.05);
+  }
 }
