@@ -97,7 +97,7 @@ export function GroundingPanel({ onClose, userName }: GroundingPanelProps) {
   const [breathingPattern, setBreathingPattern] = useState<BreathingPattern>('box');
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const { speak, stopAudio, isLoading, isPlaying } = useTTS({ voice: 'echo' });
+  const { speak, stopAudio, isLoading, isPlaying } = useTTS();
 
   // Cleanup on unmount
   useEffect(() => {

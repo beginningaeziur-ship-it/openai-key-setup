@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { playElevenLabsVoice } from "@/voice/elevenlabs";
+import { useVoiceSettings } from "@/contexts/VoiceSettingsContext";
 import { cn } from "@/lib/utils";
 
 interface RoomArrivalProps {
@@ -9,6 +9,8 @@ interface RoomArrivalProps {
 }
 
 export function RoomArrival({ userName, saiName, onComplete }: RoomArrivalProps) {
+  const { speak, stopSpeaking } = useVoiceSettings();
+  
   const [showIntro, setShowIntro] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("sai_room_intro_seen") !== "true";
@@ -20,16 +22,12 @@ export function RoomArrival({ userName, saiName, onComplete }: RoomArrivalProps)
       return;
     }
 
-    // SAI speaks the greeting softly
-    playElevenLabsVoice(
-      `You made it, ${userName}. I'm ${saiName}. This is your space. You're safe here. We move at your pace.`
-    );
+    // SAI speaks the greeting softly using centralized voice
+    speak(`You made it, ${userName}. I'm ${saiName}. This is your space. You're safe here. We move at your pace.`);
 
     // After greeting, SAI gives the verbal tutorial
     const tourTimer = setTimeout(() => {
-      playElevenLabsVoice(
-        `Let me give you a quick tour. Each object in this room has a purpose. Tap anything when you're ready.`
-      );
+      speak(`Let me give you a quick tour. Each object in this room has a purpose. Tap anything when you're ready.`);
     }, 3500);
 
     // Mark intro as seen after a few seconds
@@ -42,8 +40,9 @@ export function RoomArrival({ userName, saiName, onComplete }: RoomArrivalProps)
     return () => {
       clearTimeout(tourTimer);
       clearTimeout(completeTimer);
+      stopSpeaking();
     };
-  }, [showIntro, userName, saiName, onComplete]);
+  }, [showIntro, userName, saiName, onComplete, speak, stopSpeaking]);
 
   if (!showIntro) return null;
 
@@ -85,6 +84,7 @@ export function RoomArrival({ userName, saiName, onComplete }: RoomArrivalProps)
         {/* Skip button */}
         <button
           onClick={() => {
+            stopSpeaking();
             localStorage.setItem("sai_room_intro_seen", "true");
             setShowIntro(false);
             onComplete?.();

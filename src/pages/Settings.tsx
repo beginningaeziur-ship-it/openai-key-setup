@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSAI } from '@/contexts/SAIContext';
+import { useMicrophone } from '@/contexts/MicrophoneContext';
+import { useVoiceSettings, type VoiceId } from '@/contexts/VoiceSettingsContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { VoicePreviewSelector } from '@/components/voice/VoicePreviewSelector';
 import { VoiceCalibration } from '@/components/settings/VoiceCalibration';
 import type { VoicePreference } from '@/types/sai';
@@ -12,12 +16,13 @@ import {
   User, 
   Phone, 
   Mic, 
+  Volume2,
   Shield, 
   Trash2,
   AlertTriangle,
   ChevronDown,
   ChevronUp,
-  Check
+  MicOff
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -35,6 +40,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { cn } from '@/lib/utils';
 
 const voiceLabels: Record<VoicePreference, string> = {
   alloy: 'Sarah',
@@ -49,7 +55,27 @@ export default function Settings() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { userProfile, setUserProfile, resetAll } = useSAI();
+  const { 
+    isMicEnabled, 
+    isMicMuted, 
+    enableMicrophone, 
+    disableMicrophone, 
+    toggleMute 
+  } = useMicrophone();
+  const { 
+    voiceEnabled, 
+    setVoiceEnabled, 
+    voiceId, 
+    setVoiceId,
+    speakingSpeed,
+    setSpeakingSpeed,
+    volume,
+    setVolume,
+    speak 
+  } = useVoiceSettings();
+  
   const [voiceOpen, setVoiceOpen] = useState(false);
+  const [micOpen, setMicOpen] = useState(false);
 
   const handleReset = () => {
     resetAll();
@@ -57,21 +83,32 @@ export default function Settings() {
   };
 
   const handleVoiceChange = (voice: VoicePreference) => {
+    // Update both the user profile and voice settings
     if (userProfile) {
       setUserProfile({
         ...userProfile,
         voicePreference: voice,
       });
-      toast({
-        description: `Voice changed to ${voiceLabels[voice]}.`,
-      });
-      setVoiceOpen(false);
+    }
+    setVoiceId(voice as VoiceId);
+    toast({
+      description: `Voice changed to ${voiceLabels[voice]}.`,
+    });
+    
+    // Preview the new voice
+    speak(`Hi, I'm ${voiceLabels[voice]}. Nice to meet you.`);
+    setVoiceOpen(false);
+  };
+
+  const handleMicToggle = async () => {
+    if (isMicEnabled) {
+      disableMicrophone();
+    } else {
+      await enableMicrophone();
     }
   };
 
-  const voiceLabel = userProfile?.voicePreference 
-    ? voiceLabels[userProfile.voicePreference] 
-    : 'Not set';
+  const voiceLabel = voiceId ? voiceLabels[voiceId as VoicePreference] : 'Lily';
 
   return (
     <div className="min-h-screen bg-gradient-calm">
@@ -105,43 +142,144 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        {/* Voice */}
+        {/* Voice Output Settings */}
         <Card>
           <Collapsible open={voiceOpen} onOpenChange={setVoiceOpen}>
             <CardHeader className="pb-3">
-              <CollapsibleTrigger asChild>
-                <div className="flex items-center justify-between cursor-pointer">
-                  <CardTitle className="flex items-center gap-2">
-                    <Mic className="w-5 h-5" />
-                    Voice
-                  </CardTitle>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">{voiceLabel}</span>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Volume2 className="w-5 h-5" />
+                  Voice Output
+                </CardTitle>
+                <Switch 
+                  checked={voiceEnabled} 
+                  onCheckedChange={setVoiceEnabled}
+                />
+              </div>
+              <CardDescription>
+                {voiceEnabled ? `SAI speaks with ${voiceLabel}'s voice` : 'Text only mode'}
+              </CardDescription>
+            </CardHeader>
+            
+            {voiceEnabled && (
+              <CardContent className="space-y-6">
+                {/* Voice Selection */}
+                <CollapsibleTrigger asChild>
+                  <div className="flex items-center justify-between cursor-pointer p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                    <span className="text-sm font-medium">Voice: {voiceLabel}</span>
                     {voiceOpen ? (
                       <ChevronUp className="w-4 h-4 text-muted-foreground" />
                     ) : (
                       <ChevronDown className="w-4 h-4 text-muted-foreground" />
                     )}
                   </div>
+                </CollapsibleTrigger>
+                
+                <CollapsibleContent className="pt-2">
+                  <VoicePreviewSelector
+                    selectedVoice={voiceId as VoicePreference || 'nova'}
+                    onSelect={handleVoiceChange}
+                  />
+                </CollapsibleContent>
+
+                {/* Speed Slider */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Speaking Speed</span>
+                    <span className="text-sm text-muted-foreground">{speakingSpeed.toFixed(1)}x</span>
+                  </div>
+                  <Slider
+                    value={[speakingSpeed]}
+                    onValueChange={([value]) => setSpeakingSpeed(value)}
+                    min={0.5}
+                    max={2.0}
+                    step={0.1}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Slower</span>
+                    <span>Normal</span>
+                    <span>Faster</span>
+                  </div>
                 </div>
-              </CollapsibleTrigger>
-              <CardDescription>
-                Change Cy's voice anytime
-              </CardDescription>
-            </CardHeader>
-            <CollapsibleContent>
-              <CardContent className="pt-0">
-                <VoicePreviewSelector
-                  selectedVoice={userProfile?.voicePreference || 'alloy'}
-                  onSelect={handleVoiceChange}
-                />
+
+                {/* Volume Slider */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Volume</span>
+                    <span className="text-sm text-muted-foreground">{Math.round(volume * 100)}%</span>
+                  </div>
+                  <Slider
+                    value={[volume]}
+                    onValueChange={([value]) => setVolume(value)}
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    className="w-full"
+                  />
+                </div>
               </CardContent>
-            </CollapsibleContent>
+            )}
           </Collapsible>
         </Card>
 
-        {/* Voice Calibration */}
-        <VoiceCalibration />
+        {/* Microphone Settings */}
+        <Card>
+          <Collapsible open={micOpen} onOpenChange={setMicOpen}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  {isMicEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+                  Microphone
+                </CardTitle>
+                <Switch 
+                  checked={isMicEnabled} 
+                  onCheckedChange={handleMicToggle}
+                />
+              </div>
+              <CardDescription>
+                {isMicEnabled 
+                  ? isMicMuted 
+                    ? 'Microphone is muted' 
+                    : 'SAI can hear you' 
+                  : 'Voice input disabled'}
+              </CardDescription>
+            </CardHeader>
+            
+            {isMicEnabled && (
+              <CardContent className="space-y-4">
+                {/* Mute Toggle */}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div>
+                    <span className="text-sm font-medium">Mute Microphone</span>
+                    <p className="text-xs text-muted-foreground">Temporarily pause listening</p>
+                  </div>
+                  <Switch 
+                    checked={isMicMuted} 
+                    onCheckedChange={toggleMute}
+                  />
+                </div>
+                
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" className="w-full">
+                    {micOpen ? 'Hide Calibration' : 'Voice Calibration'}
+                    {micOpen ? (
+                      <ChevronUp className="w-4 h-4 ml-2" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 ml-2" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+                
+                <CollapsibleContent>
+                  <div className="pt-4">
+                    <VoiceCalibration />
+                  </div>
+                </CollapsibleContent>
+              </CardContent>
+            )}
+          </Collapsible>
+        </Card>
 
         {/* Emergency Contact */}
         <Card>
@@ -184,7 +322,7 @@ export default function Settings() {
               <div>
                 <p className="font-medium text-sm">Conversations are never stored</p>
                 <p className="text-xs text-muted-foreground">
-                  Your chats with Cy are processed in real-time and not saved anywhere.
+                  Your chats with SAI are processed in real-time and not saved anywhere.
                 </p>
               </div>
             </div>

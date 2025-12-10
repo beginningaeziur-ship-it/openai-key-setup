@@ -60,7 +60,7 @@ export const SAIIntroRoom: React.FC<SAIIntroRoomProps> = ({
   const [stepVisible, setStepVisible] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   
-  const { speak, stopAudio, isPlaying, isLoading } = useTTS({ voice: 'alloy' });
+  const { speak, stopAudio, isPlaying, isLoading } = useTTS();
 
   const speakCurrentStep = useCallback((stepIndex: number) => {
     if (voiceEnabled && introSteps[stepIndex]) {
