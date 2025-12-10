@@ -287,6 +287,7 @@ const addHabit = (habit: Omit<Habit, 'id'>) => {
       'sai_voice_id',
       'sai_speaking_speed',
       'sai_volume',
+      'sai_tours_completed',
     ];
     
     keysToRemove.forEach(key => localStorage.removeItem(key));

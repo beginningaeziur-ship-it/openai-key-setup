@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SAIProvider } from "@/contexts/SAIContext";
 import { MicrophoneProvider } from "@/contexts/MicrophoneContext";
 import { VoiceSettingsProvider } from "@/contexts/VoiceSettingsContext";
+import { TourProvider } from "@/components/tour/TourProvider";
 import { GlobalMicButton } from "@/components/voice/GlobalMicButton";
 import { MicrophoneActivationPrompt } from "@/components/voice/MicrophoneWarningDialog";
 
@@ -41,38 +42,40 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Routes>
-                {/* Main entry - redirects based on onboarding status */}
-                <Route path="/" element={<Index />} />
+              <TourProvider>
+                <Routes>
+                  {/* Main entry - redirects based on onboarding status */}
+                  <Route path="/" element={<Index />} />
+                  
+                  {/* Onboarding flow */}
+                  <Route path="/onboarding/welcome" element={<Welcome />} />
+                  <Route path="/onboarding/cy-name" element={<CyName />} />
+                  <Route path="/onboarding/user-info" element={<UserInfo />} />
+                  <Route path="/onboarding/who-model" element={<WHOModel />} />
+                  <Route path="/onboarding/categories" element={<Categories />} />
+                  <Route path="/onboarding/conditions" element={<Conditions />} />
+                  <Route path="/onboarding/symptoms" element={<Symptoms />} />
+                  <Route path="/onboarding/preferences" element={<Preferences />} />
+                  <Route path="/onboarding/scene" element={<SceneSelect />} />
+                  <Route path="/onboarding/goals" element={<GoalProposal />} />
+                  
+                  {/* Main app */}
+                  <Route path="/sai-room" element={<SAIRoom />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/chat" element={<Chat />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/watcher" element={<Watcher />} />
+                  
+                  {/* Catch-all */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
                 
-                {/* Onboarding flow */}
-                <Route path="/onboarding/welcome" element={<Welcome />} />
-                <Route path="/onboarding/cy-name" element={<CyName />} />
-                <Route path="/onboarding/user-info" element={<UserInfo />} />
-                <Route path="/onboarding/who-model" element={<WHOModel />} />
-                <Route path="/onboarding/categories" element={<Categories />} />
-                <Route path="/onboarding/conditions" element={<Conditions />} />
-                <Route path="/onboarding/symptoms" element={<Symptoms />} />
-                <Route path="/onboarding/preferences" element={<Preferences />} />
-                <Route path="/onboarding/scene" element={<SceneSelect />} />
-                <Route path="/onboarding/goals" element={<GoalProposal />} />
+                {/* Global floating mic button - visible on all screens */}
+                <GlobalMicButton variant="floating" />
                 
-                {/* Main app */}
-                <Route path="/sai-room" element={<SAIRoom />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/chat" element={<Chat />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/watcher" element={<Watcher />} />
-                
-                {/* Catch-all */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              
-              {/* Global floating mic button - visible on all screens */}
-              <GlobalMicButton variant="floating" />
-              
-              {/* Microphone activation prompt - shows warning on first use */}
-              <MicrophoneActivationPrompt />
+                {/* Microphone activation prompt - shows warning on first use */}
+                <MicrophoneActivationPrompt />
+              </TourProvider>
             </BrowserRouter>
           </TooltipProvider>
         </VoiceSettingsProvider>
