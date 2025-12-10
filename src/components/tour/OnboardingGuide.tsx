@@ -33,7 +33,7 @@ export const OnboardingGuide: React.FC<OnboardingGuideProps> = ({
   onDismiss,
   onRepeat,
 }) => {
-  const { speak, stopAudio, voiceEnabled, setVoiceEnabled } = useVoiceSettings();
+  const { speak, stopSpeaking, voiceEnabled, setVoiceEnabled } = useVoiceSettings();
   const [isVisible, setIsVisible] = useState(false);
   const [hasSpokeIntro, setHasSpokeIntro] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -64,9 +64,9 @@ export const OnboardingGuide: React.FC<OnboardingGuideProps> = ({
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      stopAudio();
+      stopSpeaking();
     };
-  }, [stopAudio]);
+  }, [stopSpeaking]);
 
   const handleRepeat = useCallback(() => {
     if (voiceText) {
@@ -82,7 +82,7 @@ export const OnboardingGuide: React.FC<OnboardingGuideProps> = ({
 
   const toggleVoice = () => {
     if (voiceEnabled) {
-      stopAudio();
+      stopSpeaking();
       setIsPlaying(false);
     }
     setVoiceEnabled(!voiceEnabled);
