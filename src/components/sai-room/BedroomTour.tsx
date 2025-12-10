@@ -26,6 +26,14 @@ interface BedroomTourProps {
 
 const tourSteps: TourStep[] = [
   {
+    id: 'fireplace',
+    objectLabel: 'Fireplace',
+    icon: <Lamp className="w-5 h-5" />,
+    title: 'Comfort & Soothing',
+    description: "The warmth is always here when you need it. This is where we go for comfort, emotional soothing, and gentle support when things feel cold.",
+    voiceText: "The warmth is always here when you need it. This is where we go for comfort, emotional soothing, and gentle support when things feel cold.",
+  },
+  {
     id: 'bed',
     objectLabel: 'Bed',
     icon: <BedDouble className="w-5 h-5" />,
@@ -34,28 +42,12 @@ const tourSteps: TourStep[] = [
     voiceText: "This is where we'll practice rest and breathing when things feel too heavy. Breathing exercises, body scans, and gentle rest tools live here.",
   },
   {
-    id: 'dresser',
-    objectLabel: 'Dresser',
-    icon: <Shirt className="w-5 h-5" />,
-    title: 'Daily Living Tasks',
-    description: "Here we'll build small self-care routines that match your energy. Hygiene, getting dressed, basic tasks — at your own pace.",
-    voiceText: "Here we'll build small self-care routines that match your energy. Hygiene, getting dressed, basic tasks. At your own pace.",
-  },
-  {
-    id: 'wall-art',
-    objectLabel: 'Wall Art',
+    id: 'bookshelf',
+    objectLabel: 'Bookshelf',
     icon: <Frame className="w-5 h-5" />,
-    title: 'Emotions & Thoughts',
-    description: "When thoughts get heavy, come here. Journaling prompts, CBT tools, and gentle reframes to help you process what you're feeling.",
-    voiceText: "When thoughts get heavy, come here. Journaling prompts, reframes, and gentle tools to help you process what you're feeling.",
-  },
-  {
-    id: 'clock',
-    objectLabel: 'Clock',
-    icon: <Clock className="w-5 h-5" />,
-    title: 'Time & Reminders',
-    description: "This helps us keep track of important times so nothing sneaks up on you. Appointments, medications, deadlines — all in one place.",
-    voiceText: "This helps us keep track of important times so nothing sneaks up on you. Appointments, medications, deadlines. All in one place.",
+    title: 'Resources & Learning',
+    description: "Knowledge lives here. Scripts, education materials, and advocacy resources to help you understand and navigate what you're going through.",
+    voiceText: "Knowledge lives here. Scripts, education materials, and advocacy resources to help you understand and navigate what you're going through.",
   },
   {
     id: 'nightstand',
@@ -70,8 +62,8 @@ const tourSteps: TourStep[] = [
     objectLabel: 'Lamp',
     icon: <Lamp className="w-5 h-5" />,
     title: 'Calm Settings',
-    description: "This lets us adjust the calm level of the room. Brightness, sounds, how I communicate — make this space truly yours.",
-    voiceText: "This lets us adjust the calm level of the room. Brightness, sounds, how I communicate. Make this space truly yours.",
+    description: "This lets us adjust the calm level of the room. Sounds, voice, how I communicate — make this space truly yours.",
+    voiceText: "This lets us adjust the calm level of the room. Sounds, voice, how I communicate. Make this space truly yours.",
   },
   {
     id: 'rug',
@@ -86,8 +78,8 @@ const tourSteps: TourStep[] = [
     objectLabel: 'Window',
     icon: <CloudRain className="w-5 h-5" />,
     title: 'Look Outside',
-    description: "Sometimes we need to shift perspective. Visual grounding, looking at the rain, remembering there's a world beyond this moment.",
-    voiceText: "Sometimes we need to shift perspective. Visual grounding, watching the rain, remembering there's a world beyond this moment.",
+    description: "Sometimes we need to shift perspective. Watch the rain, breathe, remember there's a world beyond this moment.",
+    voiceText: "Sometimes we need to shift perspective. Watch the rain, breathe, remember there's a world beyond this moment.",
   },
 ];
 
