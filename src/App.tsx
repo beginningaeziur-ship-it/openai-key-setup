@@ -48,8 +48,8 @@ const App = () => (
           <MicrophoneProvider>
             <VoiceSettingsProvider>
               <SpeechOnlyProvider>
-                <ServiceDogProvider>
-                  <SelfStartProvider>
+                <SelfStartProvider>
+                  <ServiceDogProvider>
                     <TooltipProvider>
                   <Toaster />
                   <Sonner />
@@ -97,8 +97,8 @@ const App = () => (
                     </TourProvider>
                   </BrowserRouter>
                     </TooltipProvider>
-                  </SelfStartProvider>
-                </ServiceDogProvider>
+                  </ServiceDogProvider>
+                </SelfStartProvider>
               </SpeechOnlyProvider>
             </VoiceSettingsProvider>
           </MicrophoneProvider>
