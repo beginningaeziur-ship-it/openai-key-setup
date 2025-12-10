@@ -9,6 +9,9 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { VoicePreviewSelector } from '@/components/voice/VoicePreviewSelector';
 import { VoiceCalibration } from '@/components/settings/VoiceCalibration';
+import { TonePathSettings } from '@/components/settings/TonePathSettings';
+import { PacingSettings } from '@/components/settings/PacingSettings';
+import { SelfStartSettings } from '@/components/settings/SelfStartSettings';
 import type { VoicePreference } from '@/types/sai';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -285,6 +288,15 @@ export default function Settings() {
             )}
           </Collapsible>
         </Card>
+
+        {/* SAI Response Style */}
+        <TonePathSettings />
+
+        {/* Pacing Settings */}
+        <PacingSettings />
+
+        {/* Self-Start Routines */}
+        <SelfStartSettings />
 
         {/* Emergency Contact */}
         <Card>
