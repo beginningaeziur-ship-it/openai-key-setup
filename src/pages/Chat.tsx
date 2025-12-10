@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSAI } from '@/contexts/SAIContext';
 import { useMicrophone } from '@/contexts/MicrophoneContext';
+import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { QuickGroundingButton } from '@/components/grounding/QuickGroundingButton';
@@ -9,7 +10,7 @@ import { useVoiceInput } from '@/hooks/useVoiceInput';
 import { useStressMonitor } from '@/hooks/useStressMonitor';
 import { useVoiceStressDetector } from '@/hooks/useVoiceStressDetector';
 import { StressIndicator } from '@/components/stress/StressIndicator';
-import { ArrowLeft, Send, Loader2, Heart, Volume2, VolumeX, Mic, MicOff, Wind, Shield } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, Heart, Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { buildCommunicationStyle } from '@/lib/disabilityResponsePatterns';
@@ -17,7 +18,6 @@ import { checkMessageSafety } from '@/lib/safetyPatterns';
 import type { ChatMessage } from '@/types/sai';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sai-chat`;
-const VOICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sai-voice`;
 
 type SAIStatus = 'idle' | 'listening' | 'speaking' | 'thinking';
 
@@ -25,18 +25,27 @@ export default function Chat() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { userProfile, selectedCategories, selectedConditions, selectedSymptoms, saiPersonality } = useSAI();
-  const { audioStream, isMicEnabled, isMicMuted } = useMicrophone();
+  const { audioStream, isMicEnabled, isMicMuted, setMuted } = useMicrophone();
+  
+  // Use centralized voice settings - SINGLE speech path
+  const { 
+    voiceEnabled, 
+    setVoiceEnabled, 
+    speak, 
+    stopSpeaking, 
+    isSpeaking,
+    isLoading: isVoiceLoading 
+  } = useVoiceSettings();
   
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [saiStatus, setSaiStatus] = useState<SAIStatus>('idle');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const hasSpokenGreetingRef = useRef(false);
+  const isProcessingResponseRef = useRef(false);
 
   const saiName = userProfile?.saiNickname || 'SAI';
   const userName = userProfile?.nickname || 'Friend';
@@ -56,18 +65,15 @@ export default function Chat() {
     startAnalysis: startVoiceAnalysis,
     stopAnalysis: stopVoiceAnalysis,
     currentResult: voiceStressResult,
-    averageStressScore: voiceStressScore,
   } = useVoiceStressDetector({
     onMetricsUpdate: (metrics) => {
-      // Feed voice metrics into the main stress monitor
       updateVoiceMetrics(metrics);
     },
   });
 
   // Start/stop voice stress analysis based on audio stream
   useEffect(() => {
-    if (audioStream && isMicEnabled && !isMicMuted) {
-      // Small delay to prevent rapid on/off cycles
+    if (audioStream && isMicEnabled && !isMicMuted && !isSpeaking) {
       const timer = setTimeout(() => {
         startVoiceAnalysis(audioStream);
       }, 500);
@@ -75,7 +81,14 @@ export default function Chat() {
     } else {
       stopVoiceAnalysis();
     }
-  }, [audioStream, isMicEnabled, isMicMuted]);
+  }, [audioStream, isMicEnabled, isMicMuted, isSpeaking, startVoiceAnalysis, stopVoiceAnalysis]);
+
+  // Mute mic when SAI is speaking to prevent overlap
+  useEffect(() => {
+    if (isSpeaking && isMicEnabled && !isMicMuted) {
+      setMuted(true);
+    }
+  }, [isSpeaking, isMicEnabled, isMicMuted, setMuted]);
 
   // Voice input hook
   const { isRecording, isProcessing, toggleRecording } = useVoiceInput({
@@ -97,22 +110,23 @@ export default function Chat() {
   useEffect(() => {
     if (isRecording) {
       setSaiStatus('listening');
-    } else if (isPlaying) {
+    } else if (isSpeaking) {
       setSaiStatus('speaking');
-    } else if (isLoading || isProcessing) {
+    } else if (isLoading || isProcessing || isVoiceLoading) {
       setSaiStatus('thinking');
     } else {
       setSaiStatus('idle');
     }
-  }, [isRecording, isPlaying, isLoading, isProcessing]);
+  }, [isRecording, isSpeaking, isLoading, isProcessing, isVoiceLoading]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Initial greeting
+  // Initial greeting - only once
   useEffect(() => {
-    if (messages.length === 0) {
+    if (messages.length === 0 && !hasSpokenGreetingRef.current) {
+      hasSpokenGreetingRef.current = true;
       const greeting: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -123,112 +137,25 @@ export default function Chat() {
       
       // Speak the greeting if voice is enabled
       if (voiceEnabled) {
-        speakText(greeting.content);
+        speak(greeting.content);
       }
     }
-  }, []);
+  }, [userName, voiceEnabled, speak, messages.length]);
 
-  const speakText = async (text: string) => {
-    if (!voiceEnabled) return;
-    
-    // Stop any currently playing audio first
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.onended = null;
-      audioRef.current.onerror = null;
-      audioRef.current = null;
-    }
-    
-    try {
-      setIsPlaying(true);
-      
-      const response = await fetch(VOICE_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          text: text,
-          voice: userProfile?.voicePreference || 'nova',
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Voice error:', errorData);
-        setIsPlaying(false);
-        return;
-      }
-
-      const { audioContent } = await response.json();
-      
-      if (!audioContent) {
-        console.error('No audio content received');
-        setIsPlaying(false);
-        return;
-      }
-      
-      // Create and play the audio
-      const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
-      audioRef.current = audio;
-      
-      // Set up event handlers before playing
-      audio.onended = () => {
-        setIsPlaying(false);
-        if (audioRef.current === audio) {
-          audioRef.current = null;
-        }
-      };
-      
-      audio.onerror = (e) => {
-        console.error('Audio playback error:', e);
-        setIsPlaying(false);
-        if (audioRef.current === audio) {
-          audioRef.current = null;
-        }
-      };
-      
-      // Wait for audio to be ready before playing
-      audio.oncanplaythrough = async () => {
-        try {
-          await audio.play();
-        } catch (playError) {
-          console.error('Audio play failed:', playError);
-          setIsPlaying(false);
-        }
-      };
-      
-      audio.load();
-    } catch (error) {
-      console.error('Voice playback error:', error);
-      setIsPlaying(false);
-    }
-  };
-
-  const stopAudio = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.onended = null;
-      audioRef.current.onerror = null;
-      audioRef.current.oncanplaythrough = null;
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-    setIsPlaying(false);
-  }, []);
-
-  const toggleVoice = () => {
-    if (isPlaying) {
-      stopAudio();
+  const toggleVoice = useCallback(() => {
+    if (isSpeaking) {
+      stopSpeaking();
     }
     setVoiceEnabled(!voiceEnabled);
     toast({
       description: voiceEnabled ? "Voice off. Text only." : "Voice on.",
     });
-  };
+  }, [voiceEnabled, isSpeaking, stopSpeaking, setVoiceEnabled, toast]);
 
   const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || isProcessingResponseRef.current) return;
+
+    isProcessingResponseRef.current = true;
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -257,9 +184,10 @@ export default function Chat() {
       };
       setMessages(prev => [...prev, safetyResponse]);
       setIsLoading(false);
+      isProcessingResponseRef.current = false;
       
       if (voiceEnabled) {
-        speakText(safetyCheck.safeResponse);
+        speak(safetyCheck.safeResponse);
       }
       return;
     }
@@ -276,9 +204,8 @@ export default function Chat() {
       acknowledgeIntervention();
       
       if (voiceEnabled) {
-        speakText(stressState.interventionMessage);
+        speak(stressState.interventionMessage);
       }
-      // Continue to also get AI response, but prepend the stress context
     }
 
     let assistantContent = '';
@@ -300,7 +227,6 @@ export default function Chat() {
             symptoms: selectedSymptoms.flatMap(s => s.symptoms),
             personality: saiPersonality,
             communicationStyle: buildCommunicationStyle(selectedCategories, selectedConditions, selectedSymptoms),
-            // Include stress context for AI awareness
             stressContext: {
               level: stressAnalysis.level,
               score: stressAnalysis.score,
@@ -367,7 +293,7 @@ export default function Chat() {
         }
       }
 
-      // Finalize the message and speak it
+      // Finalize the message
       setMessages(prev => {
         const last = prev[prev.length - 1];
         if (last?.role === 'assistant') {
@@ -378,9 +304,9 @@ export default function Chat() {
         return prev;
       });
 
-      // Speak the response
+      // Speak the response - SINGLE call
       if (voiceEnabled && assistantContent) {
-        speakText(assistantContent);
+        speak(assistantContent);
       }
 
     } catch (error) {
@@ -394,10 +320,11 @@ export default function Chat() {
       }]);
       
       if (voiceEnabled) {
-        speakText(errorMessage);
+        speak(errorMessage);
       }
     } finally {
       setIsLoading(false);
+      isProcessingResponseRef.current = false;
     }
   };
 
@@ -553,7 +480,7 @@ export default function Chat() {
               variant={isRecording ? "default" : "outline"}
               size="icon"
               onClick={toggleRecording}
-              disabled={isProcessing}
+              disabled={isProcessing || isSpeaking}
               className={cn(
                 "h-12 w-12 rounded-xl flex-shrink-0 transition-all",
                 isRecording && "bg-sai-hope text-white animate-pulse"

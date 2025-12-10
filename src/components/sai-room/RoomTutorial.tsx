@@ -96,7 +96,7 @@ export const RoomTutorial: React.FC<RoomTutorialProps> = ({
   const [showFollowUp, setShowFollowUp] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
 
-  const { speak, stopAudio, isPlaying, isLoading } = useTTS({ voice: 'alloy' });
+  const { speak, stopAudio, isPlaying, isLoading } = useTTS();
 
   // Highlight the current object in the scene
   useEffect(() => {
