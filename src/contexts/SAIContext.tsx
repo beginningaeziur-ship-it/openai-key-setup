@@ -265,15 +265,31 @@ const addHabit = (habit: Omit<Habit, 'id'>) => {
   };
 
   const resetAll = () => {
-    localStorage.removeItem('sai_onboarding');
-    localStorage.removeItem('sai_user_profile');
-    localStorage.removeItem('sai_who_model');
-    localStorage.removeItem('sai_categories');
-    localStorage.removeItem('sai_conditions');
-    localStorage.removeItem('sai_symptoms');
-    localStorage.removeItem('sai_progress');
-    localStorage.removeItem('sai_goals');
-    localStorage.removeItem('sai_habits');
+    // Clear all SAI-related localStorage keys
+    const keysToRemove = [
+      'sai_onboarding',
+      'sai_user_profile',
+      'sai_who_model',
+      'sai_categories',
+      'sai_conditions',
+      'sai_symptoms',
+      'sai_progress',
+      'sai_goals',
+      'sai_habits',
+      'sai_safety_plan',
+      'sai_intro_completed',
+      'sai_tutorial_completed',
+      'sai_room_intro_seen',
+      'sai_mic_enabled',
+      'sai_mic_muted',
+      'sai_mic_warning_seen',
+      'sai_voice_enabled',
+      'sai_voice_id',
+      'sai_speaking_speed',
+      'sai_volume',
+    ];
+    
+    keysToRemove.forEach(key => localStorage.removeItem(key));
     
     setOnboarding(defaultOnboarding);
     setUserProfileState(null);
