@@ -141,7 +141,8 @@ export default function GoalProposal() {
       });
     
     completeOnboarding();
-    navigate('/sai-room');
+    // Navigate to Water Profile explanation before SAI Room
+    navigate('/onboarding/water-profile');
   };
 
   const selectedCount = goals.filter(g => g.selected).length;
