@@ -10,6 +10,7 @@ interface VoiceSettingsContextType {
   voiceId: VoiceId;
   speakingSpeed: number; // 0.5 to 2.0
   volume: number; // 0 to 1
+  useBrowserTTS: boolean; // Whether using browser fallback
   
   // Playback state
   isSpeaking: boolean;
@@ -20,6 +21,7 @@ interface VoiceSettingsContextType {
   setVoiceId: (voice: VoiceId) => void;
   setSpeakingSpeed: (speed: number) => void;
   setVolume: (volume: number) => void;
+  setUseBrowserTTS: (use: boolean) => void;
   
   // TTS functions - single speech output path
   speak: (text: string) => Promise<void>;
@@ -34,6 +36,17 @@ const STORAGE_KEYS = {
   VOICE_ID: 'sai_voice_id',
   SPEAKING_SPEED: 'sai_speaking_speed',
   VOLUME: 'sai_volume',
+  USE_BROWSER_TTS: 'sai_use_browser_tts',
+};
+
+// Browser voice mapping for fallback
+const BROWSER_VOICE_MAP: Record<VoiceId, string[]> = {
+  'alloy': ['Google US English', 'Samantha', 'Microsoft Zira'],
+  'echo': ['Google UK English Male', 'Daniel', 'Microsoft David'],
+  'fable': ['Google UK English Female', 'Karen', 'Microsoft Hazel'],
+  'onyx': ['Alex', 'Microsoft Mark', 'Google US English'],
+  'nova': ['Samantha', 'Google US English', 'Microsoft Zira'],
+  'shimmer': ['Victoria', 'Google UK English Female', 'Microsoft Susan'],
 };
 
 interface VoiceSettingsProviderProps {
@@ -61,6 +74,11 @@ export function VoiceSettingsProvider({ children }: VoiceSettingsProviderProps) 
     const stored = localStorage.getItem(STORAGE_KEYS.VOLUME);
     return stored ? parseFloat(stored) : 1.0;
   });
+
+  const [useBrowserTTS, setUseBrowserTTSState] = useState<boolean>(() => {
+    const stored = localStorage.getItem(STORAGE_KEYS.USE_BROWSER_TTS);
+    return stored === 'true';
+  });
   
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -68,6 +86,7 @@ export function VoiceSettingsProvider({ children }: VoiceSettingsProviderProps) 
   // Refs for audio management - SINGLE audio element
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const speakLockRef = useRef<boolean>(false);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   
   // Setters that persist to localStorage
   const setVoiceEnabled = useCallback((enabled: boolean) => {
@@ -98,9 +117,15 @@ export function VoiceSettingsProvider({ children }: VoiceSettingsProviderProps) 
       audioRef.current.volume = clampedVol;
     }
   }, []);
+
+  const setUseBrowserTTS = useCallback((use: boolean) => {
+    setUseBrowserTTSState(use);
+    localStorage.setItem(STORAGE_KEYS.USE_BROWSER_TTS, String(use));
+  }, []);
   
   // Stop any currently playing audio
   const stopSpeaking = useCallback(() => {
+    // Stop ElevenLabs audio
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.onended = null;
@@ -108,9 +133,78 @@ export function VoiceSettingsProvider({ children }: VoiceSettingsProviderProps) 
       audioRef.current.oncanplaythrough = null;
       audioRef.current = null;
     }
+    // Stop browser speech synthesis
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    utteranceRef.current = null;
     setIsSpeaking(false);
     speakLockRef.current = false;
   }, []);
+
+  // Browser TTS fallback function
+  const speakWithBrowser = useCallback((text: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (!window.speechSynthesis) {
+        reject(new Error('Browser speech synthesis not supported'));
+        return;
+      }
+
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utteranceRef.current = utterance;
+      
+      // Try to find a matching voice
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoices = BROWSER_VOICE_MAP[voiceId] || BROWSER_VOICE_MAP['nova'];
+      
+      for (const preferred of preferredVoices) {
+        const match = voices.find(v => 
+          v.name.toLowerCase().includes(preferred.toLowerCase())
+        );
+        if (match) {
+          utterance.voice = match;
+          break;
+        }
+      }
+      
+      // If no match, try to find any English voice
+      if (!utterance.voice) {
+        const englishVoice = voices.find(v => v.lang.startsWith('en'));
+        if (englishVoice) {
+          utterance.voice = englishVoice;
+        }
+      }
+      
+      utterance.rate = speakingSpeed;
+      utterance.volume = volume;
+      utterance.pitch = 1.0;
+      
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+        setIsLoading(false);
+      };
+      
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        speakLockRef.current = false;
+        utteranceRef.current = null;
+        resolve();
+      };
+      
+      utterance.onerror = (event) => {
+        console.error('[VoiceSettings] Browser TTS error:', event.error);
+        setIsSpeaking(false);
+        speakLockRef.current = false;
+        utteranceRef.current = null;
+        reject(new Error(event.error));
+      };
+      
+      window.speechSynthesis.speak(utterance);
+    });
+  }, [voiceId, speakingSpeed, volume]);
   
   // Single speak function - the ONLY way to play TTS
   const speak = useCallback(async (text: string): Promise<void> => {
@@ -130,21 +224,48 @@ export function VoiceSettingsProvider({ children }: VoiceSettingsProviderProps) 
     speakLockRef.current = true; // Re-set after stopSpeaking clears it
     
     setIsLoading(true);
+
+    // If browser TTS is enabled (fallback mode), use it directly
+    if (useBrowserTTS) {
+      console.log('[VoiceSettings] Using browser TTS (fallback mode)');
+      try {
+        await speakWithBrowser(text);
+      } catch (err) {
+        console.error('[VoiceSettings] Browser TTS failed:', err);
+        speakLockRef.current = false;
+        setIsLoading(false);
+      }
+      return;
+    }
     
     try {
       const { data, error } = await supabase.functions.invoke('sai-voice', {
         body: { text, voice: voiceId },
       });
       
-      if (error) {
-        console.error('[VoiceSettings] TTS error:', error.message);
-        speakLockRef.current = false;
-        setIsLoading(false);
-        return;
-      }
-      
-      if (data?.error) {
-        console.error('[VoiceSettings] TTS error:', data.error);
+      // Check for quota exceeded - switch to browser fallback
+      if (error || data?.error) {
+        const errorMsg = error?.message || data?.error || '';
+        const shouldFallback = data?.fallbackToBrowser || 
+          errorMsg.includes('quota_exceeded') || 
+          errorMsg.includes('TTS failed: 401') ||
+          errorMsg.includes('TTS failed: 402');
+        
+        if (shouldFallback) {
+          console.log('[VoiceSettings] ElevenLabs quota exceeded, switching to browser TTS');
+          setUseBrowserTTS(true);
+          
+          try {
+            await speakWithBrowser(text);
+          } catch (browserErr) {
+            console.error('[VoiceSettings] Browser TTS fallback failed:', browserErr);
+            speakLockRef.current = false;
+            setIsLoading(false);
+          }
+          return;
+        }
+        
+        console.error('[VoiceSettings] TTS error:', errorMsg);
         speakLockRef.current = false;
         setIsLoading(false);
         return;
@@ -189,10 +310,30 @@ export function VoiceSettingsProvider({ children }: VoiceSettingsProviderProps) 
       }
     } catch (err) {
       console.error('[VoiceSettings] Failed to speak:', err);
-      setIsLoading(false);
-      speakLockRef.current = false;
+      
+      // Try browser fallback on any network/API error
+      console.log('[VoiceSettings] Attempting browser TTS fallback');
+      try {
+        await speakWithBrowser(text);
+      } catch (browserErr) {
+        console.error('[VoiceSettings] Browser TTS fallback failed:', browserErr);
+        setIsLoading(false);
+        speakLockRef.current = false;
+      }
     }
-  }, [voiceEnabled, voiceId, volume, speakingSpeed, stopSpeaking]);
+  }, [voiceEnabled, voiceId, volume, speakingSpeed, useBrowserTTS, stopSpeaking, speakWithBrowser, setUseBrowserTTS]);
+
+  // Load voices when available (for browser TTS)
+  useEffect(() => {
+    if (window.speechSynthesis) {
+      // Voices may load async
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+      // Trigger initial load
+      window.speechSynthesis.getVoices();
+    }
+  }, []);
   
   // Cleanup on unmount
   useEffect(() => {
@@ -200,6 +341,9 @@ export function VoiceSettingsProvider({ children }: VoiceSettingsProviderProps) 
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
+      }
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
       }
     };
   }, []);
@@ -210,12 +354,14 @@ export function VoiceSettingsProvider({ children }: VoiceSettingsProviderProps) 
       voiceId,
       speakingSpeed,
       volume,
+      useBrowserTTS,
       isSpeaking,
       isLoading,
       setVoiceEnabled,
       setVoiceId,
       setSpeakingSpeed,
       setVolume,
+      setUseBrowserTTS,
       speak,
       stopSpeaking,
     }}>

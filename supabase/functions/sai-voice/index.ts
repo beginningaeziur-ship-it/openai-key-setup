@@ -64,9 +64,17 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error('ElevenLabs TTS error:', response.status, errorText);
       
+      // Check for quota exceeded
+      if (errorText.includes('quota_exceeded') || response.status === 401) {
+        return new Response(
+          JSON.stringify({ error: 'quota_exceeded', fallbackToBrowser: true }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: 'Voice service busy. Please try again.' }),
+          JSON.stringify({ error: 'Voice service busy. Please try again.', fallbackToBrowser: true }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
