@@ -313,7 +313,7 @@ export default function GoalProposal() {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              onClick={() => navigate('/onboarding/scene')}
+              onClick={() => navigate('/onboarding/preferences')}
               className="flex-1 h-12 rounded-xl"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
