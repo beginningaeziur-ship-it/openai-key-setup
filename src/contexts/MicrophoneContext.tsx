@@ -104,10 +104,14 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
 
   // Start speech recognition
   const startListening = useCallback(() => {
-    if (!isSupported) return;
-    if (isRestartingRef.current) return; // Prevent concurrent starts
-    if (!document.hasFocus()) {
-      console.log('[SAI Mic] Page not focused, skipping start');
+    console.log('[SAI Mic] startListening called, isSupported:', isSupported, 'isRestarting:', isRestartingRef.current);
+    
+    if (!isSupported) {
+      console.log('[SAI Mic] Not supported, aborting');
+      return;
+    }
+    if (isRestartingRef.current) {
+      console.log('[SAI Mic] Already restarting, aborting');
       return;
     }
     
@@ -199,7 +203,7 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
         setIsListening(false);
         
         // Only restart if we should still be active and haven't exceeded max attempts
-        if (isActiveRef.current && document.hasFocus()) {
+        if (isActiveRef.current) {
           if (restartCountRef.current >= MAX_RESTART_ATTEMPTS) {
             console.log('[SAI Mic] Max restart attempts reached, stopping');
             isActiveRef.current = false;
@@ -215,9 +219,9 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
           }
           
           // Delay restart based on how quickly it failed
-          const delay = listenDuration < 1000 ? 3000 : 1000;
+          const delay = listenDuration < 1000 ? 2000 : 500;
           restartTimeoutRef.current = setTimeout(() => {
-            if (isActiveRef.current && document.hasFocus()) {
+            if (isActiveRef.current) {
               console.log('[SAI Mic] Restarting recognition...');
               startListening();
             }
