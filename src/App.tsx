@@ -11,6 +11,7 @@ import { SupportMapProvider } from "@/contexts/SupportMapContext";
 import { SelfStartProvider } from "@/contexts/SelfStartContext";
 import { SpeechOnlyProvider } from "@/contexts/SpeechOnlyContext";
 import { ServiceDogProvider } from "@/contexts/ServiceDogContext";
+import { AccessibilityProvider } from "@/contexts/AccessibilityContext";
 import { TourProvider } from "@/components/tour/TourProvider";
 import { GlobalMicButton } from "@/components/voice/GlobalMicButton";
 import { MicrophoneActivationPrompt } from "@/components/voice/MicrophoneWarningDialog";
@@ -42,15 +43,16 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <SAIProvider>
-      <EmotionalStateProvider>
-        <SupportMapProvider>
-          <MicrophoneProvider>
-            <VoiceSettingsProvider>
-              <SpeechOnlyProvider>
-                <SelfStartProvider>
-                  <ServiceDogProvider>
-                    <TooltipProvider>
+    <AccessibilityProvider>
+      <SAIProvider>
+        <EmotionalStateProvider>
+          <SupportMapProvider>
+            <MicrophoneProvider>
+              <VoiceSettingsProvider>
+                <SpeechOnlyProvider>
+                  <SelfStartProvider>
+                    <ServiceDogProvider>
+                      <TooltipProvider>
                   <Toaster />
                   <Sonner />
                   <BrowserRouter>
@@ -96,15 +98,16 @@ const App = () => (
                       <MicrophoneActivationPrompt />
                     </TourProvider>
                   </BrowserRouter>
-                    </TooltipProvider>
-                  </ServiceDogProvider>
-                </SelfStartProvider>
-              </SpeechOnlyProvider>
-            </VoiceSettingsProvider>
-          </MicrophoneProvider>
-        </SupportMapProvider>
-      </EmotionalStateProvider>
-    </SAIProvider>
+                      </TooltipProvider>
+                    </ServiceDogProvider>
+                  </SelfStartProvider>
+                </SpeechOnlyProvider>
+              </VoiceSettingsProvider>
+            </MicrophoneProvider>
+          </SupportMapProvider>
+        </EmotionalStateProvider>
+      </SAIProvider>
+    </AccessibilityProvider>
   </QueryClientProvider>
 );
 
