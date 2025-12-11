@@ -326,9 +326,10 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
           return;
         }
         
+        // Don't block on focus - just log it and continue
+        // The preview iframe may not have focus but we still want to listen
         if (!document.hasFocus()) {
-          console.log('[SAI Mic] Page not focused, no restart');
-          return;
+          console.log('[SAI Mic] Page not focused, but continuing anyway');
         }
         
         if (restartCountRef.current >= MAX_RESTART_ATTEMPTS) {
