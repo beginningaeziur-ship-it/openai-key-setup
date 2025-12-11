@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { Heart, Volume2, VolumeX } from 'lucide-react';
+import { Heart, Volume2, VolumeX, Dog, Shield, Compass, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
+import comfortOfficeBg from '@/assets/comfort-office-bg.jpg';
 
 interface SAIArrivalProps {
   saiName: string;
@@ -15,35 +16,43 @@ export const SAIArrival: React.FC<SAIArrivalProps> = ({
   userName,
   onContinue,
 }) => {
-  const [phase, setPhase] = useState<'appearing' | 'speaking' | 'ready'>('appearing');
-  const [textVisible, setTextVisible] = useState(false);
+  const [phase, setPhase] = useState<'appearing' | 'intro' | 'role' | 'question' | 'ready'>('appearing');
+  const [showQuestion, setShowQuestion] = useState(false);
   const { speak, stopSpeaking, isSpeaking, voiceEnabled, setVoiceEnabled } = useVoiceSettings();
 
-  const arrivalText = `I'm ${saiName}, powered by Aezuir... and I'm here with you.`;
-  const roleText = `I will guide you, teach you, listen, support you, and advocate for you. You never have to figure this alone. I walk with you through every step — not ahead of you, not behind you.`;
+  // SAI's introduction script per the spec
+  const introText = `I'm ${saiName} — your Supportive Intelligence Agent. Think of me as a service dog, an advocate, a guide, your steady Yoda. I'll walk with you through every part of this program. You are safe here.`;
+  const questionText = "Do you want me to explain anything before we continue?";
 
-  const speakArrival = useCallback(async () => {
+  const speakIntroduction = useCallback(async () => {
     if (voiceEnabled) {
-      await speak(arrivalText);
-      // Small pause before role explanation
+      setPhase('intro');
+      await speak(introText);
+      
+      // Wait a moment, then ask question
       setTimeout(async () => {
+        setPhase('question');
+        setShowQuestion(true);
         if (voiceEnabled) {
-          await speak(roleText);
+          await speak(questionText);
         }
         setPhase('ready');
-      }, 500);
+      }, 800);
     } else {
-      setTimeout(() => setPhase('ready'), 2000);
+      setPhase('intro');
+      setTimeout(() => {
+        setPhase('question');
+        setShowQuestion(true);
+        setTimeout(() => setPhase('ready'), 1500);
+      }, 3000);
     }
-  }, [voiceEnabled, speak, arrivalText, roleText]);
+  }, [voiceEnabled, speak, introText, questionText]);
 
   useEffect(() => {
     // Phase 1: SAI appears
     const appearTimer = setTimeout(() => {
-      setPhase('speaking');
-      setTextVisible(true);
-      speakArrival();
-    }, 1500);
+      speakIntroduction();
+    }, 1200);
 
     return () => {
       clearTimeout(appearTimer);
@@ -63,11 +72,32 @@ export const SAIArrival: React.FC<SAIArrivalProps> = ({
     onContinue();
   };
 
+  const handleExplainMore = () => {
+    if (voiceEnabled) {
+      speak("I am here to help you navigate life, not control it. I will teach you to make decisions, ground yourself when overwhelmed, and advocate for what you need. We go at your pace. You lead, I walk beside you.");
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-b from-[#0d0d1a] via-[#1a1a2e] to-[#0f0f1f]">
-      {/* Ambient glow */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden">
+      {/* Comfort office background */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${comfortOfficeBg})` }}
+      />
+      
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/40" />
+
+      {/* Warm ambient glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/15 rounded-full blur-[120px] animate-pulse-soft" />
+        <div 
+          className={cn(
+            "absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[300px] rounded-full blur-[100px] transition-opacity duration-1000",
+            phase !== 'appearing' ? "opacity-100" : "opacity-0"
+          )}
+          style={{ background: 'radial-gradient(ellipse, rgba(251, 191, 36, 0.15) 0%, transparent 70%)' }}
+        />
       </div>
 
       {/* Voice toggle */}
@@ -75,118 +105,194 @@ export const SAIArrival: React.FC<SAIArrivalProps> = ({
         onClick={toggleVoice}
         className={cn(
           "absolute top-6 right-6 p-3 rounded-full transition-all z-10",
-          "bg-card/60 backdrop-blur-sm border border-border/40",
-          "hover:bg-card/80",
-          isSpeaking && "animate-pulse"
+          "bg-black/40 backdrop-blur-md border border-white/10",
+          "hover:bg-black/60",
+          isSpeaking && "ring-2 ring-primary/50"
         )}
+        aria-label={voiceEnabled ? "Mute voice" : "Enable voice"}
       >
         {voiceEnabled ? (
-          <Volume2 className={cn("w-5 h-5", isSpeaking ? "text-primary" : "text-foreground/70")} />
+          <Volume2 className={cn("w-5 h-5", isSpeaking ? "text-primary animate-pulse" : "text-white/80")} />
         ) : (
-          <VolumeX className="w-5 h-5 text-muted-foreground" />
+          <VolumeX className="w-5 h-5 text-white/50" />
         )}
       </button>
 
-      {/* SAI Avatar - appears first */}
-      <div className="flex flex-col items-center gap-8 max-w-lg mx-4">
+      {/* Main content */}
+      <div className="relative z-10 flex flex-col items-center gap-6 max-w-xl mx-4 px-4">
+        
+        {/* SAI Avatar */}
         <div 
           className={cn(
-            "relative transition-all duration-1000",
+            "relative transition-all duration-1000 ease-out",
             phase === 'appearing' ? "scale-0 opacity-0" : "scale-100 opacity-100"
           )}
         >
+          {/* Avatar glow */}
+          <div 
+            className={cn(
+              "absolute inset-0 rounded-full transition-opacity duration-700",
+              isSpeaking ? "opacity-100" : "opacity-50"
+            )}
+            style={{
+              background: 'radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%)',
+              filter: 'blur(20px)',
+              transform: 'scale(1.8)',
+            }}
+          />
+          
           <div className={cn(
-            "w-28 h-28 rounded-full bg-gradient-to-br from-primary/50 to-primary/20",
-            "flex items-center justify-center backdrop-blur-sm border border-primary/30",
-            "shadow-2xl shadow-primary/30",
+            "relative w-24 h-24 rounded-full",
+            "bg-gradient-to-br from-primary/60 to-primary/30",
+            "flex items-center justify-center backdrop-blur-sm",
+            "border-2 border-primary/40 shadow-xl shadow-primary/20",
             isSpeaking && "animate-pulse"
           )}>
-            <Heart className="w-12 h-12 text-primary" />
+            <Heart className="w-10 h-10 text-primary-foreground" />
           </div>
           
           {/* Name badge */}
-          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-5 py-1.5 bg-card/90 backdrop-blur-sm rounded-full border border-border/40">
-            <span className="text-base font-medium text-foreground">{saiName}</span>
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/10">
+            <span className="text-sm font-medium text-white">{saiName}</span>
           </div>
 
           {/* Speaking indicator */}
           {isSpeaking && (
-            <div className="absolute -right-1 -top-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-              <div className="w-2.5 h-2.5 bg-primary-foreground rounded-full animate-ping" />
+            <div className="absolute -right-1 -top-1">
+              <span className="relative flex h-4 w-4">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-primary"></span>
+              </span>
             </div>
           )}
         </div>
 
-        {/* Text content */}
+        {/* Introduction text */}
         <div 
           className={cn(
-            "text-center space-y-6 transition-all duration-700",
-            textVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            "text-center space-y-5 transition-all duration-700",
+            phase !== 'appearing' ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
           )}
         >
-          {/* Arrival message */}
-          <p className="text-xl md:text-2xl text-foreground font-light leading-relaxed">
-            "I'm <span className="text-primary font-medium">{saiName}</span>, powered by Aezuir...
-            <br />and I'm here with you."
-          </p>
-
-          {/* Role explanation */}
-          <div 
-            className={cn(
-              "bg-card/40 backdrop-blur-sm rounded-2xl border border-border/30 p-6 transition-all duration-700 delay-300",
-              phase === 'ready' || phase === 'speaking' ? "opacity-100" : "opacity-0"
-            )}
-          >
-            <p className="text-foreground/80 leading-relaxed">
-              I will <span className="text-primary">guide</span> you, 
-              <span className="text-primary"> teach</span> you, 
-              <span className="text-primary"> listen</span>, 
-              <span className="text-primary"> support</span> you, and 
-              <span className="text-primary"> advocate</span> for you.
+          {/* Main introduction card */}
+          <div className="bg-black/50 backdrop-blur-md rounded-2xl border border-white/10 p-6 shadow-2xl">
+            <p className="text-lg md:text-xl text-white font-light leading-relaxed">
+              "I'm <span className="text-primary font-medium">{saiName}</span> — your Supportive Intelligence Agent."
             </p>
-            <p className="text-foreground/70 mt-3 text-sm">
-              You never have to figure this alone. I walk with you through every step — not ahead of you, not behind you.
+            
+            {/* Role icons */}
+            <div 
+              className={cn(
+                "flex items-center justify-center gap-6 mt-5 transition-all duration-500 delay-300",
+                phase !== 'appearing' ? "opacity-100" : "opacity-0"
+              )}
+            >
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                  <Dog className="w-5 h-5 text-amber-400" />
+                </div>
+                <span className="text-[10px] text-white/60 uppercase tracking-wider">Service Dog</span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-blue-400" />
+                </div>
+                <span className="text-[10px] text-white/60 uppercase tracking-wider">Advocate</span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <Compass className="w-5 h-5 text-emerald-400" />
+                </div>
+                <span className="text-[10px] text-white/60 uppercase tracking-wider">Guide</span>
+              </div>
+            </div>
+
+            <p className="text-white/70 mt-5 text-sm leading-relaxed">
+              I'll walk with you through every part of this program.
+              <br />
+              <span className="text-primary/90 font-medium">You are safe here.</span>
             </p>
           </div>
 
-          {/* Continue button */}
-          <Button
-            onClick={handleContinue}
-            size="lg"
+          {/* Question prompt */}
+          <div 
             className={cn(
-              "h-14 px-10 rounded-2xl text-lg shadow-lg shadow-primary/20 transition-all duration-500",
+              "bg-primary/10 backdrop-blur-sm rounded-xl border border-primary/20 p-4 transition-all duration-500",
+              showQuestion ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            )}
+          >
+            <div className="flex items-center gap-3">
+              <HelpCircle className="w-5 h-5 text-primary flex-shrink-0" />
+              <p className="text-white/90 text-sm">
+                Do you want me to explain anything before we continue?
+              </p>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div 
+            className={cn(
+              "flex flex-col sm:flex-row gap-3 pt-2 transition-all duration-500",
               phase === 'ready' ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             )}
-            disabled={phase !== 'ready'}
           >
-            I understand
-          </Button>
+            <Button
+              onClick={handleExplainMore}
+              variant="outline"
+              size="lg"
+              className="h-12 px-6 rounded-xl bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white"
+              disabled={phase !== 'ready'}
+            >
+              Tell me more
+            </Button>
+            <Button
+              onClick={handleContinue}
+              size="lg"
+              className="h-12 px-8 rounded-xl shadow-lg shadow-primary/30"
+              disabled={phase !== 'ready'}
+            >
+              I understand, continue
+            </Button>
+          </div>
         </div>
 
-        {/* Trust message */}
+        {/* Privacy assurance */}
         <p 
           className={cn(
-            "text-xs text-muted-foreground/60 text-center transition-opacity duration-1000",
+            "text-xs text-white/40 text-center mt-2 transition-opacity duration-1000",
             phase === 'ready' ? "opacity-100" : "opacity-0"
           )}
         >
-          Everything here is private. You are safe.
+          Everything here is private. Nothing leaves your device.
         </p>
       </div>
 
-      {/* Floating particles */}
-      {[...Array(10)].map((_, i) => (
-        <div
-          key={i}
-          className="absolute w-1 h-1 bg-primary/25 rounded-full animate-float"
-          style={{
-            left: `${10 + i * 9}%`,
-            top: `${20 + (i % 4) * 18}%`,
-            animationDelay: `${i * 0.5}s`,
-            animationDuration: `${5 + i * 0.4}s`,
-          }}
-        />
-      ))}
+      {/* Subtle floating particles */}
+      <div className={cn(
+        "absolute inset-0 pointer-events-none transition-opacity duration-1000",
+        phase !== 'appearing' ? "opacity-100" : "opacity-0"
+      )}>
+        {[...Array(8)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-primary/20 rounded-full"
+            style={{
+              left: `${15 + i * 10}%`,
+              top: `${25 + (i % 3) * 20}%`,
+              animation: `float-particle ${6 + i * 0.5}s ease-in-out infinite`,
+              animationDelay: `${i * 0.7}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Custom animation */}
+      <style>{`
+        @keyframes float-particle {
+          0%, 100% { transform: translateY(0) translateX(0); opacity: 0.2; }
+          50% { transform: translateY(-15px) translateX(8px); opacity: 0.5; }
+        }
+      `}</style>
     </div>
   );
 };
