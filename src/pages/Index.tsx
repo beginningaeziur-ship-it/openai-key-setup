@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSAI } from "@/contexts/SAIContext";
+import { useMicrophone } from "@/contexts/MicrophoneContext";
 import { LogoSplash } from "@/components/onboarding/LogoSplash";
 import { SAIArrival } from "@/components/onboarding/SAIArrival";
 import { OnboardingExplanation } from "@/components/onboarding/OnboardingExplanation";
@@ -20,6 +21,7 @@ type OnboardingPhase =
 const Index = () => {
   const navigate = useNavigate();
   const { onboarding, userProfile, setUserProfile, completeOnboarding } = useSAI();
+  const { enableMicrophone, isSupported } = useMicrophone();
   
   const [phase, setPhase] = useState<OnboardingPhase>(() => {
     // If already completed, skip to room
@@ -38,7 +40,12 @@ const Index = () => {
     }
   }, [phase, onboarding.completed, navigate]);
 
-  const handleSplashComplete = () => {
+  const handleSplashComplete = async () => {
+    // Enable microphone after logo splash for voice-first experience
+    if (isSupported) {
+      console.log('[Index] Enabling microphone after splash...');
+      await enableMicrophone();
+    }
     setPhase('arrival');
   };
 
