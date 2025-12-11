@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Captions, CaptionsOff } from 'lucide-react';
 import { ConversationalScreen } from './ConversationalScreen';
 import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
+import { useAccessibility } from '@/contexts/AccessibilityContext';
+import { AccessibilityButton } from '@/components/accessibility/AccessibilityButton';
 
 interface SAIArrivalProps {
   saiName: string;
@@ -17,9 +18,9 @@ export const SAIArrival: React.FC<SAIArrivalProps> = ({
 }) => {
   const [hasAskedQuestion, setHasAskedQuestion] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const [captionsEnabled, setCaptionsEnabled] = useState(false);
   const [currentCaption, setCurrentCaption] = useState('');
   const { speak, stopSpeaking } = useVoiceSettings();
+  const { captionsEnabled } = useAccessibility();
 
   // SAI's introduction - spoken aloud, minimal on screen
   const introScript = `I'm ${saiName} — your Supportive Intelligence Agent. Think of me as a service dog, an advocate, a guide. I'll walk with you through every step. You are safe here. Do you have any questions before we continue?`;
@@ -87,23 +88,8 @@ export const SAIArrival: React.FC<SAIArrivalProps> = ({
       listenAfterSpeech={true}
       hesitationThreshold={10000}
     >
-      {/* Closed Caption Toggle - Top Right */}
-      <div className="absolute top-4 right-4 z-50">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setCaptionsEnabled(!captionsEnabled)}
-          className="bg-black/40 hover:bg-black/60 text-white border border-white/20 gap-2"
-          title={captionsEnabled ? "Turn off captions" : "Turn on captions"}
-        >
-          {captionsEnabled ? (
-            <Captions className="h-5 w-5" />
-          ) : (
-            <CaptionsOff className="h-5 w-5" />
-          )}
-          <span className="text-xs">CC</span>
-        </Button>
-      </div>
+      {/* Accessibility Settings - Top Right */}
+      <AccessibilityButton variant="floating" />
 
       {/* Closed Caption Display */}
       {captionsEnabled && currentCaption && (
