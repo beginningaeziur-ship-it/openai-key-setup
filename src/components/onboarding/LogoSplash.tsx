@@ -16,18 +16,22 @@ export const LogoSplash: React.FC<LogoSplashProps> = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Create and play ambient intro sound
+    // Create and play cinematic intro sound
     audioRef.current = new Audio();
-    audioRef.current.volume = 0.3;
+    audioRef.current.volume = 0.5;
     
-    // Use a gentle chime/ambient sound URL (royalty-free)
-    audioRef.current.src = 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3';
+    // Cinematic dramatic whoosh/reveal sound (royalty-free)
+    audioRef.current.src = 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3';
     
     // Play sound with user interaction fallback
     const playSound = () => {
-      audioRef.current?.play().catch(() => {
-        // Sound blocked - continue silently
-      });
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch(() => {
+          // Sound blocked - continue silently
+          console.log('[Logo] Sound autoplay blocked');
+        });
+      }
     };
 
     // Phase timing for cinematic effect
