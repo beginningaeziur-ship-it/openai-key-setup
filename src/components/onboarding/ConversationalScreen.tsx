@@ -47,10 +47,12 @@ export const ConversationalScreen: React.FC<ConversationalScreenProps> = ({
   
   const { speak, stopSpeaking, isSpeaking, voiceEnabled, setVoiceEnabled, isLoading } = useVoiceSettings();
   const { 
-    isMicEnabled, 
+    isMicEnabled,
+    isMicMuted,
     isListening, 
     lastTranscript, 
-    enableMicrophone, 
+    enableMicrophone,
+    toggleMute,
     clearTranscript,
     hasPermission 
   } = useMicrophone();
@@ -169,15 +171,16 @@ export const ConversationalScreen: React.FC<ConversationalScreenProps> = ({
 
           {/* Mic toggle */}
           <button
-            onClick={isMicEnabled ? undefined : handleEnableMic}
+            onClick={isMicEnabled ? toggleMute : handleEnableMic}
             className={cn(
               "p-2.5 rounded-full transition-all",
               "bg-black/40 backdrop-blur-md border border-white/10",
               "hover:bg-black/60",
-              isListening && "ring-2 ring-emerald-500/50"
+              isListening && !isMicMuted && "ring-2 ring-emerald-500/50"
             )}
+            title={isMicEnabled ? (isMicMuted ? "Unmute microphone" : "Mute microphone") : "Enable microphone"}
           >
-            {isMicEnabled ? (
+            {isMicEnabled && !isMicMuted ? (
               <Mic className={cn("w-5 h-5", isListening ? "text-emerald-400 animate-pulse" : "text-white/80")} />
             ) : (
               <MicOff className="w-5 h-5 text-white/50" />
@@ -190,11 +193,11 @@ export const ConversationalScreen: React.FC<ConversationalScreenProps> = ({
           "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
           "bg-black/40 backdrop-blur-md border border-white/10",
           phase === 'speaking' && "border-primary/30 text-primary",
-          phase === 'listening' && "border-emerald-500/30 text-emerald-400",
+          phase === 'listening' && !isMicMuted && "border-emerald-500/30 text-emerald-400",
         )}>
           {isLoading && "Thinking..."}
           {isSpeaking && "SAI speaking..."}
-          {phase === 'listening' && !isSpeaking && (isListening ? "Listening..." : "Your turn")}
+          {phase === 'listening' && !isSpeaking && (isListening && !isMicMuted ? "Listening..." : isMicMuted ? "Mic muted" : "Your turn")}
           {phase === 'waiting' && !isSpeaking && "Ready"}
         </div>
       </div>
@@ -281,7 +284,7 @@ export const ConversationalScreen: React.FC<ConversationalScreenProps> = ({
         )}
 
         {/* Listening indicator when it's user's turn */}
-        {phase === 'listening' && isListening && !isSpeaking && (
+        {phase === 'listening' && isListening && !isMicMuted && !isSpeaking && (
           <div 
             className={cn(
               "mt-6 flex flex-col items-center gap-2 transition-all duration-500",
@@ -304,16 +307,16 @@ export const ConversationalScreen: React.FC<ConversationalScreenProps> = ({
           </div>
         )}
 
-        {/* Enable mic prompt if not enabled */}
-        {phase === 'listening' && !isMicEnabled && !isSpeaking && (
+        {/* Enable mic prompt if not enabled or muted */}
+        {phase === 'listening' && (!isMicEnabled || isMicMuted) && !isSpeaking && (
           <Button
-            onClick={handleEnableMic}
+            onClick={isMicEnabled ? toggleMute : handleEnableMic}
             variant="outline"
             size="sm"
             className="mt-6 bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
             <Mic className="w-4 h-4 mr-2" />
-            Enable microphone to respond
+            {isMicEnabled ? "Unmute to respond" : "Enable microphone to respond"}
           </Button>
         )}
       </div>
