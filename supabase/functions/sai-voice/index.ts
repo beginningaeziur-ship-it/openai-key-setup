@@ -101,9 +101,19 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('cy-voice error:', error);
+    console.error('sai-voice error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Voice generation failed';
+    
+    // Check if error message indicates quota issue
+    if (errorMessage.includes('401') || errorMessage.includes('quota')) {
+      return new Response(
+        JSON.stringify({ error: 'quota_exceeded', fallbackToBrowser: true }),
+        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Voice generation failed' }),
+      JSON.stringify({ error: errorMessage, fallbackToBrowser: true }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
