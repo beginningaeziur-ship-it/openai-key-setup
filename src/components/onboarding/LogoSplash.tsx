@@ -1,261 +1,279 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import aezuirLogo from '@/assets/aezuir-logo.png';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LogoSplashProps {
   onComplete: () => void;
   duration?: number;
 }
 
-export const LogoSplash: React.FC<LogoSplashProps> = ({ 
-  onComplete, 
-  duration = 4500 
-}) => {
-  const [phase, setPhase] = useState<'initial' | 'reveal' | 'glow' | 'text' | 'fade'>('initial');
-  const [isVisible, setIsVisible] = useState(true);
+// Movie-studio-style animation phases
+type Phase = 'black' | 'fadeIn' | 'peak' | 'hold' | 'fadeOut' | 'complete';
+
+export const LogoSplash = ({ onComplete, duration = 6000 }: LogoSplashProps) => {
+  const [phase, setPhase] = useState<Phase>('black');
+  const [audioLoaded, setAudioLoaded] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const volumeIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Create and play cinematic intro sound
-    audioRef.current = new Audio();
-    audioRef.current.volume = 0.5;
-    
-    // Cinematic dramatic whoosh/reveal sound (royalty-free)
-    audioRef.current.src = 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3';
-    
-    // Play sound with user interaction fallback
-    const playSound = () => {
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(() => {
-          // Sound blocked - continue silently
-          console.log('[Logo] Sound autoplay blocked');
-        });
+    // Generate cinematic sound from edge function
+    const loadCinematicSound = async () => {
+      try {
+        console.log('[Logo] Fetching cinematic sound...');
+        const { data, error } = await supabase.functions.invoke('generate-cinematic-sound');
+        
+        if (error) {
+          console.error('[Logo] Error generating sound:', error);
+          // Continue without sound
+          setAudioLoaded(true);
+          return;
+        }
+
+        if (data?.audioContent) {
+          audioRef.current = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
+          audioRef.current.volume = 0.7;
+          console.log('[Logo] Cinematic sound loaded');
+          setAudioLoaded(true);
+        } else {
+          setAudioLoaded(true);
+        }
+      } catch (err) {
+        console.error('[Logo] Failed to load sound:', err);
+        setAudioLoaded(true); // Continue without sound
       }
     };
 
-    // Phase timing for cinematic effect
-    const timers: NodeJS.Timeout[] = [];
-
-    // Initial delay, then reveal
-    timers.push(setTimeout(() => {
-      setPhase('reveal');
-      playSound();
-    }, 300));
-
-    // Glow phase
-    timers.push(setTimeout(() => {
-      setPhase('glow');
-    }, 1200));
-
-    // Text reveal
-    timers.push(setTimeout(() => {
-      setPhase('text');
-    }, 2000));
-
-    // Fade out
-    timers.push(setTimeout(() => {
-      setPhase('fade');
-    }, duration - 1000));
-
-    // Complete
-    timers.push(setTimeout(() => {
-      setIsVisible(false);
-      onComplete();
-    }, duration));
+    loadCinematicSound();
 
     return () => {
-      timers.forEach(clearTimeout);
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
       }
+      if (volumeIntervalRef.current) {
+        clearInterval(volumeIntervalRef.current);
+      }
     };
-  }, [duration, onComplete]);
+  }, []);
 
-  if (!isVisible) return null;
+  useEffect(() => {
+    if (!audioLoaded) return;
+
+    // Phase timing for movie-studio-style cinematic effect
+    // Total: ~6 seconds
+    const timings = {
+      black: 500,      // Dark anticipation
+      fadeIn: 1500,    // Logo emerges with sound building
+      peak: 1500,      // Full reveal, dramatic hit
+      hold: 1000,      // Let it breathe
+      fadeOut: 1500,   // Graceful fade to black
+    };
+
+    const timers: NodeJS.Timeout[] = [];
+
+    // Phase 1: Black (anticipation) -> Fade In
+    timers.push(setTimeout(() => {
+      setPhase('fadeIn');
+      // Play sound at fade in start
+      if (audioRef.current) {
+        audioRef.current.play().catch(() => {
+          console.log('[Logo] Sound autoplay blocked');
+        });
+      }
+    }, timings.black));
+
+    // Phase 2: Fade In -> Peak
+    timers.push(setTimeout(() => {
+      setPhase('peak');
+    }, timings.black + timings.fadeIn));
+
+    // Phase 3: Peak -> Hold
+    timers.push(setTimeout(() => {
+      setPhase('hold');
+    }, timings.black + timings.fadeIn + timings.peak));
+
+    // Phase 4: Hold -> Fade Out
+    timers.push(setTimeout(() => {
+      setPhase('fadeOut');
+      // Start volume fade out
+      if (audioRef.current) {
+        volumeIntervalRef.current = setInterval(() => {
+          if (audioRef.current && audioRef.current.volume > 0.05) {
+            audioRef.current.volume = Math.max(0, audioRef.current.volume - 0.05);
+          }
+        }, 100);
+      }
+    }, timings.black + timings.fadeIn + timings.peak + timings.hold));
+
+    // Phase 5: Complete
+    timers.push(setTimeout(() => {
+      setPhase('complete');
+      if (volumeIntervalRef.current) {
+        clearInterval(volumeIntervalRef.current);
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      onComplete();
+    }, timings.black + timings.fadeIn + timings.peak + timings.hold + timings.fadeOut));
+
+    return () => {
+      timers.forEach(clearTimeout);
+    };
+  }, [audioLoaded, onComplete]);
+
+  // Calculate opacity and scale based on phase
+  const getLogoOpacity = () => {
+    switch (phase) {
+      case 'black': return 0;
+      case 'fadeIn': return 1;
+      case 'peak': return 1;
+      case 'hold': return 1;
+      case 'fadeOut': return 0;
+      case 'complete': return 0;
+      default: return 0;
+    }
+  };
+
+  const getLogoScale = () => {
+    switch (phase) {
+      case 'black': return 0.8;
+      case 'fadeIn': return 1;
+      case 'peak': return 1.05;
+      case 'hold': return 1.05;
+      case 'fadeOut': return 1.1;
+      case 'complete': return 1.1;
+      default: return 0.8;
+    }
+  };
+
+  const getGlowIntensity = () => {
+    switch (phase) {
+      case 'black': return 0;
+      case 'fadeIn': return 0.5;
+      case 'peak': return 1;
+      case 'hold': return 0.8;
+      case 'fadeOut': return 0;
+      case 'complete': return 0;
+      default: return 0;
+    }
+  };
+
+  if (phase === 'complete') return null;
 
   return (
     <div 
       className={cn(
         "fixed inset-0 z-[100] flex items-center justify-center overflow-hidden",
-        "bg-[#050508]",
-        "transition-opacity duration-1000",
-        phase === 'fade' ? "opacity-0" : "opacity-100"
+        "transition-opacity duration-1000"
       )}
+      style={{
+        backgroundColor: '#000000',
+        opacity: phase === 'fadeOut' ? 0 : 1,
+      }}
     >
-      {/* Deep ambient gradient background */}
+      {/* Deep black background */}
+      <div className="absolute inset-0 bg-black" />
+
+      {/* Subtle ambient gradient - only visible during peak */}
       <div 
-        className={cn(
-          "absolute inset-0 transition-opacity duration-2000",
-          phase !== 'initial' ? "opacity-100" : "opacity-0"
-        )}
+        className="absolute inset-0 transition-opacity duration-1000"
         style={{
-          background: 'radial-gradient(ellipse at center, rgba(99, 102, 241, 0.08) 0%, rgba(5, 5, 8, 0) 70%)'
+          opacity: phase === 'peak' || phase === 'hold' ? 0.3 : 0,
+          background: 'radial-gradient(ellipse at center, rgba(59, 130, 246, 0.1) 0%, transparent 70%)',
         }}
       />
 
-      {/* Cinematic light rays */}
-      <div className={cn(
-        "absolute inset-0 overflow-hidden transition-opacity duration-1500",
-        phase === 'glow' || phase === 'text' || phase === 'fade' ? "opacity-100" : "opacity-0"
-      )}>
-        {[...Array(6)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute top-1/2 left-1/2 origin-center"
-            style={{
-              width: '2px',
-              height: '400px',
-              background: `linear-gradient(to bottom, transparent, rgba(99, 102, 241, ${0.1 - i * 0.015}), transparent)`,
-              transform: `translate(-50%, -50%) rotate(${i * 30}deg)`,
-              animation: 'ray-pulse 3s ease-in-out infinite',
-              animationDelay: `${i * 0.2}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Primary glow orb */}
+      {/* Primary glow orb behind logo */}
       <div 
-        className={cn(
-          "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
-          "rounded-full transition-all duration-2000 ease-out",
-          phase === 'initial' ? "w-0 h-0 opacity-0" :
-          phase === 'reveal' ? "w-[200px] h-[200px] opacity-40" :
-          phase === 'glow' || phase === 'text' ? "w-[600px] h-[600px] opacity-30" :
-          "w-[800px] h-[800px] opacity-0"
-        )}
+        className="absolute w-96 h-96 rounded-full transition-all duration-1000"
         style={{
-          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, rgba(99, 102, 241, 0.1) 40%, transparent 70%)',
-          filter: 'blur(60px)',
+          opacity: getGlowIntensity() * 0.6,
+          transform: `scale(${0.5 + getGlowIntensity() * 0.5})`,
+          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, rgba(59, 130, 246, 0.1) 40%, transparent 70%)',
+          filter: 'blur(40px)',
         }}
       />
 
-      {/* Secondary pulse ring */}
+      {/* Secondary pulse ring - only during peak */}
       <div 
-        className={cn(
-          "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
-          "rounded-full border border-primary/20 transition-all duration-1500",
-          phase === 'glow' || phase === 'text' ? "w-[300px] h-[300px] opacity-100" : "w-0 h-0 opacity-0"
-        )}
+        className="absolute w-[500px] h-[500px] rounded-full border border-blue-500/20 transition-all duration-500"
         style={{
-          animation: phase === 'glow' || phase === 'text' ? 'ring-expand 2s ease-out infinite' : 'none',
+          opacity: phase === 'peak' ? 0.5 : 0,
+          transform: `scale(${phase === 'peak' ? 1.2 : 0.8})`,
         }}
       />
 
-      {/* Logo container */}
+      {/* Logo container with dramatic transitions */}
       <div 
-        className={cn(
-          "relative z-10 flex flex-col items-center gap-8 transition-all duration-1000",
-          phase === 'fade' ? "scale-110 opacity-0" : "scale-100 opacity-100"
-        )}
+        className="relative z-10 flex flex-col items-center transition-all ease-out"
+        style={{
+          opacity: getLogoOpacity(),
+          transform: `scale(${getLogoScale()})`,
+          transitionDuration: '1500ms',
+        }}
       >
-        {/* Logo with cinematic entrance */}
+        {/* Logo glow effect */}
         <div 
-          className={cn(
-            "relative transition-all duration-1000 ease-out",
-            phase === 'initial' ? "scale-50 opacity-0 blur-lg" :
-            phase === 'reveal' ? "scale-100 opacity-100 blur-0" :
-            "scale-100 opacity-100 blur-0"
-          )}
-        >
-          {/* Logo glow effect */}
-          <div 
-            className={cn(
-              "absolute inset-0 transition-opacity duration-1000",
-              phase === 'glow' || phase === 'text' ? "opacity-100" : "opacity-0"
-            )}
-            style={{
-              background: `radial-gradient(circle, rgba(99, 102, 241, 0.5) 0%, transparent 70%)`,
-              filter: 'blur(40px)',
-              transform: 'scale(1.5)',
-            }}
-          />
-          
-          <img 
-            src={aezuirLogo} 
-            alt="Aezuir" 
-            className={cn(
-              "relative w-36 h-36 md:w-44 md:h-44 object-contain",
-              phase === 'glow' || phase === 'text' ? "drop-shadow-[0_0_50px_rgba(99,102,241,0.5)]" : ""
-            )}
-          />
-        </div>
-        
-        {/* Text reveal with stagger */}
-        <div 
-          className={cn(
-            "text-center space-y-2 transition-all duration-700",
-            phase === 'text' || phase === 'fade' ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          )}
-        >
-          <p 
-            className="text-[10px] text-muted-foreground/50 uppercase tracking-[0.4em] font-light"
-            style={{ transitionDelay: phase === 'text' ? '0.2s' : '0s' }}
-          >
-            Powered by
-          </p>
-          <p 
-            className={cn(
-              "text-2xl font-extralight tracking-[0.2em] transition-all duration-700",
-              "bg-gradient-to-r from-foreground/70 via-foreground/90 to-foreground/70 bg-clip-text text-transparent"
-            )}
-            style={{ transitionDelay: phase === 'text' ? '0.4s' : '0s' }}
-          >
-            AEZUIR
-          </p>
-        </div>
-      </div>
+          className="absolute inset-0 transition-opacity duration-700"
+          style={{
+            opacity: getGlowIntensity(),
+            filter: 'blur(30px)',
+            background: 'radial-gradient(circle, rgba(59, 130, 246, 0.5) 0%, transparent 70%)',
+          }}
+        />
 
-      {/* Floating particles */}
-      <div className={cn(
-        "absolute inset-0 pointer-events-none transition-opacity duration-1000",
-        phase === 'glow' || phase === 'text' ? "opacity-100" : "opacity-0"
-      )}>
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-primary/30"
-            style={{
-              width: `${2 + Math.random() * 3}px`,
-              height: `${2 + Math.random() * 3}px`,
-              left: `${10 + Math.random() * 80}%`,
-              top: `${10 + Math.random() * 80}%`,
-              animation: `float-particle ${5 + Math.random() * 5}s ease-in-out infinite`,
-              animationDelay: `${Math.random() * 3}s`,
-            }}
-          />
-        ))}
+        {/* Main logo */}
+        <img 
+          src={aezuirLogo} 
+          alt="AEZUIR" 
+          className="w-48 h-48 md:w-64 md:h-64 object-contain relative z-10 drop-shadow-2xl"
+          style={{
+            filter: phase === 'peak' ? 'drop-shadow(0 0 30px rgba(59, 130, 246, 0.5))' : 'none',
+          }}
+        />
+        
+        {/* "Powered by AEZUIR" text - appears at peak */}
+        <div 
+          className="mt-8 flex flex-col items-center gap-2 transition-all duration-700"
+          style={{
+            opacity: phase === 'peak' || phase === 'hold' ? 1 : 0,
+            transform: `translateY(${phase === 'peak' || phase === 'hold' ? 0 : 20}px)`,
+          }}
+        >
+          <span className="text-blue-400/60 text-sm tracking-[0.3em] uppercase font-light">
+            Powered by
+          </span>
+          <span className="text-white text-3xl md:text-4xl font-bold tracking-wider">
+            AEZUIR
+          </span>
+        </div>
       </div>
 
       {/* Cinematic letterbox bars */}
-      <div className={cn(
-        "absolute top-0 left-0 right-0 h-16 bg-black transition-all duration-1000",
-        phase === 'fade' ? "h-0" : "h-16"
-      )} />
-      <div className={cn(
-        "absolute bottom-0 left-0 right-0 h-16 bg-black transition-all duration-1000",
-        phase === 'fade' ? "h-0" : "h-16"
-      )} />
+      <div 
+        className="absolute top-0 left-0 right-0 h-16 bg-black transition-transform duration-1000"
+        style={{
+          transform: `translateY(${phase === 'fadeIn' || phase === 'peak' || phase === 'hold' ? 0 : -64}px)`,
+        }}
+      />
+      <div 
+        className="absolute bottom-0 left-0 right-0 h-16 bg-black transition-transform duration-1000"
+        style={{
+          transform: `translateY(${phase === 'fadeIn' || phase === 'peak' || phase === 'hold' ? 0 : 64}px)`,
+        }}
+      />
 
-      {/* Inline styles for custom animations */}
-      <style>{`
-        @keyframes ray-pulse {
-          0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) rotate(var(--rotation)) scaleY(1); }
-          50% { opacity: 0.6; transform: translate(-50%, -50%) rotate(var(--rotation)) scaleY(1.1); }
-        }
-        @keyframes ring-expand {
-          0% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
-          100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
-        }
-        @keyframes float-particle {
-          0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
-          25% { transform: translateY(-20px) translateX(10px); opacity: 0.6; }
-          50% { transform: translateY(-10px) translateX(-5px); opacity: 0.4; }
-          75% { transform: translateY(-30px) translateX(15px); opacity: 0.5; }
-        }
-      `}</style>
+      {/* Vignette effect for cinema feel */}
+      <div 
+        className="absolute inset-0 pointer-events-none transition-opacity duration-1000"
+        style={{
+          opacity: phase === 'peak' || phase === 'hold' ? 0.4 : 0,
+          background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.8) 100%)',
+        }}
+      />
     </div>
   );
 };
