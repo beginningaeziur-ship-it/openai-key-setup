@@ -243,29 +243,31 @@ export function VoiceSettingsProvider({ children }: VoiceSettingsProviderProps) 
         body: { text, voice: voiceId },
       });
       
-      // Check for quota exceeded - switch to browser fallback
-      if (error || data?.error) {
-        const errorMsg = error?.message || data?.error || '';
-        const shouldFallback = data?.fallbackToBrowser || 
-          errorMsg.includes('quota_exceeded') || 
-          errorMsg.includes('TTS failed: 401') ||
-          errorMsg.includes('TTS failed: 402');
+      // Check for quota exceeded or any error that should trigger fallback
+      const hasError = error || data?.error;
+      const shouldFallback = data?.fallbackToBrowser || 
+        data?.error?.includes?.('quota_exceeded') ||
+        data?.error?.includes?.('401') ||
+        data?.error?.includes?.('402') ||
+        error?.message?.includes?.('402') ||
+        error?.message?.includes?.('quota');
+      
+      if (hasError && shouldFallback) {
+        console.log('[VoiceSettings] ElevenLabs unavailable, switching to browser TTS');
+        setUseBrowserTTS(true);
         
-        if (shouldFallback) {
-          console.log('[VoiceSettings] ElevenLabs quota exceeded, switching to browser TTS');
-          setUseBrowserTTS(true);
-          
-          try {
-            await speakWithBrowser(text);
-          } catch (browserErr) {
-            console.error('[VoiceSettings] Browser TTS fallback failed:', browserErr);
-            speakLockRef.current = false;
-            setIsLoading(false);
-          }
-          return;
+        try {
+          await speakWithBrowser(text);
+        } catch (browserErr) {
+          console.error('[VoiceSettings] Browser TTS fallback failed:', browserErr);
+          speakLockRef.current = false;
+          setIsLoading(false);
         }
-        
-        console.error('[VoiceSettings] TTS error:', errorMsg);
+        return;
+      }
+      
+      if (hasError) {
+        console.error('[VoiceSettings] TTS error:', error?.message || data?.error);
         speakLockRef.current = false;
         setIsLoading(false);
         return;
