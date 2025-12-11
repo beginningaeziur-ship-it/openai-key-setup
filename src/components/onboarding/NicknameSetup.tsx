@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { User, Heart, Volume2 } from 'lucide-react';
+import { Heart, Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
+import { useMicrophone } from '@/contexts/MicrophoneContext';
+import comfortWaitingBg from '@/assets/comfort-waiting-bg.jpg';
 
 interface NicknameSetupProps {
   onComplete: (nickname: string) => void;
@@ -12,106 +14,170 @@ interface NicknameSetupProps {
 
 export const NicknameSetup: React.FC<NicknameSetupProps> = ({
   onComplete,
-  onBack,
 }) => {
   const [nickname, setNickname] = useState('');
   const [isVisible, setIsVisible] = useState(false);
+  const [hasSpokeIntro, setHasSpokeIntro] = useState(false);
   
-  const { speak, isSpeaking, voiceEnabled } = useVoiceSettings();
+  const { speak, stopSpeaking, isSpeaking, voiceEnabled, setVoiceEnabled } = useVoiceSettings();
+  const { isMicEnabled, isListening, lastTranscript, enableMicrophone, clearTranscript } = useMicrophone();
 
-  const explanation = "Now tell me what you want me to call you. Not your real name — just the name that feels safe.";
+  const introScript = "Tell me what you want me to call you. Not your real name — something safe and comfortable for you.";
 
   useEffect(() => {
     setIsVisible(true);
-    if (voiceEnabled) {
-      speak(explanation);
-    }
+    const timer = setTimeout(async () => {
+      if (voiceEnabled && !hasSpokeIntro) {
+        setHasSpokeIntro(true);
+        await speak(introScript);
+      }
+    }, 600);
+
+    return () => {
+      clearTimeout(timer);
+      stopSpeaking();
+    };
   }, []);
 
-  const handleContinue = () => {
+  // Handle voice input for nickname
+  useEffect(() => {
+    if (lastTranscript && lastTranscript.length > 1) {
+      // Extract a reasonable nickname from speech
+      const words = lastTranscript.trim().split(' ');
+      // Take first word or "call me X" pattern
+      let extractedName = words[0];
+      
+      const callMeIndex = lastTranscript.toLowerCase().indexOf('call me');
+      if (callMeIndex !== -1) {
+        const afterCallMe = lastTranscript.slice(callMeIndex + 7).trim();
+        extractedName = afterCallMe.split(' ')[0] || extractedName;
+      }
+
+      if (extractedName && extractedName.length > 1) {
+        setNickname(extractedName.charAt(0).toUpperCase() + extractedName.slice(1).toLowerCase());
+      }
+      clearTranscript();
+    }
+  }, [lastTranscript, clearTranscript]);
+
+  const handleContinue = async () => {
     if (nickname.trim()) {
+      if (voiceEnabled) {
+        await speak(`Nice to meet you, ${nickname}. I'll remember that.`);
+      }
       onComplete(nickname.trim());
     }
+  };
+
+  const toggleVoice = () => {
+    if (voiceEnabled) stopSpeaking();
+    setVoiceEnabled(!voiceEnabled);
   };
 
   return (
     <div 
       className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center",
-        "bg-gradient-to-b from-[#0d0d1a] via-[#1a1a2e] to-[#0f0f1f]",
+        "fixed inset-0 z-50 flex flex-col overflow-hidden",
         "transition-opacity duration-700",
         isVisible ? "opacity-100" : "opacity-0"
       )}
     >
-      {/* Ambient glow */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[350px] bg-primary/10 rounded-full blur-[100px]" />
+      {/* Background */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${comfortWaitingBg})` }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/60 to-black/40" />
+
+      {/* Top controls */}
+      <div className="relative z-20 flex items-center justify-between p-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleVoice}
+            className="p-2.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60"
+          >
+            {voiceEnabled ? (
+              <Volume2 className={cn("w-5 h-5", isSpeaking ? "text-primary animate-pulse" : "text-white/80")} />
+            ) : (
+              <VolumeX className="w-5 h-5 text-white/50" />
+            )}
+          </button>
+          <button
+            onClick={!isMicEnabled ? enableMicrophone : undefined}
+            className="p-2.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60"
+          >
+            {isMicEnabled ? (
+              <Mic className={cn("w-5 h-5", isListening ? "text-emerald-400 animate-pulse" : "text-white/80")} />
+            ) : (
+              <MicOff className="w-5 h-5 text-white/50" />
+            )}
+          </button>
+        </div>
+        <div className="px-3 py-1.5 rounded-full text-xs font-medium bg-black/40 backdrop-blur-md border border-white/10 text-white/70">
+          {isSpeaking ? "SAI speaking..." : isListening ? "Listening..." : "Ready"}
+        </div>
       </div>
 
-      <div className="flex flex-col items-center gap-8 max-w-md mx-4 w-full">
-        {/* Icon */}
-        <div className={cn(
-          "w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center",
-          "border border-primary/30 shadow-lg shadow-primary/10",
-          isSpeaking && "animate-pulse"
-        )}>
-          <User className="w-10 h-10 text-primary" />
-        </div>
-
-        {/* Title */}
-        <div className="text-center space-y-3">
-          <h2 className="text-2xl font-semibold text-foreground">Your Safe Name</h2>
-          <p className="text-foreground/70 text-sm max-w-xs leading-relaxed">
-            Not your real name — just the name that feels safe. This is how I'll address you.
-          </p>
-        </div>
-
-        {/* Nickname Input */}
-        <div className="w-full max-w-xs space-y-2">
-          <div className="relative">
-            <Heart className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              type="text"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              placeholder="Enter your nickname"
-              className={cn(
-                "h-14 pl-12 text-lg",
-                "bg-card/60 border-border/40 rounded-xl"
-              )}
-              maxLength={20}
-              autoFocus
-            />
+      {/* Main content */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6">
+        {/* SAI Avatar */}
+        <div className="relative mb-6">
+          <div 
+            className={cn(
+              "absolute inset-0 rounded-full transition-all duration-500",
+              isSpeaking ? "opacity-100 scale-150" : "opacity-40 scale-125"
+            )}
+            style={{
+              background: 'radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%)',
+              filter: 'blur(25px)',
+            }}
+          />
+          <div className={cn(
+            "relative w-16 h-16 rounded-full bg-gradient-to-br from-primary/60 to-primary/30",
+            "flex items-center justify-center border-2 border-primary/40",
+            isSpeaking && "animate-pulse"
+          )}>
+            <Heart className="w-7 h-7 text-white" />
           </div>
-          <p className="text-xs text-muted-foreground/60 text-center">
-            Examples: Alex, Star, Friend, anything you like
+        </div>
+
+        {/* Nickname Card */}
+        <div className="w-full max-w-xs bg-black/50 backdrop-blur-md rounded-2xl border border-white/10 p-6">
+          <p className="text-white/80 text-sm text-center mb-4">
+            What should I call you?
+          </p>
+
+          <Input
+            type="text"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            placeholder="Your safe name..."
+            className={cn(
+              "h-14 text-center text-lg",
+              "bg-white/10 border-white/20 text-white placeholder:text-white/30"
+            )}
+            maxLength={20}
+            autoFocus
+          />
+
+          <p className="text-white/40 text-xs text-center mt-3">
+            {isMicEnabled ? "Say your name or type it" : "Type a nickname"}
           </p>
         </div>
+      </div>
 
-        {/* Actions */}
-        <div className="flex flex-col gap-3 w-full max-w-xs">
-          <Button
-            onClick={handleContinue}
-            size="lg"
-            className="w-full h-14 rounded-xl text-lg"
-            disabled={!nickname.trim()}
-          >
-            Continue
-          </Button>
-
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
-            >
-              Go back
-            </button>
-          )}
-        </div>
-
-        {/* Privacy note */}
-        <p className="text-xs text-muted-foreground/60 text-center">
-          This stays on your device. I never share it.
+      {/* Bottom action */}
+      <div className="relative z-10 p-6 pb-8">
+        <Button
+          onClick={handleContinue}
+          size="lg"
+          className="w-full max-w-xs mx-auto h-12 rounded-xl shadow-lg shadow-primary/30 block"
+          disabled={!nickname.trim()}
+        >
+          Continue
+        </Button>
+        <p className="text-white/40 text-xs text-center mt-3">
+          This stays between us
         </p>
       </div>
     </div>

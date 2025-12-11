@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { Phone, UserPlus, AlertCircle, Building, HeartHandshake, Volume2 } from 'lucide-react';
+import { Phone, UserPlus, Building, HeartHandshake, Heart, Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
+import { useMicrophone } from '@/contexts/MicrophoneContext';
+import comfortOfficeBg from '@/assets/comfort-office-bg.jpg';
 
 interface EmergencyContactSetupProps {
   onComplete: (contact: { nickname: string; phone: string } | null, alternative?: string) => void;
@@ -14,29 +16,73 @@ type ContactOption = 'add' | 'none' | 'alternative';
 
 export const EmergencyContactSetup: React.FC<EmergencyContactSetupProps> = ({
   onComplete,
-  onBack,
 }) => {
   const [option, setOption] = useState<ContactOption | null>(null);
   const [nickname, setNickname] = useState('');
   const [phone, setPhone] = useState('');
   const [alternative, setAlternative] = useState('');
   const [isVisible, setIsVisible] = useState(false);
+  const [hasSpokeIntro, setHasSpokeIntro] = useState(false);
   
-  const { speak, isSpeaking, voiceEnabled } = useVoiceSettings();
+  const { speak, stopSpeaking, isSpeaking, voiceEnabled, setVoiceEnabled } = useVoiceSettings();
+  const { isMicEnabled, isListening, lastTranscript, enableMicrophone, clearTranscript } = useMicrophone();
 
-  const explanation = "Next, choose your emergency contact. Just a nickname and a number. If you ever go silent, or something feels wrong, I will reach out and ask them to check on you.";
+  const introScript = "Now, choose your emergency contact. If you ever go silent or something feels wrong, I will reach out to check on you. You can add someone, use a hotline, or skip this for now.";
 
   useEffect(() => {
     setIsVisible(true);
-    if (voiceEnabled) {
-      speak(explanation);
-    }
+    const timer = setTimeout(async () => {
+      if (voiceEnabled && !hasSpokeIntro) {
+        setHasSpokeIntro(true);
+        await speak(introScript);
+      }
+    }, 600);
+
+    return () => {
+      clearTimeout(timer);
+      stopSpeaking();
+    };
   }, []);
 
-  const handleContinue = () => {
+  // Handle voice input
+  useEffect(() => {
+    if (lastTranscript) {
+      const lower = lastTranscript.toLowerCase();
+      
+      if (lower.includes('add') || lower.includes('someone') || lower.includes('contact')) {
+        setOption('add');
+        speak("Okay, tell me their nickname and phone number.");
+      } else if (lower.includes('hotline') || lower.includes('shelter') || lower.includes('alternative')) {
+        setOption('alternative');
+        speak("Good choice. What hotline or service should I use?");
+      } else if (lower.includes('none') || lower.includes('skip') || lower.includes("don't have")) {
+        setOption('none');
+        speak("That's okay. We can add one later when you're ready.");
+      }
+      
+      clearTranscript();
+    }
+  }, [lastTranscript, clearTranscript, speak]);
+
+  const handleOptionSelect = async (opt: ContactOption) => {
+    setOption(opt);
+    if (voiceEnabled) {
+      if (opt === 'add') {
+        await speak("Okay, enter their nickname and phone number.");
+      } else if (opt === 'alternative') {
+        await speak("Good choice. Enter the hotline or service name.");
+      } else {
+        await speak("That's okay. We can build your support network later, together.");
+      }
+    }
+  };
+
+  const handleContinue = async () => {
     if (option === 'add' && nickname.trim() && phone.trim()) {
+      if (voiceEnabled) await speak("Got it. I'll remember them.");
       onComplete({ nickname: nickname.trim(), phone: phone.trim() });
     } else if (option === 'alternative' && alternative.trim()) {
+      if (voiceEnabled) await speak("Saved. Moving on.");
       onComplete(null, alternative.trim());
     } else if (option === 'none') {
       onComplete(null);
@@ -50,69 +96,109 @@ export const EmergencyContactSetup: React.FC<EmergencyContactSetupProps> = ({
     return false;
   };
 
+  const toggleVoice = () => {
+    if (voiceEnabled) stopSpeaking();
+    setVoiceEnabled(!voiceEnabled);
+  };
+
   return (
     <div 
       className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center overflow-y-auto py-8",
-        "bg-gradient-to-b from-[#0d0d1a] via-[#1a1a2e] to-[#0f0f1f]",
+        "fixed inset-0 z-50 flex flex-col overflow-hidden",
         "transition-opacity duration-700",
         isVisible ? "opacity-100" : "opacity-0"
       )}
     >
-      {/* Ambient glow */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[350px] bg-primary/10 rounded-full blur-[100px]" />
+      {/* Background */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${comfortOfficeBg})` }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/65 to-black/45" />
+
+      {/* Top controls */}
+      <div className="relative z-20 flex items-center justify-between p-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleVoice}
+            className="p-2.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60"
+          >
+            {voiceEnabled ? (
+              <Volume2 className={cn("w-5 h-5", isSpeaking ? "text-primary animate-pulse" : "text-white/80")} />
+            ) : (
+              <VolumeX className="w-5 h-5 text-white/50" />
+            )}
+          </button>
+          <button
+            onClick={!isMicEnabled ? enableMicrophone : undefined}
+            className="p-2.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60"
+          >
+            {isMicEnabled ? (
+              <Mic className={cn("w-5 h-5", isListening ? "text-emerald-400 animate-pulse" : "text-white/80")} />
+            ) : (
+              <MicOff className="w-5 h-5 text-white/50" />
+            )}
+          </button>
+        </div>
+        <div className="px-3 py-1.5 rounded-full text-xs font-medium bg-black/40 backdrop-blur-md border border-white/10 text-white/70">
+          {isSpeaking ? "SAI speaking..." : isListening ? "Listening..." : "Ready"}
+        </div>
       </div>
 
-      <div className="flex flex-col items-center gap-6 max-w-md mx-4 w-full">
-        {/* Icon */}
-        <div className={cn(
-          "w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center",
-          "border border-primary/30 shadow-lg shadow-primary/10",
-          isSpeaking && "animate-pulse"
-        )}>
-          <Phone className="w-10 h-10 text-primary" />
+      {/* Main content */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 overflow-y-auto py-4">
+        {/* SAI Avatar */}
+        <div className="relative mb-4 flex-shrink-0">
+          <div 
+            className={cn(
+              "absolute inset-0 rounded-full transition-all duration-500",
+              isSpeaking ? "opacity-100 scale-150" : "opacity-40 scale-125"
+            )}
+            style={{
+              background: 'radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%)',
+              filter: 'blur(25px)',
+            }}
+          />
+          <div className={cn(
+            "relative w-14 h-14 rounded-full bg-gradient-to-br from-primary/60 to-primary/30",
+            "flex items-center justify-center border-2 border-primary/40",
+            isSpeaking && "animate-pulse"
+          )}>
+            <Heart className="w-6 h-6 text-white" />
+          </div>
         </div>
 
-        {/* Title */}
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-semibold text-foreground">Emergency Contact</h2>
-          <p className="text-foreground/70 text-sm max-w-xs leading-relaxed">
-            If you ever go silent or something feels wrong, I can reach out to check on you.
-          </p>
-        </div>
+        {/* Options Card */}
+        <div className="w-full max-w-xs bg-black/50 backdrop-blur-md rounded-2xl border border-white/10 p-4 space-y-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Phone className="w-4 h-4 text-primary" />
+            <span className="text-white text-sm font-medium">Emergency Contact</span>
+          </div>
 
-        {/* Options */}
-        <div className="w-full max-w-xs space-y-3">
           {/* Add contact option */}
           <button
-            onClick={() => setOption('add')}
+            onClick={() => handleOptionSelect('add')}
             className={cn(
-              "w-full p-4 rounded-xl border transition-all text-left",
-              "bg-card/40 backdrop-blur-sm",
+              "w-full p-3 rounded-xl border transition-all text-left",
               option === 'add' 
-                ? "border-primary bg-primary/10" 
-                : "border-border/40 hover:border-border/60"
+                ? "border-primary bg-primary/20" 
+                : "border-white/10 bg-white/5 hover:bg-white/10"
             )}
           >
             <div className="flex items-center gap-3">
-              <UserPlus className="w-5 h-5 text-primary" />
-              <div>
-                <p className="font-medium text-foreground">Add a contact</p>
-                <p className="text-xs text-muted-foreground">Someone I can reach if needed</p>
-              </div>
+              <UserPlus className="w-4 h-4 text-primary" />
+              <span className="text-white text-sm">Add someone</span>
             </div>
           </button>
 
-          {/* Add contact form */}
           {option === 'add' && (
-            <div className="space-y-3 p-4 bg-card/30 rounded-xl border border-border/30 animate-fade-in">
+            <div className="space-y-2 animate-fade-in">
               <Input
                 type="text"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
-                placeholder="Their nickname (e.g., Mom, Friend)"
-                className="h-12 bg-background/50 border-border/40 rounded-lg"
+                placeholder="Their nickname"
+                className="h-11 bg-white/10 border-white/20 text-white placeholder:text-white/40 text-sm"
                 maxLength={20}
               />
               <Input
@@ -120,89 +206,67 @@ export const EmergencyContactSetup: React.FC<EmergencyContactSetupProps> = ({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="Phone number"
-                className="h-12 bg-background/50 border-border/40 rounded-lg"
+                className="h-11 bg-white/10 border-white/20 text-white placeholder:text-white/40 text-sm"
               />
             </div>
           )}
 
           {/* Alternative option */}
           <button
-            onClick={() => setOption('alternative')}
+            onClick={() => handleOptionSelect('alternative')}
             className={cn(
-              "w-full p-4 rounded-xl border transition-all text-left",
-              "bg-card/40 backdrop-blur-sm",
+              "w-full p-3 rounded-xl border transition-all text-left",
               option === 'alternative' 
-                ? "border-primary bg-primary/10" 
-                : "border-border/40 hover:border-border/60"
+                ? "border-primary bg-primary/20" 
+                : "border-white/10 bg-white/5 hover:bg-white/10"
             )}
           >
             <div className="flex items-center gap-3">
-              <Building className="w-5 h-5 text-primary" />
-              <div>
-                <p className="font-medium text-foreground">Use an alternative</p>
-                <p className="text-xs text-muted-foreground">Hotline, shelter, or caseworker</p>
-              </div>
+              <Building className="w-4 h-4 text-amber-400" />
+              <span className="text-white text-sm">Use a hotline instead</span>
             </div>
           </button>
 
-          {/* Alternative form */}
           {option === 'alternative' && (
-            <div className="p-4 bg-card/30 rounded-xl border border-border/30 animate-fade-in">
-              <Input
-                type="text"
-                value={alternative}
-                onChange={(e) => setAlternative(e.target.value)}
-                placeholder="Name or number (e.g., Crisis Line)"
-                className="h-12 bg-background/50 border-border/40 rounded-lg"
-              />
-            </div>
+            <Input
+              type="text"
+              value={alternative}
+              onChange={(e) => setAlternative(e.target.value)}
+              placeholder="Hotline or service name"
+              className="h-11 bg-white/10 border-white/20 text-white placeholder:text-white/40 text-sm animate-fade-in"
+            />
           )}
 
           {/* No contact option */}
           <button
-            onClick={() => setOption('none')}
+            onClick={() => handleOptionSelect('none')}
             className={cn(
-              "w-full p-4 rounded-xl border transition-all text-left",
-              "bg-card/40 backdrop-blur-sm",
+              "w-full p-3 rounded-xl border transition-all text-left",
               option === 'none' 
-                ? "border-primary bg-primary/10" 
-                : "border-border/40 hover:border-border/60"
+                ? "border-primary bg-primary/20" 
+                : "border-white/10 bg-white/5 hover:bg-white/10"
             )}
           >
             <div className="flex items-center gap-3">
-              <HeartHandshake className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <p className="font-medium text-foreground">I don't have one</p>
-                <p className="text-xs text-muted-foreground">That's okay — we can add one later</p>
-              </div>
+              <HeartHandshake className="w-4 h-4 text-white/60" />
+              <span className="text-white text-sm">Skip for now</span>
             </div>
           </button>
         </div>
+      </div>
 
-        {/* Actions */}
-        <div className="flex flex-col gap-3 w-full max-w-xs">
-          <Button
-            onClick={handleContinue}
-            size="lg"
-            className="w-full h-14 rounded-xl text-lg"
-            disabled={!isValid()}
-          >
-            Continue
-          </Button>
-
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
-            >
-              Go back
-            </button>
-          )}
-        </div>
-
-        {/* Privacy note */}
-        <p className="text-xs text-muted-foreground/60 text-center max-w-xs">
-          This information stays on your device. I only use it in emergencies.
+      {/* Bottom action */}
+      <div className="relative z-10 p-4 pb-6">
+        <Button
+          onClick={handleContinue}
+          size="lg"
+          className="w-full max-w-xs mx-auto h-12 rounded-xl shadow-lg shadow-primary/30 block"
+          disabled={!isValid()}
+        >
+          Continue
+        </Button>
+        <p className="text-white/40 text-xs text-center mt-2">
+          Stays on your device
         </p>
       </div>
     </div>
