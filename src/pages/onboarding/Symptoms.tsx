@@ -58,10 +58,16 @@ export default function Symptoms() {
             </div>
           </div>
 
+          {/* Privacy disclaimer */}
+          <div className="bg-sai-calm/30 rounded-xl p-4 border border-sai-calm-dark/20">
+            <p className="text-sm text-foreground">
+              <strong>Nothing you enter here is saved as personal information.</strong> SAI uses these selections only to shape the structure of your support goals. This information is not stored, tracked, or shared.
+            </p>
+          </div>
+
           <div className="bg-sai-lavender/50 rounded-xl p-4 border border-sai-lavender-dark/20">
             <p className="text-sm text-foreground">
-              <strong>This stays private.</strong> I use this information to adapt how I talk to you, 
-              not to share with anyone else. Professionals only see category-level information.
+              <strong>Staff see progress percentages only.</strong> They do not see symptoms, behaviors, or personal details.
             </p>
           </div>
 

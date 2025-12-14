@@ -59,6 +59,13 @@ export default function Categories() {
             </div>
           </div>
 
+          {/* Privacy disclaimer */}
+          <div className="bg-sai-calm/30 rounded-xl p-4 border border-sai-calm-dark/20">
+            <p className="text-sm text-foreground">
+              <strong>Nothing you select here is saved as personal information.</strong> SAI uses these selections only to shape the size and structure of your support goals. This information is not stored, tracked, or shared.
+            </p>
+          </div>
+
           <div className="bg-sai-warm/50 rounded-xl p-4 border border-sai-warm-dark/20">
             <p className="text-sm text-foreground">
               <strong>You don't need a diagnosis.</strong> If you experience something, 
