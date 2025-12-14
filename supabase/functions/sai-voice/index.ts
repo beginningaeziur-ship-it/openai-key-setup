@@ -66,16 +66,18 @@ serve(async (req) => {
       
       // Check for quota exceeded
       if (errorText.includes('quota_exceeded') || response.status === 401) {
+        // Return 200 so the client can handle graceful fallback without breaking the UI
         return new Response(
           JSON.stringify({ error: 'quota_exceeded', fallbackToBrowser: true }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
       if (response.status === 429) {
+        // Also return 200 here and let the client decide how to fall back
         return new Response(
           JSON.stringify({ error: 'Voice service busy. Please try again.', fallbackToBrowser: true }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
