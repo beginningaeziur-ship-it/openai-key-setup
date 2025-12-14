@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useRef, ReactNode, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 // Voice options matching OpenAI/ElevenLabs voices
 export type VoiceId = 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
@@ -255,6 +256,13 @@ export function VoiceSettingsProvider({ children }: VoiceSettingsProviderProps) 
       if (hasError && shouldFallback) {
         console.log('[VoiceSettings] ElevenLabs unavailable, switching to browser TTS');
         setUseBrowserTTS(true);
+        
+        // Show friendly toast about fallback
+        toast({
+          title: "Voice still working",
+          description: "SAI switched to free browser voice. Everything works the same.",
+          duration: 4000,
+        });
         
         try {
           await speakWithBrowser(text);
