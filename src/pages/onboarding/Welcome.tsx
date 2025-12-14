@@ -20,20 +20,20 @@ export default function Welcome() {
 
         <div className="space-y-4">
           <h1 className="text-4xl font-display font-bold text-foreground">
-            SAI Ally Guide
+            SAI
           </h1>
           <p className="text-xl text-muted-foreground">
-            Your personalized, trauma-informed digital ally
+            A steady presence to help you pause, think, and choose
           </p>
         </div>
 
         <div className="bg-card rounded-2xl p-6 shadow-sm border border-border space-y-4">
           <p className="text-foreground leading-relaxed">
-            I'm here to support you — not to judge, not to fix, just to walk alongside you at your own pace.
+            I'm here to walk alongside you — not to judge, not to decide for you, just to help you see your options clearly.
           </p>
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Shield className="w-4 h-4" />
-            <span>Your privacy is protected. Always.</span>
+            <span>SAI remembers goals and progress, not people.</span>
           </div>
         </div>
 

@@ -12,39 +12,40 @@ export default function PrivacyExplanation() {
   };
 
   const narration = 
-    "Your privacy and safety are my priority. " +
-    "I don't store your personal information beyond what keeps you safe. " +
-    "Your PIN protects this app if someone else picks up your phone. " +
-    "You decide what anyone else sees. " +
-    "Nothing you share leaves your device without your permission.";
+    "Let me be clear about what I do and don't do. " +
+    "I don't store your personal information, conversations, diagnoses, or behaviors. " +
+    "I don't monitor, track, or report you to anyone. " +
+    "I don't act on your behalf or contact emergency services. " +
+    "I remember your goals and progress — that's it. " +
+    "The PIN protects your goals, not your identity.";
 
   const privacyPoints = [
     {
-      icon: Lock,
-      title: "Protected by PIN",
-      description: "A simple PIN keeps your information safe if someone else accesses your phone."
+      icon: Shield,
+      title: "No Personal Information Stored",
+      description: "SAI does not store your identity, conversations, diagnoses, disabilities, urges, or behaviors."
     },
     {
       icon: Eye,
-      title: "You Control Visibility",
-      description: "You decide what professionals or watchers can see. Nothing is shared without your choice."
+      title: "No Monitoring or Tracking",
+      description: "SAI does not monitor, track, or report you. Staff see only progress percentages, not details."
+    },
+    {
+      icon: Lock,
+      title: "PIN Protects Goals, Not Identity",
+      description: "Your PIN keeps your goals and progress private if someone else uses your device."
     },
     {
       icon: Trash2,
-      title: "No Unnecessary Storage",
-      description: "I only keep what helps me support you. Voice conversations aren't stored long-term."
-    },
-    {
-      icon: Shield,
-      title: "Local-First",
-      description: "Most of your information stays on your device, not on remote servers."
+      title: "Urges Are Released, Not Stored",
+      description: "When you talk through an urge, it's released after the moment. Nothing is saved or tracked."
     },
   ];
 
   return (
     <OnboardingScreen
       screenId="privacy-explanation"
-      title="Privacy & Safety"
+      title="How SAI Works"
       narration={narration}
     >
       <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
@@ -53,9 +54,9 @@ export default function PrivacyExplanation() {
           <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
             <Shield className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-2xl font-semibold text-foreground">Your Privacy Matters</h2>
+          <h2 className="text-2xl font-semibold text-foreground">SAI Remembers Goals, Not People</h2>
           <p className="text-muted-foreground mt-2">
-            Here's how I keep your information safe.
+            Here's exactly what SAI does and doesn't do.
           </p>
         </div>
 
@@ -75,6 +76,13 @@ export default function PrivacyExplanation() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Core truth */}
+        <div className="mt-6 p-4 rounded-xl bg-sai-calm/20 border border-sai-calm-dark/20 text-center">
+          <p className="text-sm text-foreground font-medium">
+            "SAI remembers goals and progress, not people."
+          </p>
         </div>
 
         {/* Continue Button */}
