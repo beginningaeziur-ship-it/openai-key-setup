@@ -1,4 +1,8 @@
 import { cn } from '@/lib/utils';
+import cozyBedroomBg from '@/assets/cozy-bedroom-bg.jpg';
+import cozyCabinBg from '@/assets/cozy-cabin-bg.jpg';
+import tropicalOceanBg from '@/assets/tropical-ocean-bg.jpg';
+import forestWoodsBg from '@/assets/forest-woods-bg.jpg';
 
 export type SceneType = 
   | 'bedroom' 
@@ -12,57 +16,61 @@ interface SceneBackgroundProps {
   children?: React.ReactNode;
 }
 
-const sceneStyles: Record<SceneType, { gradient: string; particles?: boolean }> = {
+const sceneConfig: Record<SceneType, { image: string; overlay: string; alt: string }> = {
   bedroom: {
-    gradient: 'from-[#1a1a2e] via-[#16213e] to-[#0f0f23]',
-    particles: true,
+    image: cozyBedroomBg,
+    overlay: 'from-black/40 via-black/20 to-black/40',
+    alt: 'Cozy bedroom with fireplace',
   },
   cabin: {
-    gradient: 'from-[#2d1b0e] via-[#1a1208] to-[#0d0906]',
-    particles: true,
+    image: cozyCabinBg,
+    overlay: 'from-amber-900/30 via-black/20 to-black/40',
+    alt: 'Cozy log cabin with stone fireplace',
   },
   ocean: {
-    gradient: 'from-[#0a3d62] via-[#1e5f74] to-[#0a2647]',
-    particles: true,
+    image: tropicalOceanBg,
+    overlay: 'from-cyan-900/20 via-transparent to-black/30',
+    alt: 'Tropical beach at sunset',
   },
   woods: {
-    gradient: 'from-[#1f3b2f] via-[#162821] to-[#0d1a14]',
-    particles: true,
+    image: forestWoodsBg,
+    overlay: 'from-indigo-900/20 via-transparent to-black/40',
+    alt: 'Forest campsite at dusk',
   },
 };
 
 export function SceneBackground({ scene, className, children }: SceneBackgroundProps) {
-  const config = sceneStyles[scene] || sceneStyles.bedroom;
+  const config = sceneConfig[scene] || sceneConfig.bedroom;
 
   return (
     <div className={cn('relative min-h-screen overflow-hidden', className)}>
-      {/* Base gradient */}
+      {/* Photo background - ALWAYS visible */}
+      <img
+        src={config.image}
+        alt={config.alt}
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+      
+      {/* Subtle overlay for readability */}
       <div className={cn(
-        'absolute inset-0 bg-gradient-to-b transition-all duration-1000',
-        config.gradient
+        'absolute inset-0 bg-gradient-to-b pointer-events-none',
+        config.overlay
       )} />
       
-      {/* Ambient particles/fireflies for certain scenes */}
-      {config.particles && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {[...Array(8)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-1 h-1 bg-primary/30 rounded-full animate-float"
-              style={{
-                left: `${10 + i * 12}%`,
-                top: `${20 + (i % 3) * 25}%`,
-                animationDelay: `${i * 0.8}s`,
-                animationDuration: `${4 + i * 0.5}s`,
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Subtle glow effect */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/5 rounded-full blur-3xl" />
+      {/* Ambient particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(8)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-white/20 rounded-full animate-float"
+            style={{
+              left: `${10 + i * 12}%`,
+              top: `${20 + (i % 3) * 25}%`,
+              animationDelay: `${i * 0.8}s`,
+              animationDuration: `${4 + i * 0.5}s`,
+            }}
+          />
+        ))}
       </div>
 
       {/* Content */}
