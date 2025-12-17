@@ -6,6 +6,7 @@ import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { QuickGroundingButton } from '@/components/grounding/QuickGroundingButton';
+import { SceneBackground, SceneType } from '@/components/sai-room/SceneBackground';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 import { useStressMonitor } from '@/hooks/useStressMonitor';
 import { useVoiceStressDetector } from '@/hooks/useVoiceStressDetector';
@@ -49,6 +50,7 @@ export default function Chat() {
 
   const saiName = userProfile?.saiNickname || 'SAI';
   const userName = userProfile?.nickname || 'Friend';
+  const scene = (userProfile?.scene as SceneType) || 'bedroom';
 
   // Stress monitoring (text-based)
   const { 
@@ -345,7 +347,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <SceneBackground scene={scene} className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -522,6 +524,6 @@ export default function Chat() {
           </p>
         </div>
       </div>
-    </div>
+    </SceneBackground>
   );
 }
