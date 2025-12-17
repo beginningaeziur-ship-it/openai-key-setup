@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { OnboardingProgress } from '@/components/sai/OnboardingProgress';
 import { SelectableCard } from '@/components/sai/SelectableCard';
 import { useSAI } from '@/contexts/SAIContext';
+import { useMicrophone } from '@/contexts/MicrophoneContext';
 import { conditionsByCategory, disabilityCategories } from '@/data/saiCategories';
 import type { ConditionSelection } from '@/types/sai';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
@@ -12,8 +13,41 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 export default function Conditions() {
   const navigate = useNavigate();
   const { selectedCategories, selectedConditions, setSelectedConditions, setOnboardingStep } = useSAI();
+  const { lastTranscript, clearTranscript, isMicEnabled } = useMicrophone();
   
   const [conditions, setConditions] = useState<ConditionSelection[]>(selectedConditions);
+
+  // Voice command handling
+  useEffect(() => {
+    if (!lastTranscript || !isMicEnabled) return;
+    
+    const lower = lastTranscript.toLowerCase();
+    
+    // Check for navigation commands
+    if (lower.includes('next') || lower.includes('continue') || lower.includes('enter') || lower.includes('done')) {
+      clearTranscript();
+      handleNext();
+      return;
+    }
+    
+    if (lower.includes('back') || lower.includes('previous')) {
+      clearTranscript();
+      navigate('/onboarding/categories');
+      return;
+    }
+    
+    // Check for condition selection by name
+    selectedCategories.forEach(categoryId => {
+      const categoryConditions = conditionsByCategory[categoryId] || [];
+      categoryConditions.forEach(condition => {
+        const conditionName = condition.label.toLowerCase();
+        if (lower.includes(conditionName)) {
+          toggleCondition(categoryId, condition.id);
+          clearTranscript();
+        }
+      });
+    });
+  }, [lastTranscript, isMicEnabled]);
 
   const toggleCondition = (category: string, conditionId: string) => {
     const existing = conditions.find(c => c.category === category);

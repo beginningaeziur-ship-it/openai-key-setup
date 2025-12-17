@@ -43,14 +43,25 @@ export const SafetyPinSetup: React.FC<SafetyPinSetupProps> = ({
     };
   }, []);
 
-  // Handle voice input for PIN
+  // Handle voice input for PIN including "Enter" command
   useEffect(() => {
     if (lastTranscript && step !== 'intro') {
+      const lowerTranscript = lastTranscript.toLowerCase();
+      
+      // Check for "enter", "submit", "continue", "done" commands
+      if (lowerTranscript.includes('enter') || lowerTranscript.includes('submit') || 
+          lowerTranscript.includes('continue') || lowerTranscript.includes('done') ||
+          lowerTranscript.includes('confirm') || lowerTranscript.includes('set')) {
+        clearTranscript();
+        handleContinue();
+        return;
+      }
+      
       const numbers = lastTranscript.replace(/\D/g, '');
       if (numbers.length >= 4) {
         if (step === 'enter') {
           setPin(numbers.slice(0, 4));
-          speak("Good. Now say those numbers again to confirm.");
+          speak("Good. Say 'enter' when ready, or say those numbers again to confirm.");
           setStep('confirm');
         } else if (step === 'confirm') {
           setConfirmPin(numbers.slice(0, 4));
@@ -216,7 +227,7 @@ export const SafetyPinSetup: React.FC<SafetyPinSetupProps> = ({
           </div>
 
           <p className="text-white/50 text-xs text-center">
-            {isMicEnabled ? "Say 4 numbers or type them" : "Type 4 numbers"}
+            {isMicEnabled ? "Say 4 numbers, then say 'enter' to confirm" : "Type 4 numbers"}
           </p>
         </div>
       </div>

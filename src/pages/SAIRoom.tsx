@@ -4,11 +4,7 @@ import { useSAI } from '@/contexts/SAIContext';
 import { Button } from '@/components/ui/button';
 import { SceneBackground, SceneType } from '@/components/sai-room/SceneBackground';
 import { SAIPresence } from '@/components/sai-room/SAIPresence';
-import { PhotoBedroomScene } from '@/components/sai-room/PhotoBedroomScene';
-import { PhotoCabinScene } from '@/components/sai-room/PhotoCabinScene';
-import { PhotoOceanScene } from '@/components/sai-room/PhotoOceanScene';
-import { PhotoWoodsScene } from '@/components/sai-room/PhotoWoodsScene';
-import { GroundingPanel } from '@/components/sai-room/GroundingPanel';
+import { RoomActionsDropdown } from '@/components/sai-room/RoomActionsDropdown';
 import { SAIIntroRoom } from '@/components/sai-room/SAIIntroRoom';
 import { SceneSelector } from '@/components/sai-room/SceneSelector';
 import { BedroomTour } from '@/components/sai-room/BedroomTour';
@@ -21,9 +17,6 @@ import { RugPanel } from '@/components/room-panels/RugPanel';
 import { BookshelfPanel } from '@/components/room-panels/BookshelfPanel';
 import { CoffeeTablePanel } from '@/components/room-panels/CoffeeTablePanel';
 import { BedPanel } from '@/components/room-panels/BedPanel';
-import { NightstandPanel } from '@/components/room-panels/NightstandPanel';
-import { WindowPanel } from '@/components/room-panels/WindowPanel';
-import { WallArtPanel } from '@/components/room-panels/WallArtPanel';
 import { 
   Settings, 
   MessageCircle,
@@ -55,8 +48,6 @@ export default function SAIRoom() {
 
   const [phase, setPhase] = useState<RoomPhase>(getInitialPhase);
   const [scene, setScene] = useState<SceneType>(savedScene || 'bedroom');
-  const [activeArea, setActiveArea] = useState<string | null>(null);
-  const [showGrounding, setShowGrounding] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [roomReady, setRoomReady] = useState(phase === 'room');
   
@@ -67,11 +58,8 @@ export default function SAIRoom() {
   const [showBookshelf, setShowBookshelf] = useState(false);
   const [showCoffeeTable, setShowCoffeeTable] = useState(false);
   const [showBed, setShowBed] = useState(false);
-  const [showNightstand, setShowNightstand] = useState(false);
-  const [showWindow, setShowWindow] = useState(false);
-  const [showWallArt, setShowWallArt] = useState(false);
   
-  // Tour state for bedroom
+  // Tour state
   const [showTour, setShowTour] = useState(() => {
     return localStorage.getItem('sai_room_tour_completed') !== 'true' && phase === 'room';
   });
@@ -99,7 +87,6 @@ export default function SAIRoom() {
 
   const handleSceneSelect = useCallback((selectedScene: SceneType) => {
     setScene(selectedScene);
-    // Save scene to user profile
     if (userProfile) {
       setUserProfile({ ...userProfile, scene: selectedScene });
     }
@@ -118,45 +105,15 @@ export default function SAIRoom() {
     setTimeout(() => setRoomReady(true), 500);
   }, []);
 
-  const handleHotspotClick = (id: string) => {
-    setActiveArea(id);
-    
-    switch (id) {
-      // Bedroom hotspots
-      case 'bed': setShowBed(true); break;
-      case 'fireplace': setShowFireplace(true); break;
-      case 'bookshelf': setShowBookshelf(true); break;
-      case 'lamp': setShowLamp(true); break;
-      case 'nightstand': setShowNightstand(true); break;
-      case 'rug': setShowRug(true); break;
-      case 'window': setShowWindow(true); break;
-      case 'wall-art': setShowWallArt(true); break;
-      case 'coffee-table': setShowCoffeeTable(true); break;
-      // Cabin hotspots
-      case 'couch': setShowBed(true); break;
-      // Ocean hotspots
-      case 'horizon': setShowWindow(true); break;
-      case 'waves': setShowRug(true); break;
-      case 'boulders': setShowFireplace(true); break;
-      case 'palm-tree': setShowBed(true); break;
-      case 'sand': setShowRug(true); break;
-      case 'sunset': setShowWallArt(true); break;
-      case 'shoreline': setShowCoffeeTable(true); break;
-      // Woods/Forest hotspots
-      case 'tent': setShowBed(true); break;
-      case 'lake': setShowWindow(true); break;
-      case 'mountains': setShowWallArt(true); break;
-      case 'pine-tree': setShowFireplace(true); break;
-      case 'moon': setShowNightstand(true); break;
-      case 'forest-floor': setShowRug(true); break;
-      case 'mist': setShowRug(true); break;
-      // Generic aliases
+  // Handle dropdown action selection
+  const handleActionSelect = (actionId: string) => {
+    switch (actionId) {
       case 'grounding': setShowRug(true); break;
-      case 'tools': setShowCoffeeTable(true); break;
-      case 'research': setShowBookshelf(true); break;
-      case 'settings': setShowLamp(true); break;
       case 'comfort': setShowFireplace(true); break;
-      case 'goals': navigate('/dashboard'); break;
+      case 'rest': setShowBed(true); break;
+      case 'research': setShowBookshelf(true); break;
+      case 'tools': setShowCoffeeTable(true); break;
+      case 'settings': setShowLamp(true); break;
       default: break;
     }
   };
@@ -194,54 +151,10 @@ export default function SAIRoom() {
     );
   }
 
-  // Render the appropriate scene based on selection
-  const renderScene = (onClick: (id: string) => void, highlighted: string | null, active: string | null, visible: boolean) => {
-    switch (scene) {
-      case 'cabin':
-        return (
-          <PhotoCabinScene
-            onHotspotClick={onClick}
-            highlightedHotspot={highlighted}
-            activeHotspot={active}
-            isVisible={visible}
-          />
-        );
-      case 'ocean':
-        return (
-          <PhotoOceanScene
-            onHotspotClick={onClick}
-            highlightedHotspot={highlighted}
-            activeHotspot={active}
-            isVisible={visible}
-          />
-        );
-      case 'woods':
-        return (
-          <PhotoWoodsScene
-            onHotspotClick={onClick}
-            highlightedHotspot={highlighted}
-            activeHotspot={active}
-            isVisible={visible}
-          />
-        );
-      case 'bedroom':
-      default:
-        return (
-          <PhotoBedroomScene
-            onHotspotClick={onClick}
-            highlightedHotspot={highlighted}
-            activeHotspot={active}
-            isVisible={visible}
-          />
-        );
-    }
-  };
-
-  // Phase: Tutorial - now uses photo background
+  // Phase: Tutorial
   if (phase === 'tutorial') {
     return (
       <SceneBackground scene={scene}>
-        {renderScene(() => {}, tourHighlight, null, true)}
         <BedroomTour
           saiName={saiName}
           userName={userName}
@@ -259,9 +172,6 @@ export default function SAIRoom() {
       "transition-opacity duration-1000",
       roomReady ? 'opacity-100' : 'opacity-70'
     )}>
-      {/* Scene with interactive hotspots */}
-      {renderScene(handleHotspotClick, showTour ? tourHighlight : null, activeArea, roomReady)}
-
       {/* First-time room tour */}
       {showTour && (
         <BedroomTour
@@ -322,7 +232,7 @@ export default function SAIRoom() {
 
         {/* Talk Area - Primary CTA */}
         <div className={cn(
-          "flex flex-col items-center gap-4 mb-12",
+          "flex flex-col items-center gap-4 mb-8",
           "transition-all duration-700 delay-500",
           roomReady ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
         )}>
@@ -334,6 +244,12 @@ export default function SAIRoom() {
             <MessageCircle className="w-6 h-6 mr-3" />
             Talk to {saiName}
           </Button>
+          
+          {/* Room Actions Dropdown - Single button */}
+          <RoomActionsDropdown 
+            scene={scene} 
+            onActionSelect={handleActionSelect}
+          />
           
           {/* Keyboard toggle */}
           <button
@@ -395,22 +311,6 @@ export default function SAIRoom() {
         open={showBed}
         onClose={() => setShowBed(false)}
         userName={userName}
-      />
-      
-      <NightstandPanel
-        open={showNightstand}
-        onClose={() => setShowNightstand(false)}
-        userName={userName}
-      />
-      
-      <WindowPanel
-        open={showWindow}
-        onClose={() => setShowWindow(false)}
-      />
-      
-      <WallArtPanel
-        open={showWallArt}
-        onClose={() => setShowWallArt(false)}
       />
     </SceneBackground>
   );
