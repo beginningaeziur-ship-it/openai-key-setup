@@ -1,12 +1,38 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// CORS configuration with origin restriction
+const ALLOWED_ORIGINS = [
+  'https://lovable.dev',
+  'https://www.lovable.dev',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const isLovablePreview = origin && (
+    origin.endsWith('.lovableproject.com') || 
+    origin.endsWith('.lovable.app') ||
+    origin.includes('hypccwbfzuefwxlccxye')
+  );
+  
+  const allowedOrigin = origin && (ALLOWED_ORIGINS.includes(origin) || isLovablePreview)
+    ? origin
+    : ALLOWED_ORIGINS[0];
+  
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Credentials': 'true',
+  };
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+  
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -14,7 +40,11 @@ serve(async (req) => {
   try {
     const elevenlabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
     if (!elevenlabsApiKey) {
-      throw new Error('ELEVENLABS_API_KEY not configured')
+      console.error('ELEVENLABS_API_KEY not configured');
+      return new Response(
+        JSON.stringify({ error: 'Audio service temporarily unavailable' }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log('[Cinematic Sound] Generating epic logo reveal sound...')
@@ -35,8 +65,19 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('[Cinematic Sound] ElevenLabs error:', errorText)
-      throw new Error(`Failed to generate sound: ${errorText}`)
+      console.error('[Cinematic Sound] ElevenLabs error:', response.status, errorText)
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'Audio service busy. Please try again.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      return new Response(
+        JSON.stringify({ error: 'Audio generation temporarily unavailable' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Get audio as array buffer and convert to base64
@@ -61,10 +102,9 @@ serve(async (req) => {
       },
     )
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[Cinematic Sound] Error:', errorMessage)
+    console.error('[Cinematic Sound] Error:', error)
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'Audio generation temporarily unavailable' }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
