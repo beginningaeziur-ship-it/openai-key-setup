@@ -1,10 +1,131 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Input validation schemas (inline to avoid external dependencies in edge functions)
+function validateChatInput(data: unknown): { 
+  valid: boolean; 
+  error?: string; 
+  parsed?: { messages: Array<{role: string; content: string}>; userContext?: Record<string, unknown> } 
+} {
+  if (!data || typeof data !== 'object') {
+    return { valid: false, error: 'Invalid request format' };
+  }
+  
+  const obj = data as Record<string, unknown>;
+  
+  // Validate messages array
+  if (!Array.isArray(obj.messages)) {
+    return { valid: false, error: 'Messages array is required' };
+  }
+  
+  if (obj.messages.length === 0) {
+    return { valid: false, error: 'At least one message is required' };
+  }
+  
+  if (obj.messages.length > 50) {
+    return { valid: false, error: 'Too many messages (max 50)' };
+  }
+  
+  // Validate each message
+  for (const msg of obj.messages) {
+    if (!msg || typeof msg !== 'object') {
+      return { valid: false, error: 'Invalid message format' };
+    }
+    
+    const msgObj = msg as Record<string, unknown>;
+    
+    if (!['user', 'assistant', 'system'].includes(msgObj.role as string)) {
+      return { valid: false, error: 'Invalid message role' };
+    }
+    
+    if (typeof msgObj.content !== 'string') {
+      return { valid: false, error: 'Message content must be a string' };
+    }
+    
+    if (msgObj.content.length > 10000) {
+      return { valid: false, error: 'Message content too long (max 10000 characters)' };
+    }
+  }
+  
+  // Validate userContext if present
+  if (obj.userContext !== undefined && typeof obj.userContext !== 'object') {
+    return { valid: false, error: 'Invalid user context format' };
+  }
+  
+  // Validate userContext fields if present
+  if (obj.userContext && typeof obj.userContext === 'object') {
+    const ctx = obj.userContext as Record<string, unknown>;
+    
+    if (ctx.userName !== undefined && typeof ctx.userName !== 'string') {
+      return { valid: false, error: 'Invalid userName' };
+    }
+    if (ctx.userName && (ctx.userName as string).length > 100) {
+      return { valid: false, error: 'userName too long (max 100 characters)' };
+    }
+    
+    if (ctx.saiName !== undefined && typeof ctx.saiName !== 'string') {
+      return { valid: false, error: 'Invalid saiName' };
+    }
+    if (ctx.saiName && (ctx.saiName as string).length > 100) {
+      return { valid: false, error: 'saiName too long (max 100 characters)' };
+    }
+    
+    if (ctx.categories !== undefined) {
+      if (!Array.isArray(ctx.categories) || ctx.categories.length > 20) {
+        return { valid: false, error: 'Invalid categories (max 20)' };
+      }
+    }
+    
+    if (ctx.conditions !== undefined) {
+      if (!Array.isArray(ctx.conditions) || ctx.conditions.length > 50) {
+        return { valid: false, error: 'Invalid conditions (max 50)' };
+      }
+    }
+    
+    if (ctx.symptoms !== undefined) {
+      if (!Array.isArray(ctx.symptoms) || ctx.symptoms.length > 50) {
+        return { valid: false, error: 'Invalid symptoms (max 50)' };
+      }
+    }
+  }
+  
+  return { 
+    valid: true, 
+    parsed: { 
+      messages: obj.messages as Array<{role: string; content: string}>, 
+      userContext: obj.userContext as Record<string, unknown> | undefined 
+    } 
+  };
+}
+
+// CORS configuration with origin restriction
+const ALLOWED_ORIGINS = [
+  'https://lovable.dev',
+  'https://www.lovable.dev',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  // Allow Lovable preview domains (*.lovableproject.com and *.lovable.app)
+  const isLovablePreview = origin && (
+    origin.endsWith('.lovableproject.com') || 
+    origin.endsWith('.lovable.app') ||
+    origin.includes('hypccwbfzuefwxlccxye')
+  );
+  
+  const allowedOrigin = origin && (ALLOWED_ORIGINS.includes(origin) || isLovablePreview)
+    ? origin
+    : ALLOWED_ORIGINS[0]; // Fallback to first allowed origin
+  
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+}
 
 // SAI Module definitions from personality spec
 const SAI_MODULES = {
@@ -184,25 +305,52 @@ Be ${userName}'s organized backend.
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { messages, userContext } = await req.json();
+    // Parse and validate input
+    let rawData: unknown;
+    try {
+      rawData = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const validation = validateChatInput(rawData);
+    if (!validation.valid || !validation.parsed) {
+      console.error('Validation failed:', validation.error);
+      return new Response(
+        JSON.stringify({ error: validation.error || 'Invalid request format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const { messages, userContext } = validation.parsed;
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     if (!LOVABLE_API_KEY) {
       console.error('LOVABLE_API_KEY is not configured');
-      throw new Error('AI service is not configured');
+      return new Response(
+        JSON.stringify({ error: 'AI service temporarily unavailable' }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Detect which module should handle this interaction
     const lastUserMessage = messages[messages.length - 1]?.content || '';
-    const stressLevel = userContext?.stressContext?.level;
-    const moduleDetection = detectModule(lastUserMessage, stressLevel);
+    const stressLevel = (userContext as Record<string, unknown>)?.stressContext as { level?: string } | undefined;
+    const moduleDetection = detectModule(lastUserMessage, stressLevel?.level);
     
-    console.log(`[SAI] Module: ${moduleDetection.module} | Reason: ${moduleDetection.reason} | User: ${userContext?.userName || 'Unknown'}`);
+    const userName = (userContext as Record<string, unknown>)?.userName || 'Unknown';
+    console.log(`[SAI] Module: ${moduleDetection.module} | Reason: ${moduleDetection.reason} | User: ${userName}`);
 
     // Build SAI's system prompt with module-specific behavior
     const systemPrompt = buildSAISystemPrompt(userContext, moduleDetection);
@@ -255,19 +403,19 @@ serve(async (req) => {
   } catch (error) {
     console.error('Chat error:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ error: 'An unexpected error occurred. Please try again.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
 
-function buildSAISystemPrompt(userContext: any, moduleDetection: { module: SAIModule; reason: string; threatLevel: number }): string {
-  const userName = userContext?.userName || 'Friend';
-  const saiName = userContext?.saiName || 'SAI';
-  const categories = userContext?.categories || [];
-  const conditions = userContext?.conditions || [];
-  const symptoms = userContext?.symptoms || [];
-  const personality = userContext?.personality || { 
+function buildSAISystemPrompt(userContext: Record<string, unknown> | undefined, moduleDetection: { module: SAIModule; reason: string; threatLevel: number }): string {
+  const userName = (userContext?.userName as string) || 'Friend';
+  const saiName = (userContext?.saiName as string) || 'SAI';
+  const categories = (userContext?.categories as string[]) || [];
+  const conditions = (userContext?.conditions as string[]) || [];
+  const symptoms = (userContext?.symptoms as string[]) || [];
+  const personality = (userContext?.personality as Record<string, unknown>) || { 
     tone: 'warm', 
     pacing: 'moderate',
     sensitivityLevel: 'low',
@@ -276,9 +424,9 @@ function buildSAISystemPrompt(userContext: any, moduleDetection: { module: SAIMo
     adaptations: [],
     triggerZones: []
   };
-  const communicationStyle = userContext?.communicationStyle || null;
-  const stressContext = userContext?.stressContext || null;
-  const isFirstSession = userContext?.isFirstSession ?? true;
+  const communicationStyle = userContext?.communicationStyle as Record<string, unknown> | null || null;
+  const stressContext = userContext?.stressContext as Record<string, unknown> | null || null;
+  const isFirstSession = (userContext?.isFirstSession as boolean) ?? true;
 
   // Detect specific user profiles
   const hasTrauma = categories.some((c: string) => 
@@ -493,10 +641,10 @@ When dysregulated:
     } else if (communicationStyle.structure === 'step-based') {
       prompt += `- Use numbered steps.\n`;
     }
-    if (communicationStyle.avoidances?.length > 0) {
+    if (Array.isArray(communicationStyle.avoidances) && communicationStyle.avoidances.length > 0) {
       prompt += `- AVOID: ${communicationStyle.avoidances.join(', ')}.\n`;
     }
-    if (communicationStyle.priorities?.length > 0) {
+    if (Array.isArray(communicationStyle.priorities) && communicationStyle.priorities.length > 0) {
       prompt += `- PRIORITIZE: ${communicationStyle.priorities.join(', ')}.\n`;
     }
     prompt += `\n`;
@@ -545,8 +693,8 @@ If ${userName} is in crisis:
   // Stress-aware response guidance
   if (stressContext && stressContext.level !== 'calm') {
     prompt += `## CURRENT STRESS STATE
-${userName}'s stress: ${stressContext.level.toUpperCase()} (${stressContext.score}/100)
-Triggers: ${stressContext.triggers?.join(', ') || 'none'}
+${userName}'s stress: ${(stressContext.level as string).toUpperCase()} (${stressContext.score}/100)
+Triggers: ${Array.isArray(stressContext.triggers) ? stressContext.triggers.join(', ') : 'none'}
 Action: ${stressContext.recommendedAction}
 
 `;
