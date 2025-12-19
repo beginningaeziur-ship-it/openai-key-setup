@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import aezuirLogo from '@/assets/aezuir-logo.png';
+import cinematicSound from '@/assets/cinematic-roar.mp3';
 
 interface LogoSplashProps {
   onComplete: () => void;
@@ -22,18 +23,13 @@ type Phase =
 
 export const LogoSplash = ({ onComplete, duration = 20000 }: LogoSplashProps) => {
   const [phase, setPhase] = useState<Phase>('black');
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const lionRoarRef = useRef<HTMLAudioElement | null>(null);
+  const cinematicAudioRef = useRef<HTMLAudioElement | null>(null);
   const volumeIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // MGM-style dramatic orchestral fanfare (royalty-free from Mixkit)
-    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
-    audioRef.current.volume = 0.9;
-
-    // Lion roar for MGM authenticity
-    lionRoarRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/522/522-preview.mp3');
-    lionRoarRef.current.volume = 0.85;
+    // Cinematic sound for logo reveal
+    cinematicAudioRef.current = new Audio(cinematicSound);
+    cinematicAudioRef.current.volume = 0.9;
 
     // Phase timing for epic 20-second movie-studio experience
     const timings = {
@@ -57,15 +53,10 @@ export const LogoSplash = ({ onComplete, duration = 20000 }: LogoSplashProps) =>
       setPhase('rumble');
     }, cumulativeTime));
 
-    // Phase 2: Rumble -> Emerge (play sound)
+    // Phase 2: Rumble -> Emerge
     cumulativeTime += timings.rumble;
     timers.push(setTimeout(() => {
       setPhase('emerge');
-      if (audioRef.current) {
-        audioRef.current.play().catch(() => {
-          console.log('[Logo] Sound autoplay blocked');
-        });
-      }
     }, cumulativeTime));
 
     // Phase 3: Emerge -> Reveal
@@ -74,14 +65,14 @@ export const LogoSplash = ({ onComplete, duration = 20000 }: LogoSplashProps) =>
       setPhase('reveal');
     }, cumulativeTime));
 
-    // Phase 4: Reveal -> Peak (play lion roar!)
+    // Phase 4: Reveal -> Peak (play cinematic sound!)
     cumulativeTime += timings.reveal;
     timers.push(setTimeout(() => {
       setPhase('peak');
-      // Play the lion roar at peak moment
-      if (lionRoarRef.current) {
-        lionRoarRef.current.play().catch(() => {
-          console.log('[Logo] Lion roar autoplay blocked');
+      // Play the cinematic sound at peak moment
+      if (cinematicAudioRef.current) {
+        cinematicAudioRef.current.play().catch(() => {
+          console.log('[Logo] Cinematic sound autoplay blocked');
         });
       }
     }, cumulativeTime));
@@ -109,10 +100,10 @@ export const LogoSplash = ({ onComplete, duration = 20000 }: LogoSplashProps) =>
     timers.push(setTimeout(() => {
       setPhase('fadeOut');
       // Start volume fade out
-      if (audioRef.current) {
+      if (cinematicAudioRef.current) {
         volumeIntervalRef.current = setInterval(() => {
-          if (audioRef.current && audioRef.current.volume > 0.05) {
-            audioRef.current.volume = Math.max(0, audioRef.current.volume - 0.03);
+          if (cinematicAudioRef.current && cinematicAudioRef.current.volume > 0.05) {
+            cinematicAudioRef.current.volume = Math.max(0, cinematicAudioRef.current.volume - 0.03);
           }
         }, 50);
       }
@@ -125,21 +116,17 @@ export const LogoSplash = ({ onComplete, duration = 20000 }: LogoSplashProps) =>
       if (volumeIntervalRef.current) {
         clearInterval(volumeIntervalRef.current);
       }
-      if (audioRef.current) {
-        audioRef.current.pause();
+      if (cinematicAudioRef.current) {
+        cinematicAudioRef.current.pause();
       }
       onComplete();
     }, cumulativeTime));
 
     return () => {
       timers.forEach(clearTimeout);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-      if (lionRoarRef.current) {
-        lionRoarRef.current.pause();
-        lionRoarRef.current = null;
+      if (cinematicAudioRef.current) {
+        cinematicAudioRef.current.pause();
+        cinematicAudioRef.current = null;
       }
       if (volumeIntervalRef.current) {
         clearInterval(volumeIntervalRef.current);
