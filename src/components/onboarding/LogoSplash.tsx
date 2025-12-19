@@ -23,13 +23,17 @@ type Phase =
 export const LogoSplash = ({ onComplete, duration = 20000 }: LogoSplashProps) => {
   const [phase, setPhase] = useState<Phase>('black');
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lionRoarRef = useRef<HTMLAudioElement | null>(null);
   const volumeIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // MGM-style dramatic orchestral fanfare (royalty-free from Mixkit)
-    // Epic cinematic orchestra opener - sounds like classic movie studio intros
     audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
     audioRef.current.volume = 0.9;
+
+    // Lion roar for MGM authenticity
+    lionRoarRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/522/522-preview.mp3');
+    lionRoarRef.current.volume = 0.85;
 
     // Phase timing for epic 20-second movie-studio experience
     const timings = {
@@ -70,10 +74,16 @@ export const LogoSplash = ({ onComplete, duration = 20000 }: LogoSplashProps) =>
       setPhase('reveal');
     }, cumulativeTime));
 
-    // Phase 4: Reveal -> Peak
+    // Phase 4: Reveal -> Peak (play lion roar!)
     cumulativeTime += timings.reveal;
     timers.push(setTimeout(() => {
       setPhase('peak');
+      // Play the lion roar at peak moment
+      if (lionRoarRef.current) {
+        lionRoarRef.current.play().catch(() => {
+          console.log('[Logo] Lion roar autoplay blocked');
+        });
+      }
     }, cumulativeTime));
 
     // Phase 5: Peak -> Radiate
@@ -126,6 +136,10 @@ export const LogoSplash = ({ onComplete, duration = 20000 }: LogoSplashProps) =>
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
+      }
+      if (lionRoarRef.current) {
+        lionRoarRef.current.pause();
+        lionRoarRef.current = null;
       }
       if (volumeIntervalRef.current) {
         clearInterval(volumeIntervalRef.current);
