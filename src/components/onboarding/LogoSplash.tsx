@@ -26,9 +26,10 @@ export const LogoSplash = ({ onComplete, duration = 20000 }: LogoSplashProps) =>
   const volumeIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Use a dramatic orchestral hit sound (royalty-free)
-    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/209/209-preview.mp3');
-    audioRef.current.volume = 0.8;
+    // MGM-style dramatic orchestral fanfare (royalty-free from Mixkit)
+    // Epic cinematic orchestra opener - sounds like classic movie studio intros
+    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
+    audioRef.current.volume = 0.9;
 
     // Phase timing for epic 20-second movie-studio experience
     const timings = {
