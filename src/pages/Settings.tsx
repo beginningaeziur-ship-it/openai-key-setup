@@ -27,7 +27,8 @@ import {
   ChevronUp,
   MicOff,
   HelpCircle,
-  RotateCcw
+  RotateCcw,
+  Play
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -352,6 +353,36 @@ export default function Settings() {
                 </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Developer Testing */}
+        <Card className="border-dashed border-2 border-muted-foreground/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-muted-foreground">
+              <Play className="w-5 h-5" />
+              Developer Testing
+            </CardTitle>
+            <CardDescription>
+              Tools for testing animations and features
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                localStorage.removeItem('sai_intro_seen');
+                navigate('/');
+                toast({
+                  title: 'Logo Splash Ready',
+                  description: 'Navigate to home to see the splash animation.',
+                });
+              }}
+            >
+              <Play className="w-4 h-4 mr-2" />
+              Replay Logo Splash
+            </Button>
           </CardContent>
         </Card>
 
