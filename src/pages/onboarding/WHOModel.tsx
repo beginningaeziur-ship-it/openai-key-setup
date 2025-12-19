@@ -1,159 +1,122 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { OnboardingProgress } from '@/components/sai/OnboardingProgress';
-import { SelectableCard } from '@/components/sai/SelectableCard';
 import { useSAI } from '@/contexts/SAIContext';
+import { WHOIntroScreen } from '@/components/onboarding/WHOIntroScreen';
+import { WHOQuestionFlow } from '@/components/onboarding/WHOQuestionFlow';
 import { 
   whoBodyFunctions, 
   whoActivityLimitations, 
   whoParticipationRestrictions, 
   whoEnvironmentalBarriers 
 } from '@/data/saiCategories';
-import { ArrowLeft, ArrowRight, Brain, Activity, Users, Building } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+type Phase = 'intro' | 'questions' | 'complete';
+
+// Convert data to spoken questions format
+function buildQuestions() {
+  const allQuestions = [];
+
+  // Body Functions
+  for (const item of whoBodyFunctions) {
+    allQuestions.push({
+      id: item.id,
+      category: 'Body & Health',
+      label: item.label,
+      spokenQuestion: `Do you experience ${item.label.toLowerCase()}?`,
+    });
+  }
+
+  // Activity Limitations
+  for (const item of whoActivityLimitations) {
+    allQuestions.push({
+      id: `activity_${item.id}`,
+      category: 'Daily Activities',
+      label: item.label,
+      spokenQuestion: `Do you have difficulty with ${item.label.toLowerCase()}?`,
+    });
+  }
+
+  // Participation Restrictions
+  for (const item of whoParticipationRestrictions) {
+    allQuestions.push({
+      id: `participation_${item.id}`,
+      category: 'Life Participation',
+      label: item.label,
+      spokenQuestion: `Do you face challenges with ${item.label.toLowerCase()}?`,
+    });
+  }
+
+  // Environmental Barriers
+  for (const item of whoEnvironmentalBarriers) {
+    allQuestions.push({
+      id: `environment_${item.id}`,
+      category: 'Environment & Circumstances',
+      label: item.label,
+      spokenQuestion: `Are you currently dealing with ${item.label.toLowerCase()}?`,
+    });
+  }
+
+  return allQuestions;
+}
 
 export default function WHOModel() {
   const navigate = useNavigate();
-  const { whoModel, setWHOModel, setOnboardingStep } = useSAI();
+  const { setWHOModel, setOnboardingStep } = useSAI();
+  const [phase, setPhase] = useState<Phase>('intro');
   
-  const [bodyFunctions, setBodyFunctions] = useState<string[]>(whoModel?.bodyFunctions || []);
-  const [activityLimitations, setActivityLimitations] = useState<string[]>(whoModel?.activityLimitations || []);
-  const [participationRestrictions, setParticipationRestrictions] = useState<string[]>(whoModel?.participationRestrictions || []);
-  const [environmentalBarriers, setEnvironmentalBarriers] = useState<string[]>(whoModel?.environmentalBarriers || []);
-  
-  const [activeTab, setActiveTab] = useState('body');
+  const questions = useMemo(() => buildQuestions(), []);
 
-  const toggleSelection = (
-    id: string, 
-    current: string[], 
-    setter: React.Dispatch<React.SetStateAction<string[]>>
-  ) => {
-    if (current.includes(id)) {
-      setter(current.filter(item => item !== id));
-    } else {
-      setter([...current, id]);
-    }
+  const handleIntroComplete = () => {
+    setPhase('questions');
   };
 
-  const handleNext = () => {
+  const handleQuestionsComplete = (selectedIds: string[]) => {
+    // Parse selected IDs back into WHO model categories
+    const bodyFunctions = selectedIds.filter(id => 
+      whoBodyFunctions.some(bf => bf.id === id)
+    );
+    const activityLimitations = selectedIds
+      .filter(id => id.startsWith('activity_'))
+      .map(id => id.replace('activity_', ''));
+    const participationRestrictions = selectedIds
+      .filter(id => id.startsWith('participation_'))
+      .map(id => id.replace('participation_', ''));
+    const environmentalBarriers = selectedIds
+      .filter(id => id.startsWith('environment_'))
+      .map(id => id.replace('environment_', ''));
+
     setWHOModel({
       bodyFunctions,
       activityLimitations,
       participationRestrictions,
       environmentalBarriers,
     });
+    
     setOnboardingStep(4);
     navigate('/onboarding/categories');
   };
 
-  const categories = [
-    { id: 'body', label: 'Body', icon: Brain, items: whoBodyFunctions, selected: bodyFunctions, setter: setBodyFunctions },
-    { id: 'activity', label: 'Activities', icon: Activity, items: whoActivityLimitations, selected: activityLimitations, setter: setActivityLimitations },
-    { id: 'participation', label: 'Participation', icon: Users, items: whoParticipationRestrictions, selected: participationRestrictions, setter: setParticipationRestrictions },
-    { id: 'environment', label: 'Environment', icon: Building, items: whoEnvironmentalBarriers, selected: environmentalBarriers, setter: setEnvironmentalBarriers },
-  ];
-
-  const descriptions: Record<string, { title: string; desc: string }> = {
-    body: { 
-      title: 'Body Functions', 
-      desc: 'Things happening inside you — conditions, how your brain or body works differently.' 
-    },
-    activity: { 
-      title: 'Activity Limitations', 
-      desc: 'Things that are harder for you to do — daily tasks, focusing, organizing.' 
-    },
-    participation: { 
-      title: 'Participation Restrictions', 
-      desc: 'Things that make it harder to be part of life — work, school, social situations.' 
-    },
-    environment: { 
-      title: 'Environmental Barriers', 
-      desc: 'Things around you that create challenges — housing, relationships, systems.' 
-    },
+  const handleBack = () => {
+    if (phase === 'questions') {
+      setPhase('intro');
+    } else {
+      navigate('/onboarding/user-info');
+    }
   };
 
+  if (phase === 'intro') {
+    return (
+      <WHOIntroScreen 
+        onContinue={handleIntroComplete}
+      />
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-calm p-6">
-      <div className="max-w-2xl mx-auto">
-        <OnboardingProgress currentStep={3} totalSteps={9} />
-        
-        <div className="space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl font-display font-bold text-foreground">
-              Tell me about your challenges
-            </h1>
-            <p className="text-lg text-muted-foreground">
-              Check all that apply. This helps me understand how to support you best.
-            </p>
-          </div>
-
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 h-auto p-1 bg-muted/50 rounded-xl">
-              {categories.map(cat => (
-                <TabsTrigger 
-                  key={cat.id} 
-                  value={cat.id}
-                  className="flex flex-col items-center gap-1 py-3 data-[state=active]:bg-card rounded-lg"
-                >
-                  <cat.icon className="w-5 h-5" />
-                  <span className="text-xs">{cat.label}</span>
-                  {cat.selected.length > 0 && (
-                    <span className="text-xs bg-primary/20 text-primary px-2 rounded-full">
-                      {cat.selected.length}
-                    </span>
-                  )}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            {categories.map(cat => (
-              <TabsContent key={cat.id} value={cat.id} className="mt-6">
-                <div className="bg-card rounded-2xl p-6 shadow-sm border border-border space-y-4">
-                  <div className="space-y-1">
-                    <h2 className="text-xl font-display font-semibold text-foreground">
-                      {descriptions[cat.id].title}
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      {descriptions[cat.id].desc}
-                    </p>
-                  </div>
-
-                  <div className="grid gap-2 max-h-[400px] overflow-y-auto pr-2">
-                    {cat.items.map(item => (
-                      <SelectableCard
-                        key={item.id}
-                        id={item.id}
-                        label={item.label}
-                        selected={cat.selected.includes(item.id)}
-                        onSelect={(id) => toggleSelection(id, cat.selected, cat.setter)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </TabsContent>
-            ))}
-          </Tabs>
-
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/onboarding/user-info')}
-              className="flex-1 h-12 rounded-xl"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-            <Button
-              onClick={handleNext}
-              className="flex-1 h-12 rounded-xl"
-            >
-              Next
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <WHOQuestionFlow
+      questions={questions}
+      onComplete={handleQuestionsComplete}
+      onBack={handleBack}
+    />
   );
 }
