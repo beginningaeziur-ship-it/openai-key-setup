@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
 import { ArrowRight } from 'lucide-react';
-import { OnboardingLayout } from './OnboardingLayout';
+import { SAIAnchoredLayout } from './SAIAnchoredLayout';
 
 interface WHOIntroScreenProps {
   onContinue: () => void;
@@ -54,9 +54,11 @@ export function WHOIntroScreen({ onContinue }: WHOIntroScreenProps) {
     : INTRO_PHRASES.join(' ');
 
   return (
-    <OnboardingLayout 
+    <SAIAnchoredLayout 
       saiMessage={currentMessage}
       saiState={isSpeaking ? 'speaking' : 'attentive'}
+      showOverlay={true}
+      overlayStyle="glass"
     >
       <div className="flex-1 flex flex-col items-center justify-end pb-8">
         {/* Show all phrases as text when voice is off */}
@@ -84,6 +86,6 @@ export function WHOIntroScreen({ onContinue }: WHOIntroScreenProps) {
           {voiceEnabled && !hasHeardIntro ? "Listening..." : "Say 'ready' or tap the button"}
         </p>
       </div>
-    </OnboardingLayout>
+    </SAIAnchoredLayout>
   );
 }

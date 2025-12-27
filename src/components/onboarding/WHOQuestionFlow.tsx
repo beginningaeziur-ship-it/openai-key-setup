@@ -3,7 +3,7 @@ import { useAccessibility } from '@/contexts/AccessibilityContext';
 import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
 import { Check, X, SkipForward } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { OnboardingLayout } from './OnboardingLayout';
+import { SAIAnchoredLayout } from './SAIAnchoredLayout';
 import { Button } from '@/components/ui/button';
 
 interface WHOQuestion {
@@ -97,9 +97,11 @@ export function WHOQuestionFlow({ questions, onComplete, onBack }: WHOQuestionFl
   };
 
   return (
-    <OnboardingLayout 
+    <SAIAnchoredLayout 
       saiMessage={currentQuestion?.spokenQuestion || ''}
       saiState={isSpeaking ? 'speaking' : 'attentive'}
+      showOverlay={true}
+      overlayStyle="glass"
     >
       <div className="flex-1 flex flex-col">
         {/* Progress bar */}
@@ -159,6 +161,6 @@ export function WHOQuestionFlow({ questions, onComplete, onBack }: WHOQuestionFl
           </div>
         )}
       </div>
-    </OnboardingLayout>
+    </SAIAnchoredLayout>
   );
 }
