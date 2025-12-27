@@ -265,11 +265,8 @@ export function ServiceDogProvider({ children }: { children: ReactNode }) {
 
   // Get a gentle prompt for a specific need
   const getNeedPrompt = useCallback((need: SaiNeed): string => {
-    const mapping = SAI_RECIPROCAL_CARE.needMappings[need];
-    const prompts = SAI_LANGUAGE.gentlePrompts;
-    const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
-    
-    return `${randomPrompt} ${mapping.action}?`;
+    const prompt = SAI_LANGUAGE.gentlePrompts[need];
+    return prompt || "Can we take a moment together?";
   }, []);
 
   // Calculate overall energy level from needs
