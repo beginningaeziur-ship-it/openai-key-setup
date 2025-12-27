@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useSAI } from '@/contexts/SAIContext';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { PaperTestForm } from '@/components/onboarding/PaperTestForm';
+import { SAIAnchoredLayout } from '@/components/onboarding/SAIAnchoredLayout';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 type ChoiceType = 'gentle' | 'standard' | 'challenge';
@@ -74,23 +74,23 @@ export default function Preferences() {
     selected: ChoiceType | null,
     onSelect: (id: ChoiceType) => void
   ) => (
-    <div className="space-y-2">
-      <p className="text-stone-700 font-medium text-sm">{title}</p>
-      <div className="grid grid-cols-3 gap-2">
+    <div className="space-y-1">
+      <p className="font-medium text-xs">{title}</p>
+      <div className="grid grid-cols-3 gap-1">
         {options.map(option => (
           <div
             key={option.id}
             onClick={() => onSelect(option.id)}
             className={`
-              p-2 rounded-lg cursor-pointer transition-all text-center
+              p-2 rounded cursor-pointer transition-all text-center
               ${selected === option.id
                 ? 'bg-amber-200 border-2 border-amber-500'
                 : 'bg-amber-50 border border-stone-300 hover:bg-amber-100'
               }
             `}
           >
-            <p className="text-stone-800 text-sm font-medium">{option.label}</p>
-            <p className="text-stone-500 text-xs">{option.description}</p>
+            <p className="text-xs font-medium">{option.label}</p>
+            <p className="text-[10px] text-stone-500">{option.description}</p>
           </div>
         ))}
       </div>
@@ -98,24 +98,28 @@ export default function Preferences() {
   );
 
   return (
-    <PaperTestForm>
-      <div className="space-y-6">
+    <SAIAnchoredLayout 
+      saiMessage="How should we work together? There's no wrong answer here."
+      saiState="attentive"
+      overlayStyle="paper"
+    >
+      <div className="space-y-4">
         {/* Header */}
-        <div className="text-center border-b-2 border-stone-300 pb-4">
-          <h1 className="text-2xl font-bold text-stone-800 tracking-wide">
+        <div className="text-center border-b-2 border-stone-300 pb-3">
+          <h1 className="text-xl font-bold tracking-wide">
             Personal Support Assessment
           </h1>
           <p className="text-xs text-red-600 font-semibold mt-1">CONFIDENTIAL</p>
         </div>
 
         {/* Question */}
-        <p className="text-stone-700 font-medium">
-          How should we work together? There's no wrong answer:
+        <p className="font-medium text-sm">
+          How should we work together?
         </p>
 
         {/* Options */}
-        <ScrollArea className="max-h-[320px]">
-          <div className="space-y-4 pr-2">
+        <ScrollArea className="max-h-[220px]">
+          <div className="space-y-3 pr-2">
             {renderChoiceGroup('Pace', paceOptions, pace, setPace)}
             {renderChoiceGroup('Intensity', intensityOptions, intensity, setIntensity)}
             {renderChoiceGroup('Support Style', supportOptions, supportStyle, setSupportStyle)}
@@ -124,25 +128,25 @@ export default function Preferences() {
         </ScrollArea>
 
         {/* Navigation */}
-        <div className="flex gap-3 pt-2">
+        <div className="flex gap-3 pt-1">
           <Button
             variant="outline"
             onClick={() => navigate('/onboarding/symptoms')}
-            className="flex-1 h-10 bg-stone-100 border-stone-300 text-stone-700 hover:bg-stone-200"
+            className="flex-1 h-9 bg-stone-100 border-stone-300 text-stone-700 hover:bg-stone-200"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4 mr-1" />
             Back
           </Button>
           <Button
             onClick={handleNext}
             disabled={!allSelected}
-            className="flex-1 h-10 bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50"
+            className="flex-1 h-9 bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50"
           >
             Next
-            <ArrowRight className="w-4 h-4 ml-2" />
+            <ArrowRight className="w-4 h-4 ml-1" />
           </Button>
         </div>
       </div>
-    </PaperTestForm>
+    </SAIAnchoredLayout>
   );
 }

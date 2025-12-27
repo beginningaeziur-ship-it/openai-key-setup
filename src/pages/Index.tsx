@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSAI } from "@/contexts/SAIContext";
 import { useMicrophone } from "@/contexts/MicrophoneContext";
 import { LogoSplash } from "@/components/onboarding/LogoSplash";
-import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
+import { SAIAnchoredLayout } from "@/components/onboarding/SAIAnchoredLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Lock, Eye, EyeOff, Phone, User } from "lucide-react";
@@ -13,16 +13,15 @@ import { useVoiceSettings } from "@/contexts/VoiceSettingsContext";
 /**
  * Onboarding Flow - HARD LOCKED ORDER (from UI Spec)
  * 
- * 1. Logo resolves → Sai appears
- * 2. Sai introduces self
- * 3. "Who" assessment (Sai introduces questions)
- * 4. Safety plan creation
- * 5. Enter Home-Base Cabin
+ * 1. Logo (alone) → then unmounts
+ * 2. SAI appears and introduces self (SAI visible first, no overlap)
+ * 3. Nickname, PIN, Emergency (SAI always visible, forms are overlays)
+ * 4. → Navigate to WHO assessment
  * 
- * Rules:
- * - Background never changes (persistent cabin)
- * - Sai always visible
- * - No screen appears without Sai introducing it
+ * RULES:
+ * - Logo NEVER shows with SAI
+ * - SAI is ALWAYS visible when present
+ * - Forms are overlays, not replacements
  */
 
 type OnboardingPhase = 
@@ -35,7 +34,7 @@ type OnboardingPhase =
 
 const Index = () => {
   const navigate = useNavigate();
-  const { onboarding, setUserProfile, completeOnboarding } = useSAI();
+  const { onboarding, setUserProfile } = useSAI();
   const { enableMicrophone, isSupported } = useMicrophone();
   const { speak, voiceEnabled } = useVoiceSettings();
   
@@ -56,7 +55,7 @@ const Index = () => {
   const [emergencyPhone, setEmergencyPhone] = useState('');
   const [skipEmergency, setSkipEmergency] = useState(false);
 
-  // SAI messages for each phase
+  // SAI messages for each phase - SAI speaks first, introduces what comes next
   const saiMessages: Record<OnboardingPhase, string> = {
     'splash': '',
     'sai-intro': "I'm SAI — your service dog companion. I'll walk with you through every step. We go at your pace. You lead, I walk beside you.",
@@ -74,14 +73,15 @@ const Index = () => {
     }
   }, [phase, onboarding.completed, navigate]);
 
-  // Speak SAI's message when phase changes
+  // Speak SAI's message when phase changes (SAI speaks first)
   useEffect(() => {
     if (phase !== 'splash' && phase !== 'complete' && voiceEnabled && saiMessages[phase]) {
       speak(saiMessages[phase]);
     }
-  }, [phase, voiceEnabled]);
+  }, [phase, voiceEnabled, pinStep]);
 
   const handleSplashComplete = async () => {
+    // Logo is done, now SAI can appear
     if (isSupported) {
       await enableMicrophone();
     }
@@ -130,14 +130,15 @@ const Index = () => {
     navigate('/onboarding/categories', { replace: true });
   };
 
-  // Render based on phase
+  // SPLASH: Logo only, SAI NOT visible
   if (phase === 'splash') {
     return <LogoSplash onComplete={handleSplashComplete} />;
   }
 
+  // SAI INTRO: SAI appears first, speaks, then button
   if (phase === 'sai-intro') {
     return (
-      <OnboardingLayout saiMessage={saiMessages[phase]} saiState="speaking">
+      <SAIAnchoredLayout saiMessage={saiMessages[phase]} saiState="speaking" showOverlay={true}>
         <div className="flex-1 flex flex-col items-center justify-end pb-8">
           <Button
             onClick={handleSaiIntroContinue}
@@ -150,13 +151,14 @@ const Index = () => {
             Say "ready" or tap the button
           </p>
         </div>
-      </OnboardingLayout>
+      </SAIAnchoredLayout>
     );
   }
 
+  // NICKNAME: SAI visible + form overlay
   if (phase === 'nickname') {
     return (
-      <OnboardingLayout saiMessage={saiMessages[phase]} saiState="attentive">
+      <SAIAnchoredLayout saiMessage={saiMessages[phase]} saiState="attentive" showOverlay={true}>
         <div className="flex-1 flex flex-col justify-center">
           <div className="bg-black/50 backdrop-blur-md rounded-2xl border border-white/10 p-6">
             <div className="flex items-center gap-3 mb-4">
@@ -185,13 +187,14 @@ const Index = () => {
             Continue
           </Button>
         </div>
-      </OnboardingLayout>
+      </SAIAnchoredLayout>
     );
   }
 
+  // SAFETY PIN: SAI visible + form overlay
   if (phase === 'safety-pin') {
     return (
-      <OnboardingLayout saiMessage={saiMessages[phase]} saiState="attentive">
+      <SAIAnchoredLayout saiMessage={saiMessages[phase]} saiState="attentive" showOverlay={true}>
         <div className="flex-1 flex flex-col justify-center">
           <div className="bg-black/50 backdrop-blur-md rounded-2xl border border-white/10 p-6">
             <div className="flex items-center gap-3 mb-4">
@@ -255,13 +258,14 @@ const Index = () => {
             {pinStep === 'enter' ? 'Continue' : 'Set PIN'}
           </Button>
         </div>
-      </OnboardingLayout>
+      </SAIAnchoredLayout>
     );
   }
 
+  // EMERGENCY CONTACT: SAI visible + form overlay
   if (phase === 'emergency-contact') {
     return (
-      <OnboardingLayout saiMessage={saiMessages[phase]} saiState="attentive">
+      <SAIAnchoredLayout saiMessage={saiMessages[phase]} saiState="attentive" showOverlay={true}>
         <div className="flex-1 flex flex-col justify-center">
           <div className="bg-black/50 backdrop-blur-md rounded-2xl border border-white/10 p-6 space-y-4">
             <div className="flex items-center gap-3 mb-2">
@@ -315,11 +319,11 @@ const Index = () => {
             Continue
           </Button>
         </div>
-      </OnboardingLayout>
+      </SAIAnchoredLayout>
     );
   }
 
-  // Loading/redirect state
+  // Loading/redirect state (should not happen normally)
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-center space-y-4">
