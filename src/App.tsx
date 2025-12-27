@@ -18,6 +18,7 @@ import { GlobalMicButton } from "@/components/voice/GlobalMicButton";
 import { MicrophoneActivationPrompt } from "@/components/voice/MicrophoneWarningDialog";
 import { CompanionCheckIn } from "@/components/companion/CompanionCheckIn";
 import { PendingRoutinePopup } from "@/components/routines/PendingRoutinePopup";
+
 // Pages
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -28,18 +29,10 @@ import Settings from "./pages/Settings";
 import Watcher from "./pages/Watcher";
 
 // Onboarding Pages
-import Welcome from "./pages/onboarding/Welcome";
-import CyName from "./pages/onboarding/CyName";
-import UserInfo from "./pages/onboarding/UserInfo";
-import WHOModel from "./pages/onboarding/WHOModel";
-import Categories from "./pages/onboarding/Categories";
-import Conditions from "./pages/onboarding/Conditions";
-import Symptoms from "./pages/onboarding/Symptoms";
-import Preferences from "./pages/onboarding/Preferences";
-import SceneSelect from "./pages/onboarding/SceneSelect";
-import GoalProposal from "./pages/onboarding/GoalProposal";
-import WaterProfileExplanation from "./pages/onboarding/WaterProfileExplanation";
+import WelcomeIntro from "./pages/onboarding/WelcomeIntro";
+import Assessment from "./pages/onboarding/Assessment";
 import SafetyPlan from "./pages/onboarding/SafetyPlan";
+import GoalProposal from "./pages/onboarding/GoalProposal";
 
 const queryClient = new QueryClient();
 
@@ -61,22 +54,14 @@ const App = () => (
                           <BrowserRouter>
                             <TourProvider>
                               <Routes>
-                                {/* Main entry - redirects based on onboarding status */}
+                                {/* Main entry - logo splash */}
                                 <Route path="/" element={<Index />} />
                                 
-                                {/* Onboarding flow */}
-                                <Route path="/onboarding/welcome" element={<Welcome />} />
-                                <Route path="/onboarding/cy-name" element={<CyName />} />
-                                <Route path="/onboarding/user-info" element={<UserInfo />} />
-                                <Route path="/onboarding/who-model" element={<WHOModel />} />
-                                <Route path="/onboarding/categories" element={<Categories />} />
-                                <Route path="/onboarding/conditions" element={<Conditions />} />
-                                <Route path="/onboarding/symptoms" element={<Symptoms />} />
-                                <Route path="/onboarding/preferences" element={<Preferences />} />
+                                {/* Simplified onboarding flow */}
+                                <Route path="/onboarding/welcome" element={<WelcomeIntro />} />
+                                <Route path="/onboarding/assessment" element={<Assessment />} />
                                 <Route path="/onboarding/safety-plan" element={<SafetyPlan />} />
-                                <Route path="/onboarding/scene" element={<SceneSelect />} />
                                 <Route path="/onboarding/goals" element={<GoalProposal />} />
-                                <Route path="/onboarding/water-profile" element={<WaterProfileExplanation />} />
                                 
                                 {/* Main app */}
                                 <Route path="/sai-room" element={<SAIRoom />} />
