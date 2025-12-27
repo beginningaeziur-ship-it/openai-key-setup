@@ -178,7 +178,23 @@ export function SAINarratorProvider({ children }: { children: React.ReactNode })
 export function useSAINarrator() {
   const context = useContext(SAINarratorContext);
   if (!context) {
-    throw new Error('useSAINarrator must be used within SAINarratorProvider');
+    // Return safe defaults if provider is not available
+    console.warn('useSAINarrator called outside SAINarratorProvider, using defaults');
+    return {
+      isNarrating: false,
+      isListening: false,
+      isMuted: false,
+      currentScreen: '',
+      narrateScreen: async () => {},
+      repeatNarration: async () => {},
+      toggleMute: () => {},
+      stopNarration: () => {},
+      setCurrentScreen: () => {},
+      hasNarratedScreen: () => false,
+      markScreenNarrated: () => {},
+      startListeningWindow: () => {},
+      stopListening: () => {},
+    } as SAINarratorContextType;
   }
   return context;
 }
