@@ -63,7 +63,7 @@ export default function Preferences() {
       });
     }
     setOnboardingStep(8);
-    navigate('/onboarding/goals');
+    navigate('/onboarding/safety-plan');
   };
 
   const allSelected = pace && intensity && supportStyle && goalSize;

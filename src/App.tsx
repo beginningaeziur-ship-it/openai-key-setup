@@ -39,6 +39,7 @@ import Preferences from "./pages/onboarding/Preferences";
 import SceneSelect from "./pages/onboarding/SceneSelect";
 import GoalProposal from "./pages/onboarding/GoalProposal";
 import WaterProfileExplanation from "./pages/onboarding/WaterProfileExplanation";
+import SafetyPlan from "./pages/onboarding/SafetyPlan";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
                                 <Route path="/onboarding/conditions" element={<Conditions />} />
                                 <Route path="/onboarding/symptoms" element={<Symptoms />} />
                                 <Route path="/onboarding/preferences" element={<Preferences />} />
+                                <Route path="/onboarding/safety-plan" element={<SafetyPlan />} />
                                 <Route path="/onboarding/scene" element={<SceneSelect />} />
                                 <Route path="/onboarding/goals" element={<GoalProposal />} />
                                 <Route path="/onboarding/water-profile" element={<WaterProfileExplanation />} />
