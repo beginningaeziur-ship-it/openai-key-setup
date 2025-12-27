@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { useEmotionalState } from './EmotionalStateContext';
 import { useSelfStart } from './SelfStartContext';
-import { SAI_RECIPROCAL_CARE, SaiNeed } from '@/lib/saiPersonalitySpec';
+import { SAI_RECIPROCAL_CARE, SAI_LANGUAGE, SaiNeed } from '@/lib/saiPersonalitySpec';
 
 export type DogMood = 'calm' | 'alert' | 'comforting' | 'playful';
 export type EnergyLevel = 'high' | 'medium' | 'low' | 'resting';
@@ -266,7 +266,7 @@ export function ServiceDogProvider({ children }: { children: ReactNode }) {
   // Get a gentle prompt for a specific need
   const getNeedPrompt = useCallback((need: SaiNeed): string => {
     const mapping = SAI_RECIPROCAL_CARE.needMappings[need];
-    const prompts = SAI_RECIPROCAL_CARE.gentlePrompts;
+    const prompts = SAI_LANGUAGE.gentlePrompts;
     const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
     
     return `${randomPrompt} ${mapping.action}?`;
