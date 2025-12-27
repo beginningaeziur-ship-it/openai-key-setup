@@ -337,7 +337,34 @@ export function ServiceDogProvider({ children }: { children: ReactNode }) {
 export function useServiceDog() {
   const context = useContext(ServiceDogContext);
   if (context === undefined) {
-    throw new Error('useServiceDog must be used within a ServiceDogProvider');
+    // Return safe defaults if provider is not available
+    // This prevents crashes during initialization
+    console.warn('useServiceDog called outside ServiceDogProvider, using defaults');
+    return {
+      dogState: {
+        name: 'SAI',
+        mood: 'calm' as DogMood,
+        lastInteraction: null,
+        stressDetected: false,
+        energyLevel: 'high' as EnergyLevel,
+        needLevels: { food: 70, water: 70, rest: 70, movement: 70, attention: 70 },
+        lastNeedUpdate: null,
+      },
+      dogModeEnabled: false,
+      setDogModeEnabled: () => {},
+      setDogName: () => {},
+      getDogGroundingPrompt: () => '',
+      getDogCheckInPrompt: () => '',
+      getDogCalmingScript: () => '',
+      careReminders: [],
+      petDog: () => {},
+      askForHelp: () => {},
+      triggerDistressResponse: () => {},
+      fulfillNeed: () => {},
+      getNeedPrompt: () => '',
+      getLowestNeed: () => null,
+      getOverallEnergy: () => 'high' as EnergyLevel,
+    } as ServiceDogContextType;
   }
   return context;
 }
