@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { Mic, MicOff, Volume2, VolumeX, Wind, Target, Pause } from "lucide-react";
+import React from "react";
+import { Volume2, VolumeX, Wind, Target, Pause } from "lucide-react";
 import { useSAI } from "@/contexts/SAIContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { RobotDogAvatar } from "@/components/sai/RobotDogAvatar";
 
 export type SAIStatus = 'idle' | 'listening' | 'speaking' | 'thinking';
 
@@ -64,50 +65,24 @@ export function SAIPresence({
     direct: 'text-foreground/90 font-medium',
   };
 
+  // Map SAIStatus to RobotDogAvatar state
+  const getDogState = () => {
+    switch (currentStatus) {
+      case 'listening': return 'listening';
+      case 'speaking': return 'speaking';
+      case 'thinking': return 'attentive';
+      default: return 'resting';
+    }
+  };
+
   return (
     <div className={cn('flex flex-col items-center gap-4', className)}>
-      {/* SAI Avatar with breathing glow */}
-      <div className="relative">
-        {/* Outer breathing glow */}
-        <div className={cn(
-          'absolute inset-0 rounded-full bg-primary/20 blur-xl transition-all duration-1000',
-          currentStatus === 'speaking' ? 'scale-150 opacity-50' : 
-          currentStatus === 'listening' ? 'scale-130 opacity-40 animate-pulse' :
-          currentStatus === 'thinking' ? 'scale-110 opacity-30' :
-          'scale-100 opacity-30 animate-breathe'
-        )} />
-        
-        {/* Avatar circle */}
-        <div className={cn(
-          'relative w-24 h-24 rounded-full flex items-center justify-center',
-          'bg-gradient-to-br from-primary/30 to-primary/10',
-          'border-2 border-primary/30 shadow-lg shadow-primary/10',
-          'transition-all duration-500',
-          currentStatus === 'speaking' && 'border-primary/60 scale-105 shadow-primary/30',
-          currentStatus === 'listening' && 'border-sai-hope/50 scale-105'
-        )}>
-          <div className={cn(
-            'w-16 h-16 rounded-full flex items-center justify-center',
-            'bg-gradient-to-br from-primary/40 to-primary/20',
-            'transition-transform duration-500',
-            currentStatus !== 'idle' && 'scale-110'
-          )}>
-            <span className="text-2xl font-display font-bold text-primary">
-              {saiName.charAt(0)}
-            </span>
-          </div>
-        </div>
-
-        {/* Status indicator */}
-        <div className={cn(
-          'absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-background',
-          'transition-colors duration-300',
-          currentStatus === 'idle' && 'bg-progress-stable',
-          currentStatus === 'listening' && 'bg-sai-hope animate-pulse',
-          currentStatus === 'speaking' && 'bg-primary animate-pulse',
-          currentStatus === 'thinking' && 'bg-sai-gentle animate-pulse'
-        )} />
-      </div>
+      {/* Robot Dog Avatar */}
+      <RobotDogAvatar 
+        size="xl" 
+        state={getDogState()} 
+        showBreathing={currentStatus === 'idle'}
+      />
 
       {/* SAI Name */}
       <div className="text-center">
