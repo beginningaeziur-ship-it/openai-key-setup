@@ -3,126 +3,328 @@ import { useNavigate } from "react-router-dom";
 import { useSAI } from "@/contexts/SAIContext";
 import { useMicrophone } from "@/contexts/MicrophoneContext";
 import { LogoSplash } from "@/components/onboarding/LogoSplash";
-import { SAIArrival } from "@/components/onboarding/SAIArrival";
-import { OnboardingExplanation } from "@/components/onboarding/OnboardingExplanation";
-import { SafetyPinSetup } from "@/components/onboarding/SafetyPinSetup";
-import { NicknameSetup } from "@/components/onboarding/NicknameSetup";
-import { EmergencyContactSetup } from "@/components/onboarding/EmergencyContactSetup";
+import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Lock, Eye, EyeOff, Phone, User } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useVoiceSettings } from "@/contexts/VoiceSettingsContext";
+
+/**
+ * Onboarding Flow - HARD LOCKED ORDER (from UI Spec)
+ * 
+ * 1. Logo resolves → Sai appears
+ * 2. Sai introduces self
+ * 3. "Who" assessment (Sai introduces questions)
+ * 4. Safety plan creation
+ * 5. Enter Home-Base Cabin
+ * 
+ * Rules:
+ * - Background never changes (persistent cabin)
+ * - Sai always visible
+ * - No screen appears without Sai introducing it
+ */
 
 type OnboardingPhase = 
   | 'splash' 
-  | 'arrival' 
-  | 'explanation' 
-  | 'pin' 
-  | 'nickname' 
-  | 'emergency' 
+  | 'sai-intro'
+  | 'nickname'
+  | 'safety-pin'
+  | 'emergency-contact'
   | 'complete';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { onboarding, userProfile, setUserProfile, completeOnboarding } = useSAI();
+  const { onboarding, setUserProfile, completeOnboarding } = useSAI();
   const { enableMicrophone, isSupported } = useMicrophone();
+  const { speak, voiceEnabled } = useVoiceSettings();
   
   const [phase, setPhase] = useState<OnboardingPhase>(() => {
-    // If already completed, skip to room
     if (onboarding.completed) return 'complete';
-    // Check if intro was seen before
     const introSeen = localStorage.getItem('sai_intro_seen');
-    return introSeen ? 'pin' : 'splash';
+    return introSeen ? 'nickname' : 'splash';
   });
 
-  const [tempPin, setTempPin] = useState('');
-  const [tempNickname, setTempNickname] = useState('');
+  // Form states
+  const [nickname, setNickname] = useState('');
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
+  const [pinStep, setPinStep] = useState<'enter' | 'confirm'>('enter');
+  const [pinError, setPinError] = useState('');
+  const [emergencyNickname, setEmergencyNickname] = useState('');
+  const [emergencyPhone, setEmergencyPhone] = useState('');
+  const [skipEmergency, setSkipEmergency] = useState(false);
+
+  // SAI messages for each phase
+  const saiMessages: Record<OnboardingPhase, string> = {
+    'splash': '',
+    'sai-intro': "I'm SAI — your service dog companion. I'll walk with you through every step. We go at your pace. You lead, I walk beside you.",
+    'nickname': "What should I call you? Pick a name you feel safe with.",
+    'safety-pin': pinStep === 'enter' 
+      ? "Let's protect your space. Choose 4 numbers so no one else can see what we're working on."
+      : "Good. Enter those numbers again to confirm.",
+    'emergency-contact': "If things ever get heavy, is there someone I should know about? This is completely optional.",
+    'complete': '',
+  };
 
   useEffect(() => {
     if (phase === 'complete' || onboarding.completed) {
-      navigate("/sai-room", { replace: true });
+      navigate("/onboarding/categories", { replace: true });
     }
   }, [phase, onboarding.completed, navigate]);
 
+  // Speak SAI's message when phase changes
+  useEffect(() => {
+    if (phase !== 'splash' && phase !== 'complete' && voiceEnabled && saiMessages[phase]) {
+      speak(saiMessages[phase]);
+    }
+  }, [phase, voiceEnabled]);
+
   const handleSplashComplete = async () => {
-    // Enable microphone after logo splash for voice-first experience
     if (isSupported) {
-      console.log('[Index] Enabling microphone after splash...');
       await enableMicrophone();
     }
-    setPhase('arrival');
-  };
-
-  const handleArrivalContinue = () => {
     localStorage.setItem('sai_intro_seen', 'true');
-    setPhase('explanation');
+    setPhase('sai-intro');
   };
 
-  const handleExplanationContinue = () => {
-    setPhase('pin');
-  };
-
-  const handlePinComplete = (pin: string) => {
-    setTempPin(pin);
-    localStorage.setItem('sai_safety_pin', pin);
+  const handleSaiIntroContinue = () => {
     setPhase('nickname');
   };
 
-  const handleNicknameComplete = (nickname: string) => {
-    setTempNickname(nickname);
-    setPhase('emergency');
+  const handleNicknameContinue = () => {
+    if (nickname.trim().length < 1) return;
+    setPhase('safety-pin');
   };
 
-  const handleEmergencyComplete = (
-    contact: { nickname: string; phone: string } | null,
-    alternative?: string
-  ) => {
-    // Save profile and continue to full onboarding
+  const handlePinContinue = async () => {
+    if (pinStep === 'enter') {
+      if (pin.length !== 4) {
+        setPinError('Enter 4 numbers');
+        return;
+      }
+      setPinStep('confirm');
+      setPinError('');
+    } else {
+      if (confirmPin !== pin) {
+        setPinError("Those don't match. Try again.");
+        setConfirmPin('');
+        return;
+      }
+      localStorage.setItem('sai_safety_pin', pin);
+      setPhase('emergency-contact');
+    }
+  };
+
+  const handleEmergencyContinue = () => {
     setUserProfile({
-      nickname: tempNickname,
+      nickname: nickname.trim(),
       saiNickname: 'SAI',
       voicePreference: 'nova',
       voiceMode: 'on',
-      emergencyContact: contact || { nickname: '', phone: '' },
+      emergencyContact: skipEmergency 
+        ? { nickname: '', phone: '' }
+        : { nickname: emergencyNickname.trim(), phone: emergencyPhone.trim() },
     });
-    
-    // Navigate to rest of onboarding (categories, conditions, etc.)
     navigate('/onboarding/categories', { replace: true });
   };
 
   // Render based on phase
   if (phase === 'splash') {
-    return <LogoSplash onComplete={handleSplashComplete} duration={3500} />;
+    return <LogoSplash onComplete={handleSplashComplete} />;
   }
 
-  if (phase === 'arrival') {
+  if (phase === 'sai-intro') {
     return (
-      <SAIArrival 
-        saiName="SAI" 
-        userName={tempNickname || 'friend'} 
-        onContinue={handleArrivalContinue} 
-      />
+      <OnboardingLayout saiMessage={saiMessages[phase]} saiState="speaking">
+        <div className="flex-1 flex flex-col items-center justify-end pb-8">
+          <Button
+            onClick={handleSaiIntroContinue}
+            size="lg"
+            className="w-full max-w-xs h-12 rounded-xl shadow-lg shadow-primary/30"
+          >
+            I'm ready
+          </Button>
+          <p className="text-white/40 text-xs text-center mt-3">
+            Say "ready" or tap the button
+          </p>
+        </div>
+      </OnboardingLayout>
     );
   }
 
-  if (phase === 'explanation') {
-    return <OnboardingExplanation onContinue={handleExplanationContinue} />;
-  }
-
-  if (phase === 'pin') {
-    return <SafetyPinSetup onComplete={handlePinComplete} />;
-  }
-
   if (phase === 'nickname') {
-    return <NicknameSetup onComplete={handleNicknameComplete} />;
+    return (
+      <OnboardingLayout saiMessage={saiMessages[phase]} saiState="attentive">
+        <div className="flex-1 flex flex-col justify-center">
+          <div className="bg-black/50 backdrop-blur-md rounded-2xl border border-white/10 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <User className="w-5 h-5 text-primary" />
+              <span className="text-white font-medium">Your Name</span>
+            </div>
+            <Input
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="What should I call you?"
+              className="h-14 text-lg bg-white/10 border-white/20 text-white placeholder:text-white/40"
+              autoFocus
+            />
+            <p className="text-white/50 text-xs mt-3">
+              This can be a nickname, first name, or anything you'd like
+            </p>
+          </div>
+        </div>
+        <div className="pb-6">
+          <Button
+            onClick={handleNicknameContinue}
+            size="lg"
+            disabled={nickname.trim().length < 1}
+            className="w-full h-12 rounded-xl shadow-lg shadow-primary/30"
+          >
+            Continue
+          </Button>
+        </div>
+      </OnboardingLayout>
+    );
   }
 
-  if (phase === 'emergency') {
-    return <EmergencyContactSetup onComplete={handleEmergencyComplete} />;
+  if (phase === 'safety-pin') {
+    return (
+      <OnboardingLayout saiMessage={saiMessages[phase]} saiState="attentive">
+        <div className="flex-1 flex flex-col justify-center">
+          <div className="bg-black/50 backdrop-blur-md rounded-2xl border border-white/10 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <Lock className="w-5 h-5 text-primary" />
+              <span className="text-white font-medium">
+                {pinStep === 'enter' ? 'Set PIN' : 'Confirm PIN'}
+              </span>
+            </div>
+            <div className="relative mb-3">
+              <Input
+                type={showPin ? 'text' : 'password'}
+                value={pinStep === 'enter' ? pin : confirmPin}
+                onChange={(e) => {
+                  const cleaned = e.target.value.replace(/\D/g, '').slice(0, 4);
+                  if (pinStep === 'enter') setPin(cleaned);
+                  else setConfirmPin(cleaned);
+                  setPinError('');
+                }}
+                placeholder="• • • •"
+                className={cn(
+                  "h-14 text-center text-2xl tracking-[0.5em] font-mono",
+                  "bg-white/10 border-white/20 text-white placeholder:text-white/30",
+                  pinError && "border-red-500/50"
+                )}
+                maxLength={4}
+                inputMode="numeric"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => setShowPin(!showPin)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+              >
+                {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+            {pinError && <p className="text-red-400 text-xs text-center mb-3">{pinError}</p>}
+            <div className="flex justify-center gap-2 mb-4">
+              {[0, 1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "w-2.5 h-2.5 rounded-full transition-all",
+                    (pinStep === 'enter' ? pin : confirmPin).length > i ? "bg-primary" : "bg-white/20"
+                  )}
+                />
+              ))}
+            </div>
+            <p className="text-white/50 text-xs text-center">
+              Stored only on your device
+            </p>
+          </div>
+        </div>
+        <div className="pb-6">
+          <Button
+            onClick={handlePinContinue}
+            size="lg"
+            disabled={(pinStep === 'enter' ? pin : confirmPin).length !== 4}
+            className="w-full h-12 rounded-xl shadow-lg shadow-primary/30"
+          >
+            {pinStep === 'enter' ? 'Continue' : 'Set PIN'}
+          </Button>
+        </div>
+      </OnboardingLayout>
+    );
+  }
+
+  if (phase === 'emergency-contact') {
+    return (
+      <OnboardingLayout saiMessage={saiMessages[phase]} saiState="attentive">
+        <div className="flex-1 flex flex-col justify-center">
+          <div className="bg-black/50 backdrop-blur-md rounded-2xl border border-white/10 p-6 space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <Phone className="w-5 h-5 text-primary" />
+              <span className="text-white font-medium">Emergency Contact</span>
+            </div>
+            
+            {!skipEmergency ? (
+              <>
+                <Input
+                  value={emergencyNickname}
+                  onChange={(e) => setEmergencyNickname(e.target.value)}
+                  placeholder="Their name or nickname"
+                  className="h-12 bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                />
+                <Input
+                  value={emergencyPhone}
+                  onChange={(e) => setEmergencyPhone(e.target.value)}
+                  placeholder="Phone number"
+                  type="tel"
+                  className="h-12 bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                />
+                <button
+                  onClick={() => setSkipEmergency(true)}
+                  className="text-white/50 text-sm hover:text-white/70 underline"
+                >
+                  Skip for now
+                </button>
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-white/70 text-sm mb-3">
+                  That's okay. You can add this later if you want.
+                </p>
+                <button
+                  onClick={() => setSkipEmergency(false)}
+                  className="text-primary text-sm hover:underline"
+                >
+                  Actually, I want to add someone
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="pb-6">
+          <Button
+            onClick={handleEmergencyContinue}
+            size="lg"
+            className="w-full h-12 rounded-xl shadow-lg shadow-primary/30"
+          >
+            Continue
+          </Button>
+        </div>
+      </OnboardingLayout>
+    );
   }
 
   // Loading/redirect state
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="text-center space-y-4 sai-fade-in">
-        <div className="w-16 h-16 mx-auto rounded-full sai-gradient-calm sai-breathe" />
-        <p className="text-muted-foreground text-lg">Loading SAI...</p>
+      <div className="text-center space-y-4">
+        <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 animate-pulse" />
+        <p className="text-muted-foreground">Loading SAI...</p>
       </div>
     </div>
   );
