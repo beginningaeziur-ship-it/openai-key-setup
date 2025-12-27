@@ -183,4 +183,103 @@ export const SAI_PURPOSE = {
   ],
 } as const;
 
+/**
+ * RECIPROCAL CARE SYSTEM (SERVICE DOG BEHAVIOR)
+ * Sai behaves as a living service dog who also has basic needs.
+ * These needs exist to teach rhythm, responsibility, and mutual care, not obedience.
+ */
+export const SAI_RECIPROCAL_CARE = {
+  needs: ['food', 'water', 'rest', 'movement', 'attention'] as const,
+  
+  needMappings: {
+    food: {
+      description: 'User completes a grounding or routine task',
+      action: 'Feed Sai',
+      userBenefit: 'Completing daily routines',
+    },
+    water: {
+      description: 'Hydration check-in or pause',
+      action: 'Water Sai',
+      userBenefit: 'Taking hydration breaks',
+    },
+    rest: {
+      description: 'Rest, sleep, or quiet presence',
+      action: 'Rest with Sai',
+      userBenefit: 'Allowing yourself to rest',
+    },
+    movement: {
+      description: 'Movement or outside time',
+      action: 'Walk Sai',
+      userBenefit: 'Getting movement and fresh air',
+    },
+    attention: {
+      description: 'Check-in or interaction',
+      action: 'Pet Sai',
+      userBenefit: 'Mindful presence and connection',
+    },
+  },
+
+  lowEnergyBehaviors: [
+    'Appear lower energy',
+    'Lie down instead of sitting alert',
+    'Speak less',
+    'Encourage rest or simplification',
+  ],
+
+  neverSays: [
+    'You failed me.',
+    'You forgot.',
+    'You hurt me.',
+  ],
+
+  gentlePrompts: [
+    "I'm low on water. Want to take care of that together?",
+    "I can rest if today is heavy.",
+    "We can go slow.",
+    "I'm here when you're ready.",
+    "Let's keep this simple today.",
+  ],
+
+  principles: {
+    needsMirrorUser: "Sai's needs mirror the user's needs",
+    careReinforces: 'Caring for Sai reinforces caring for self',
+    skipReducesComplexity: 'Skipping care reduces interaction complexity, not access',
+    noPunishment: 'No punishment mechanics',
+    noCountdown: 'No countdown-to-failure systems',
+    alwaysPresent: 'Sai always remains present',
+  },
+
+  overwhelmedBehavior: [
+    'Sai automatically lowers its own needs',
+    'Sai prioritizes safety and grounding',
+    'Sai reassures that rest is acceptable',
+  ],
+
+  routinePatterns: {
+    strongRoutines: 'Sai appears more alert and interactive',
+    falteringRoutines: 'Sai simplifies and stabilizes',
+  },
+
+  patternSuggestions: [
+    'Caring for me helped yesterday.',
+    'We did better with water in the mornings.',
+    "Let's keep this simple today.",
+  ],
+
+  psychologicalIntent: [
+    'Build responsibility through attachment, not pressure',
+    'Restore agency through care-taking',
+    'Reinforce daily rhythms',
+    'Provide purpose without performance',
+  ],
+
+  finalBoundary: {
+    resilient: "Sai's well-being is symbolic and resilient",
+    cannotBeHarmed: 'Sai cannot be harmed by the user',
+    cannotBeLost: 'Sai cannot be lost due to neglect',
+    modelsNotDemands: 'Sai exists to model care, not demand it',
+  },
+} as const;
+
+export type SaiNeed = typeof SAI_RECIPROCAL_CARE.needs[number];
 export type SAIDomain = keyof typeof SAI_DOMAINS;

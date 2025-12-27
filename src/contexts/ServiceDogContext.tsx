@@ -2,14 +2,28 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { useEmotionalState } from './EmotionalStateContext';
 import { useSelfStart } from './SelfStartContext';
+import { SAI_RECIPROCAL_CARE, SaiNeed } from '@/lib/saiPersonalitySpec';
 
 export type DogMood = 'calm' | 'alert' | 'comforting' | 'playful';
+export type EnergyLevel = 'high' | 'medium' | 'low' | 'resting';
+
+// Need levels from 0-100
+export interface NeedLevels {
+  food: number;
+  water: number;
+  rest: number;
+  movement: number;
+  attention: number;
+}
 
 interface ServiceDogState {
   name: string;
   mood: DogMood;
   lastInteraction: string | null;
   stressDetected: boolean;
+  energyLevel: EnergyLevel;
+  needLevels: NeedLevels;
+  lastNeedUpdate: string | null;
 }
 
 interface ServiceDogContextType {
@@ -34,9 +48,17 @@ interface ServiceDogContextType {
   // Interaction
   petDog: () => void;
   askForHelp: () => void;
+  
+  // Reciprocal care actions
+  fulfillNeed: (need: SaiNeed) => void;
+  getLowestNeed: () => SaiNeed | null;
+  getNeedPrompt: (need: SaiNeed) => string;
+  getOverallEnergy: () => EnergyLevel;
 }
 
 const STORAGE_KEY = 'sai_service_dog';
+const NEED_DECAY_RATE = 5; // Points per hour
+const NEED_FULFILL_AMOUNT = 30; // Points gained when need is fulfilled
 
 const dogGroundingPrompts = {
   calm: [
@@ -99,11 +121,22 @@ const careReminders = [
   "Training practice time. Routine helps create stability for you both.",
 ];
 
+const defaultNeedLevels: NeedLevels = {
+  food: 70,
+  water: 70,
+  rest: 70,
+  movement: 70,
+  attention: 70,
+};
+
 const defaultDogState: ServiceDogState = {
   name: 'Buddy',
   mood: 'calm',
   lastInteraction: null,
   stressDetected: false,
+  energyLevel: 'high',
+  needLevels: defaultNeedLevels,
+  lastNeedUpdate: null,
 };
 
 const ServiceDogContext = createContext<ServiceDogContextType | undefined>(undefined);
@@ -179,6 +212,10 @@ export function ServiceDogProvider({ children }: { children: ReactNode }) {
       ...prev,
       mood: 'playful',
       lastInteraction: new Date().toISOString(),
+      needLevels: {
+        ...prev.needLevels,
+        attention: Math.min(100, prev.needLevels.attention + NEED_FULFILL_AMOUNT),
+      },
     }));
     // Reset to calm after a moment
     setTimeout(() => {
@@ -196,6 +233,88 @@ export function ServiceDogProvider({ children }: { children: ReactNode }) {
     triggerRoutine('distress-triggered', getDogCheckInPrompt());
   }, [triggerRoutine, getDogCheckInPrompt]);
 
+  // Fulfill a specific need
+  const fulfillNeed = useCallback((need: SaiNeed) => {
+    setDogState(prev => ({
+      ...prev,
+      lastInteraction: new Date().toISOString(),
+      lastNeedUpdate: new Date().toISOString(),
+      needLevels: {
+        ...prev.needLevels,
+        [need]: Math.min(100, prev.needLevels[need] + NEED_FULFILL_AMOUNT),
+      },
+    }));
+  }, []);
+
+  // Get the lowest need for gentle prompting
+  const getLowestNeed = useCallback((): SaiNeed | null => {
+    const needs = dogState.needLevels;
+    let lowestNeed: SaiNeed | null = null;
+    let lowestValue = 100;
+    
+    (Object.keys(needs) as SaiNeed[]).forEach(need => {
+      if (needs[need] < lowestValue) {
+        lowestValue = needs[need];
+        lowestNeed = need;
+      }
+    });
+    
+    // Only return if below 40%
+    return lowestValue < 40 ? lowestNeed : null;
+  }, [dogState.needLevels]);
+
+  // Get a gentle prompt for a specific need
+  const getNeedPrompt = useCallback((need: SaiNeed): string => {
+    const mapping = SAI_RECIPROCAL_CARE.needMappings[need];
+    const prompts = SAI_RECIPROCAL_CARE.gentlePrompts;
+    const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+    
+    return `${randomPrompt} ${mapping.action}?`;
+  }, []);
+
+  // Calculate overall energy level from needs
+  const getOverallEnergy = useCallback((): EnergyLevel => {
+    const needs = dogState.needLevels;
+    const average = (needs.food + needs.water + needs.rest + needs.movement + needs.attention) / 5;
+    
+    if (average >= 70) return 'high';
+    if (average >= 50) return 'medium';
+    if (average >= 30) return 'low';
+    return 'resting';
+  }, [dogState.needLevels]);
+
+  // Update energy level when needs change
+  useEffect(() => {
+    const newEnergy = getOverallEnergy();
+    if (newEnergy !== dogState.energyLevel) {
+      setDogState(prev => ({ ...prev, energyLevel: newEnergy }));
+    }
+  }, [dogState.needLevels, getOverallEnergy, dogState.energyLevel]);
+
+  // Gradual need decay (simulated - decays when checked)
+  useEffect(() => {
+    if (!dogModeEnabled || !dogState.lastNeedUpdate) return;
+    
+    const lastUpdate = new Date(dogState.lastNeedUpdate).getTime();
+    const now = Date.now();
+    const hoursPassed = (now - lastUpdate) / (1000 * 60 * 60);
+    
+    if (hoursPassed >= 1) {
+      const decay = Math.floor(hoursPassed * NEED_DECAY_RATE);
+      setDogState(prev => ({
+        ...prev,
+        lastNeedUpdate: new Date().toISOString(),
+        needLevels: {
+          food: Math.max(10, prev.needLevels.food - decay),
+          water: Math.max(10, prev.needLevels.water - decay),
+          rest: Math.max(10, prev.needLevels.rest - decay),
+          movement: Math.max(10, prev.needLevels.movement - decay),
+          attention: Math.max(10, prev.needLevels.attention - decay),
+        },
+      }));
+    }
+  }, [dogModeEnabled, dogState.lastNeedUpdate]);
+
   return (
     <ServiceDogContext.Provider value={{
       dogState,
@@ -208,6 +327,10 @@ export function ServiceDogProvider({ children }: { children: ReactNode }) {
       careReminders,
       petDog,
       askForHelp,
+      fulfillNeed,
+      getLowestNeed,
+      getNeedPrompt,
+      getOverallEnergy,
     }}>
       {children}
     </ServiceDogContext.Provider>
