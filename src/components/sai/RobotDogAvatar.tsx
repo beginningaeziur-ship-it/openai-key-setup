@@ -1,6 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { useSAINarrator } from '@/contexts/SAINarratorContext';
+import { EnergyLevel, NeedLevels } from '@/contexts/ServiceDogContext';
 
 type DogState = 'resting' | 'alert' | 'attentive' | 'listening' | 'speaking';
 
@@ -9,13 +10,19 @@ interface RobotDogAvatarProps {
   className?: string;
   state?: DogState;
   showBreathing?: boolean;
+  energyLevel?: EnergyLevel;
+  needLevels?: NeedLevels;
+  showNeedIndicators?: boolean;
 }
 
 export function RobotDogAvatar({ 
   size = 'md', 
   className,
   state: propState,
-  showBreathing = true 
+  showBreathing = true,
+  energyLevel = 'high',
+  needLevels,
+  showNeedIndicators = false,
 }: RobotDogAvatarProps) {
   const { isNarrating, isListening } = useSAINarrator();
   
@@ -35,18 +42,42 @@ export function RobotDogAvatar({
 
   const config = sizeConfig[size];
 
-  // State-based styling
-  const getEyeGlow = () => {
-    switch (state) {
-      case 'alert': return 'hsl(var(--primary))';
-      case 'attentive': return 'hsl(142 76% 45%)'; // Soft green
-      case 'listening': return 'hsl(200 95% 60%)'; // Calm blue
-      case 'speaking': return 'hsl(45 93% 58%)'; // Warm amber
-      default: return 'hsl(var(--primary) / 0.6)'; // Dimmed for resting
+  // Energy-based opacity and saturation
+  const getEnergyModifier = () => {
+    switch (energyLevel) {
+      case 'high': return { opacity: 1, saturation: 1, speed: 1 };
+      case 'medium': return { opacity: 0.85, saturation: 0.8, speed: 1.2 };
+      case 'low': return { opacity: 0.7, saturation: 0.6, speed: 1.5 };
+      case 'resting': return { opacity: 0.5, saturation: 0.4, speed: 2 };
     }
   };
 
+  const energyMod = getEnergyModifier();
+
+  // State-based styling with energy consideration
+  const getEyeGlow = () => {
+    const baseColors = {
+      alert: 'hsl(var(--primary))',
+      attentive: 'hsl(142 76% 45%)', // Soft green
+      listening: 'hsl(200 95% 60%)', // Calm blue
+      speaking: 'hsl(45 93% 58%)', // Warm amber
+      resting: 'hsl(var(--primary) / 0.6)', // Dimmed for resting
+    };
+    
+    // Dim further based on energy
+    if (energyLevel === 'resting' || energyLevel === 'low') {
+      return 'hsl(var(--primary) / 0.3)';
+    }
+    
+    return baseColors[state];
+  };
+
   const getEarRotation = () => {
+    // Lower ears when low energy
+    if (energyLevel === 'resting' || energyLevel === 'low') {
+      return { left: 5, right: -5 }; // Droopy ears
+    }
+    
     switch (state) {
       case 'alert': return { left: -15, right: 15 };
       case 'attentive': return { left: -8, right: 8 };
@@ -57,6 +88,42 @@ export function RobotDogAvatar({
 
   const earRotation = getEarRotation();
 
+  // Get head tilt based on energy (lower head when tired)
+  const getHeadTilt = () => {
+    if (energyLevel === 'resting') return 5;
+    if (energyLevel === 'low') return 3;
+    return 0;
+  };
+
+  // Get lowest need for indicator
+  const getLowestNeedInfo = () => {
+    if (!needLevels) return null;
+    
+    let lowestNeed: keyof NeedLevels | null = null;
+    let lowestValue = 100;
+    
+    (Object.keys(needLevels) as (keyof NeedLevels)[]).forEach(need => {
+      if (needLevels[need] < lowestValue) {
+        lowestValue = needLevels[need];
+        lowestNeed = need;
+      }
+    });
+    
+    if (lowestValue >= 50) return null;
+    
+    const icons: Record<keyof NeedLevels, string> = {
+      food: '🍖',
+      water: '💧',
+      rest: '😴',
+      movement: '🦮',
+      attention: '❤️',
+    };
+    
+    return { need: lowestNeed, value: lowestValue, icon: lowestNeed ? icons[lowestNeed] : '' };
+  };
+
+  const lowestNeed = getLowestNeedInfo();
+
   return (
     <div className={cn(
       'relative flex items-center justify-center',
@@ -64,7 +131,7 @@ export function RobotDogAvatar({
       className
     )}>
       {/* Subtle glow behind for active states */}
-      {state !== 'resting' && (
+      {state !== 'resting' && energyLevel !== 'resting' && (
         <div 
           className="absolute inset-0 rounded-full opacity-30 blur-xl transition-opacity duration-1000"
           style={{ backgroundColor: getEyeGlow() }}
@@ -77,6 +144,11 @@ export function RobotDogAvatar({
           'w-full h-full transition-all duration-700',
           showBreathing && state === 'resting' && 'animate-[breathe_4s_ease-in-out_infinite]'
         )}
+        style={{ 
+          opacity: energyMod.opacity,
+          filter: `saturate(${energyMod.saturation})`,
+          transform: `rotate(${getHeadTilt()}deg)`,
+        }}
       >
         <defs>
           {/* Metallic gradient for robot body */}
@@ -131,7 +203,7 @@ export function RobotDogAvatar({
             fill="hsl(var(--foreground) / 0.8)"
             className={cn(
               'transition-all duration-300',
-              state === 'attentive' && 'animate-[pulse_2s_ease-in-out_infinite]'
+              state === 'attentive' && energyLevel !== 'resting' && 'animate-[pulse_2s_ease-in-out_infinite]'
             )}
           />
 
@@ -182,16 +254,17 @@ export function RobotDogAvatar({
           {/* Left eye - glowing */}
           <ellipse 
             cx="36" cy="42" 
-            rx="5" ry="4"
+            rx="5" 
+            ry={energyLevel === 'resting' ? 1 : energyLevel === 'low' ? 2 : 4}
             fill={getEyeGlow()}
             filter="url(#eyeGlow)"
             className={cn(
               'transition-all duration-500',
-              state === 'speaking' && 'animate-[pulse_1.5s_ease-in-out_infinite]',
-              state === 'listening' && 'animate-[pulse_2s_ease-in-out_infinite]'
+              state === 'speaking' && energyLevel !== 'resting' && 'animate-[pulse_1.5s_ease-in-out_infinite]',
+              state === 'listening' && energyLevel !== 'resting' && 'animate-[pulse_2s_ease-in-out_infinite]'
             )}
           >
-            {state === 'resting' && (
+            {state === 'resting' && energyLevel === 'high' && (
               <animate 
                 attributeName="ry" 
                 values="4;1;4" 
@@ -205,16 +278,17 @@ export function RobotDogAvatar({
           {/* Right eye - glowing */}
           <ellipse 
             cx="64" cy="42" 
-            rx="5" ry="4"
+            rx="5" 
+            ry={energyLevel === 'resting' ? 1 : energyLevel === 'low' ? 2 : 4}
             fill={getEyeGlow()}
             filter="url(#eyeGlow)"
             className={cn(
               'transition-all duration-500',
-              state === 'speaking' && 'animate-[pulse_1.5s_ease-in-out_infinite]',
-              state === 'listening' && 'animate-[pulse_2s_ease-in-out_infinite]'
+              state === 'speaking' && energyLevel !== 'resting' && 'animate-[pulse_1.5s_ease-in-out_infinite]',
+              state === 'listening' && energyLevel !== 'resting' && 'animate-[pulse_2s_ease-in-out_infinite]'
             )}
           >
-            {state === 'resting' && (
+            {state === 'resting' && energyLevel === 'high' && (
               <animate 
                 attributeName="ry" 
                 values="4;1;4" 
@@ -235,13 +309,18 @@ export function RobotDogAvatar({
             strokeWidth="1"
           />
 
-          {/* Status indicator light on collar */}
+          {/* Status indicator light on collar - color based on energy */}
           <circle 
             cx="50" cy="82" 
             r="2"
-            fill={getEyeGlow()}
+            fill={
+              energyLevel === 'high' ? 'hsl(142 76% 45%)' :
+              energyLevel === 'medium' ? 'hsl(45 93% 58%)' :
+              energyLevel === 'low' ? 'hsl(25 95% 53%)' :
+              'hsl(0 72% 50%)'
+            }
             className={cn(
-              state !== 'resting' && 'animate-[pulse_2s_ease-in-out_infinite]'
+              energyLevel !== 'resting' && 'animate-[pulse_2s_ease-in-out_infinite]'
             )}
           />
 
@@ -262,7 +341,7 @@ export function RobotDogAvatar({
       </svg>
 
       {/* Speaking indicator waves */}
-      {state === 'speaking' && (
+      {state === 'speaking' && energyLevel !== 'resting' && (
         <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-0.5">
           <div className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
           <div className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -271,8 +350,22 @@ export function RobotDogAvatar({
       )}
 
       {/* Listening indicator */}
-      {state === 'listening' && (
+      {state === 'listening' && energyLevel !== 'resting' && (
         <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background animate-pulse" />
+      )}
+
+      {/* Low energy indicator */}
+      {(energyLevel === 'low' || energyLevel === 'resting') && (
+        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-xs opacity-70">
+          💤
+        </div>
+      )}
+
+      {/* Need indicator bubble */}
+      {showNeedIndicators && lowestNeed && (
+        <div className="absolute -top-2 -left-2 w-6 h-6 bg-card border border-border rounded-full flex items-center justify-center text-xs shadow-lg animate-pulse">
+          {lowestNeed.icon}
+        </div>
       )}
     </div>
   );

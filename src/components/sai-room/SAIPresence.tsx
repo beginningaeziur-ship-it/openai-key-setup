@@ -4,6 +4,7 @@ import { useSAI } from "@/contexts/SAIContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RobotDogAvatar } from "@/components/sai/RobotDogAvatar";
+import { useServiceDog } from "@/contexts/ServiceDogContext";
 
 export type SAIStatus = 'idle' | 'listening' | 'speaking' | 'thinking';
 
@@ -29,6 +30,7 @@ export function SAIPresence({
   onQuickAction
 }: SAIPresenceProps) {
   const { selectedCategories, selectedConditions, selectedSymptoms } = useSAI();
+  const { dogState, dogModeEnabled, getOverallEnergy } = useServiceDog();
 
   // Auto-shift tone based on disability profile
   const getTone = () => {
@@ -82,6 +84,9 @@ export function SAIPresence({
         size="xl" 
         state={getDogState()} 
         showBreathing={currentStatus === 'idle'}
+        energyLevel={dogModeEnabled ? getOverallEnergy() : 'high'}
+        needLevels={dogModeEnabled ? dogState.needLevels : undefined}
+        showNeedIndicators={dogModeEnabled}
       />
 
       {/* SAI Name */}
