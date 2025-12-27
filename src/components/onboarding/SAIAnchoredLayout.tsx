@@ -4,7 +4,7 @@ import { RobotDogAvatar } from '@/components/sai/RobotDogAvatar';
 import { Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
 import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
 import { useMicrophone } from '@/contexts/MicrophoneContext';
-import cozyCabinBg from '@/assets/cozy-cabin-bg.jpg';
+import comfortOfficeBg from '@/assets/comfort-office-bg.jpg';
 
 /**
  * SAIAnchoredLayout - SAI is ALWAYS visible, UI is an overlay
@@ -46,7 +46,7 @@ export const SAIAnchoredLayout: React.FC<SAIAnchoredLayoutProps> = ({
       {/* Persistent cabin background - NEVER changes during onboarding */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${cozyCabinBg})` }}
+        style={{ backgroundImage: `url(${comfortOfficeBg})` }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
 
