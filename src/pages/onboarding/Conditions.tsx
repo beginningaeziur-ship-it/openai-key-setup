@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { SelectableCard } from '@/components/sai/SelectableCard';
 import { useSAI } from '@/contexts/SAIContext';
 import { useMicrophone } from '@/contexts/MicrophoneContext';
 import { conditionsByCategory, disabilityCategories } from '@/data/saiCategories';
 import type { ConditionSelection } from '@/types/sai';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { PaperTestForm } from '@/components/onboarding/PaperTestForm';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function Conditions() {
@@ -92,64 +91,85 @@ export default function Conditions() {
   const totalSelected = conditions.reduce((sum, c) => sum + c.conditions.length, 0);
 
   return (
-    <OnboardingLayout 
-      saiMessage={`Let's get more specific. Expand each category and select what applies. ${totalSelected > 0 ? `${totalSelected} selected so far.` : ''}`}
-      saiState="attentive"
-    >
-      <div className="flex-1 flex flex-col">
-        <ScrollArea className="flex-1 -mx-2 px-2">
-          <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden">
-            <Accordion type="multiple" className="w-full">
-              {selectedCategories.map(categoryId => (
-                <AccordionItem key={categoryId} value={categoryId} className="border-white/10">
-                  <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-white/5 text-white">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{getCategoryIcon(categoryId)}</span>
-                      <span className="font-medium text-sm">{getCategoryLabel(categoryId)}</span>
-                      {conditions.find(c => c.category === categoryId) && (
-                        <span className="text-xs bg-primary/30 text-primary px-2 py-0.5 rounded-full">
-                          {conditions.find(c => c.category === categoryId)?.conditions.length}
-                        </span>
-                      )}
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-3">
-                    <div className="grid gap-2">
-                      {conditionsByCategory[categoryId]?.map(condition => (
-                        <SelectableCard
-                          key={condition.id}
-                          id={condition.id}
-                          label={condition.label}
-                          selected={isConditionSelected(categoryId, condition.id)}
-                          onSelect={() => toggleCondition(categoryId, condition.id)}
-                        />
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </div>
+    <PaperTestForm>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="text-center border-b-2 border-stone-300 pb-4">
+          <h1 className="text-2xl font-bold text-stone-800 tracking-wide">
+            Personal Support Assessment
+          </h1>
+          <p className="text-xs text-red-600 font-semibold mt-1">CONFIDENTIAL</p>
+        </div>
+
+        {/* Question */}
+        <div className="space-y-2">
+          <p className="text-stone-700 font-medium">
+            Let's get more specific. Expand each category and select what applies:
+          </p>
+          {totalSelected > 0 && (
+            <p className="text-sm text-stone-500">{totalSelected} selected so far</p>
+          )}
+        </div>
+
+        {/* Options */}
+        <ScrollArea className="max-h-[300px]">
+          <Accordion type="multiple" className="w-full">
+            {selectedCategories.map(categoryId => (
+              <AccordionItem key={categoryId} value={categoryId} className="border-stone-300">
+                <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-amber-50 text-stone-800">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{getCategoryIcon(categoryId)}</span>
+                    <span className="font-medium text-sm">{getCategoryLabel(categoryId)}</span>
+                    {conditions.find(c => c.category === categoryId) && (
+                      <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">
+                        {conditions.find(c => c.category === categoryId)?.conditions.length}
+                      </span>
+                    )}
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3">
+                  <div className="grid gap-2">
+                    {conditionsByCategory[categoryId]?.map(condition => (
+                      <div
+                        key={condition.id}
+                        onClick={() => toggleCondition(categoryId, condition.id)}
+                        className={`
+                          flex items-center gap-3 p-2 rounded cursor-pointer transition-all text-sm
+                          ${isConditionSelected(categoryId, condition.id)
+                            ? 'bg-amber-200 border border-amber-500'
+                            : 'bg-amber-50/50 border border-stone-200 hover:bg-amber-100'
+                          }
+                        `}
+                      >
+                        <span className="text-stone-800">{condition.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </ScrollArea>
 
-        <div className="flex gap-3 pt-4 shrink-0">
+        {/* Navigation */}
+        <div className="flex gap-3 pt-2">
           <Button
             variant="outline"
             onClick={() => navigate('/onboarding/categories')}
-            className="flex-1 h-12 rounded-xl bg-white/10 border-white/20 text-white hover:bg-white/20"
+            className="flex-1 h-10 bg-stone-100 border-stone-300 text-stone-700 hover:bg-stone-200"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
           <Button
             onClick={handleNext}
-            className="flex-1 h-12 rounded-xl"
+            className="flex-1 h-10 bg-amber-600 hover:bg-amber-700 text-white"
           >
             Next
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
       </div>
-    </OnboardingLayout>
+    </PaperTestForm>
   );
 }

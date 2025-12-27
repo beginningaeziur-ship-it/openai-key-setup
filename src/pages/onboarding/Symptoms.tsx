@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { SelectableCard } from '@/components/sai/SelectableCard';
 import { useSAI } from '@/contexts/SAIContext';
 import { symptomsList } from '@/data/saiCategories';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { PaperTestForm } from '@/components/onboarding/PaperTestForm';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function Symptoms() {
@@ -30,54 +29,71 @@ export default function Symptoms() {
   };
 
   return (
-    <OnboardingLayout 
-      saiMessage={`What symptoms do you experience? This helps me understand how to pace our time together. ${symptoms.length > 0 ? `${symptoms.length} selected.` : ''}`}
-      saiState="attentive"
-    >
-      <div className="flex-1 flex flex-col">
-        <ScrollArea className="flex-1 -mx-2 px-2">
-          <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-4">
-            <div className="grid gap-2 max-h-[350px] overflow-y-auto pr-2">
-              {symptomsList.map(symptom => (
-                <SelectableCard
-                  key={symptom.id}
-                  id={symptom.id}
-                  label={symptom.label}
-                  selected={symptoms.includes(symptom.id)}
-                  onSelect={toggleSymptom}
-                />
-              ))}
-            </div>
-          </div>
+    <PaperTestForm>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="text-center border-b-2 border-stone-300 pb-4">
+          <h1 className="text-2xl font-bold text-stone-800 tracking-wide">
+            Personal Support Assessment
+          </h1>
+          <p className="text-xs text-red-600 font-semibold mt-1">CONFIDENTIAL</p>
+        </div>
 
-          {/* Privacy notes */}
-          <div className="mt-4 space-y-2">
-            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-              <p className="text-white/60 text-xs text-center">
-                Nothing here is saved as personal information. Staff see progress percentages only.
-              </p>
-            </div>
+        {/* Question */}
+        <div className="space-y-2">
+          <p className="text-stone-700 font-medium">
+            What symptoms do you experience? This helps me understand how to pace our time together:
+          </p>
+          {symptoms.length > 0 && (
+            <p className="text-sm text-stone-500">{symptoms.length} selected</p>
+          )}
+        </div>
+
+        {/* Options */}
+        <ScrollArea className="max-h-[280px]">
+          <div className="grid gap-2 pr-2">
+            {symptomsList.map(symptom => (
+              <div
+                key={symptom.id}
+                onClick={() => toggleSymptom(symptom.id)}
+                className={`
+                  flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all
+                  ${symptoms.includes(symptom.id)
+                    ? 'bg-amber-200 border-2 border-amber-500'
+                    : 'bg-amber-50 border border-stone-300 hover:bg-amber-100'
+                  }
+                `}
+              >
+                <span className="text-stone-800 text-sm font-medium">{symptom.label}</span>
+              </div>
+            ))}
           </div>
         </ScrollArea>
 
-        <div className="flex gap-3 pt-4 shrink-0">
+        {/* Privacy note */}
+        <p className="text-xs text-stone-500 italic text-center">
+          Nothing here is saved as personal information. Staff see progress percentages only.
+        </p>
+
+        {/* Navigation */}
+        <div className="flex gap-3 pt-2">
           <Button
             variant="outline"
             onClick={() => navigate('/onboarding/conditions')}
-            className="flex-1 h-12 rounded-xl bg-white/10 border-white/20 text-white hover:bg-white/20"
+            className="flex-1 h-10 bg-stone-100 border-stone-300 text-stone-700 hover:bg-stone-200"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
           <Button
             onClick={handleNext}
-            className="flex-1 h-12 rounded-xl"
+            className="flex-1 h-10 bg-amber-600 hover:bg-amber-700 text-white"
           >
             Next
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
       </div>
-    </OnboardingLayout>
+    </PaperTestForm>
   );
 }

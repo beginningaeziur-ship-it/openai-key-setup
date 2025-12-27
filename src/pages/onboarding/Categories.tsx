@@ -6,7 +6,7 @@ import { useSAI } from '@/contexts/SAIContext';
 import { disabilityCategories } from '@/data/saiCategories';
 import type { DisabilityCategory } from '@/types/sai';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { PaperTestForm } from '@/components/onboarding/PaperTestForm';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function Categories() {
@@ -30,42 +30,60 @@ export default function Categories() {
     navigate('/onboarding/conditions');
   };
 
-  const saiMessage = categories.length === 0
-    ? "So I know how to move with you, not against you. What are you living with? Select what applies — you can skip anything."
-    : `${categories.length} selected. Take your time, or say "next" when you're ready.`;
-
   return (
-    <OnboardingLayout saiMessage={saiMessage} saiState="attentive">
-      <div className="flex-1 flex flex-col">
-        <ScrollArea className="flex-1 -mx-2 px-2">
-          <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-4">
-            <div className="grid gap-2 sm:grid-cols-2">
-              {disabilityCategories.map(category => (
-                <SelectableCard
-                  key={category.id}
-                  id={category.id}
-                  label={category.label}
-                  icon={category.icon}
-                  selected={categories.includes(category.id as DisabilityCategory)}
-                  onSelect={toggleCategory}
-                />
-              ))}
-            </div>
-          </div>
+    <PaperTestForm>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="text-center border-b-2 border-stone-300 pb-4">
+          <h1 className="text-2xl font-bold text-stone-800 tracking-wide">
+            Personal Support Assessment
+          </h1>
+          <p className="text-xs text-red-600 font-semibold mt-1">CONFIDENTIAL</p>
+        </div>
 
-          {/* Privacy note */}
-          <div className="mt-4 bg-white/5 rounded-xl p-3 border border-white/10">
-            <p className="text-white/60 text-xs text-center">
-              Nothing here is saved as personal information. These selections only shape your support structure.
-            </p>
+        {/* Question */}
+        <div className="space-y-2">
+          <p className="text-stone-700 font-medium">
+            What are you living with? Select all that apply:
+          </p>
+          {categories.length > 0 && (
+            <p className="text-sm text-stone-500">{categories.length} selected</p>
+          )}
+        </div>
+
+        {/* Options */}
+        <ScrollArea className="max-h-[300px]">
+          <div className="grid gap-2 sm:grid-cols-2 pr-2">
+            {disabilityCategories.map(category => (
+              <div
+                key={category.id}
+                onClick={() => toggleCategory(category.id)}
+                className={`
+                  flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all
+                  ${categories.includes(category.id as DisabilityCategory)
+                    ? 'bg-amber-200 border-2 border-amber-500'
+                    : 'bg-amber-50 border border-stone-300 hover:bg-amber-100'
+                  }
+                `}
+              >
+                <span className="text-xl">{category.icon}</span>
+                <span className="text-stone-800 text-sm font-medium">{category.label}</span>
+              </div>
+            ))}
           </div>
         </ScrollArea>
 
-        <div className="flex gap-3 pt-4 shrink-0">
+        {/* Privacy note */}
+        <p className="text-xs text-stone-500 italic text-center">
+          Nothing here is saved as personal information. These selections only shape your support structure.
+        </p>
+
+        {/* Navigation */}
+        <div className="flex gap-3 pt-2">
           <Button
             variant="outline"
             onClick={() => navigate('/onboarding/who-model')}
-            className="flex-1 h-12 rounded-xl bg-white/10 border-white/20 text-white hover:bg-white/20"
+            className="flex-1 h-10 bg-stone-100 border-stone-300 text-stone-700 hover:bg-stone-200"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
@@ -73,13 +91,13 @@ export default function Categories() {
           <Button
             onClick={handleNext}
             disabled={categories.length === 0}
-            className="flex-1 h-12 rounded-xl"
+            className="flex-1 h-10 bg-amber-600 hover:bg-amber-700 text-white"
           >
             Next
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
       </div>
-    </OnboardingLayout>
+    </PaperTestForm>
   );
 }
