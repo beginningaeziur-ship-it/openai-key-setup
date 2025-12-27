@@ -1,13 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { OnboardingProgress } from '@/components/sai/OnboardingProgress';
 import { useSAI } from '@/contexts/SAIContext';
-import { ArrowLeft, Sparkles, Target, Check, X, Edit3, Plus } from 'lucide-react';
+import { Sparkles, Check, X, Edit3, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { generateGoalsFromProfile, type GeneratedGoal } from '@/lib/goalGenerator';
+import { generateGoalsFromProfile } from '@/lib/goalGenerator';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ProposedGoal {
   id: string;
@@ -32,7 +32,6 @@ export default function GoalProposal() {
     saiPersonality
   } = useSAI();
 
-  // Generate personalized goals based on user profile using the goal generator
   const generatedGoals = useMemo(() => {
     return generateGoalsFromProfile(selectedCategories, selectedConditions, selectedSymptoms, whoModel);
   }, [selectedCategories, selectedConditions, selectedSymptoms, whoModel]);
@@ -94,7 +93,6 @@ export default function GoalProposal() {
   };
 
   const handleComplete = () => {
-    // Add selected long-term goals
     const selectedGoalIds = new Set(goals.filter(g => g.selected).map(g => g.id));
     
     goals.filter(g => g.selected).forEach(goal => {
@@ -107,7 +105,6 @@ export default function GoalProposal() {
       });
     });
 
-    // Add mid-point goals for selected long-term goals
     generatedGoals.midpointGoals
       .filter(g => g.parentGoalId && selectedGoalIds.has(g.parentGoalId))
       .forEach(goal => {
@@ -120,7 +117,6 @@ export default function GoalProposal() {
         });
       });
 
-    // Add micro goals for selected long-term goals (first micro per mid-goal)
     const addedMidGoalIds = new Set(
       generatedGoals.midpointGoals
         .filter(g => g.parentGoalId && selectedGoalIds.has(g.parentGoalId))
@@ -129,7 +125,7 @@ export default function GoalProposal() {
 
     generatedGoals.microGoals
       .filter(g => g.parentGoalId && addedMidGoalIds.has(g.parentGoalId))
-      .slice(0, 5) // Limit initial micro goals to not overwhelm
+      .slice(0, 5)
       .forEach(goal => {
         addGoal({
           type: 'micro',
@@ -141,80 +137,43 @@ export default function GoalProposal() {
       });
     
     completeOnboarding();
-    // Navigate to Water Profile explanation before SAI Room
     navigate('/onboarding/water-profile');
   };
 
   const selectedCount = goals.filter(g => g.selected).length;
-  const saiName = userProfile?.saiNickname || 'SAI';
 
-  // Personalized intro based on SAI personality
-  const getIntroText = () => {
+  const getSaiMessage = () => {
     if (saiPersonality.sensitivityLevel === 'high') {
-      return `Based on what you've shared, I've put together some gentle goals we can work toward over the next 3-6 months. There's no pressure — you're in control of what we focus on.`;
+      return `Based on what you've shared, here are some gentle goals. There's no pressure — you choose what we focus on.`;
     }
-    if (saiPersonality.goalComfort === 'tiny') {
-      return `Here are some goals I've tailored for you. We'll break these into tiny, manageable pieces — nothing overwhelming. Accept what feels right, skip what doesn't.`;
-    }
-    return `Based on your profile, here's what I'd suggest we focus on over the next 3-6 months. You can accept, adjust, or skip any of these.`;
+    return `Here's your roadmap. I'll help break each goal into small steps. Accept, adjust, or skip any of these.`;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-calm p-6">
-      <div className="max-w-2xl mx-auto">
-        <OnboardingProgress currentStep={9} totalSteps={9} />
-        
-        <div className="space-y-6">
-          <div className="text-center space-y-3">
-            <div className="flex items-center justify-center gap-2">
-              <Target className="w-8 h-8 text-primary" />
-              <h1 className="text-3xl font-display font-bold text-foreground">
-                Your Roadmap
-              </h1>
-            </div>
-            <p className="text-lg text-muted-foreground">
-              {getIntroText()}
-            </p>
-          </div>
-
-          {/* SAI Message Card */}
-          <Card className="p-4 bg-sai-lavender/30 border-sai-lavender-dark/30">
-            <div className="flex gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-medium text-foreground">{saiName}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  I'll help you break each goal into mid-point milestones and micro-steps. 
-                  We'll adjust as we go based on what's working for you.
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Goals List */}
+    <OnboardingLayout saiMessage={getSaiMessage()} saiState="attentive">
+      <div className="flex-1 flex flex-col">
+        <ScrollArea className="flex-1 -mx-2 px-2">
           <div className="space-y-3">
             {goals.map(goal => (
-              <Card 
+              <div 
                 key={goal.id}
-                className={cn(
-                  "p-4 transition-all duration-200 cursor-pointer",
-                  goal.selected 
-                    ? "border-primary/50 bg-primary/5" 
-                    : "border-border/50 bg-muted/20 opacity-60"
-                )}
                 onClick={() => !editingId && toggleGoal(goal.id)}
+                className={cn(
+                  "bg-black/40 backdrop-blur-md rounded-xl border p-4 cursor-pointer transition-all",
+                  goal.selected 
+                    ? "border-primary/50 bg-primary/10" 
+                    : "border-white/10 opacity-60"
+                )}
               >
                 <div className="flex items-start gap-3">
-                  <div className="text-2xl">{goal.icon}</div>
+                  <span className="text-2xl">{goal.icon}</span>
                   <div className="flex-1 min-w-0">
                     {editingId === goal.id ? (
                       <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                         <Input
                           value={editValue}
                           onChange={(e) => setEditValue(e.target.value)}
-                          className="flex-1"
+                          className="flex-1 bg-white/10 border-white/20 text-white"
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') saveEdit(goal.id);
@@ -228,75 +187,63 @@ export default function GoalProposal() {
                     ) : (
                       <>
                         <div className="flex items-center gap-2">
-                          <h3 className="font-medium text-foreground">
-                            {goal.title}
-                          </h3>
+                          <h3 className="font-medium text-white text-sm">{goal.title}</h3>
                           {goal.customized && (
-                            <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                            <span className="text-xs bg-primary/30 text-primary px-1.5 py-0.5 rounded">
                               edited
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                          {goal.description}
-                        </p>
+                        <p className="text-white/60 text-xs mt-0.5">{goal.description}</p>
                       </>
                     )}
                   </div>
                   <div className="flex items-center gap-1">
                     {!editingId && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          startEditing(goal);
-                        }}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); startEditing(goal); }}
+                        className="p-1.5 text-white/50 hover:text-white"
                       >
-                        <Edit3 className="w-4 h-4 text-muted-foreground" />
-                      </Button>
+                        <Edit3 className="w-4 h-4" />
+                      </button>
                     )}
                     <div className={cn(
-                      "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
-                      goal.selected 
-                        ? "border-primary bg-primary" 
-                        : "border-muted-foreground/30"
+                      "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                      goal.selected ? "border-primary bg-primary" : "border-white/30"
                     )}>
-                      {goal.selected && <Check className="w-4 h-4 text-primary-foreground" />}
+                      {goal.selected && <Check className="w-3 h-3 text-white" />}
                     </div>
                   </div>
                 </div>
-              </Card>
+              </div>
             ))}
 
-            {/* Add Custom Goal */}
             {showAddCustom ? (
-              <Card className="p-4 border-dashed border-2 border-primary/30">
+              <div className="bg-black/40 backdrop-blur-md rounded-xl border-2 border-dashed border-primary/30 p-4">
                 <div className="flex gap-2">
                   <Input
                     placeholder="Enter your own goal..."
                     value={customGoalTitle}
                     onChange={(e) => setCustomGoalTitle(e.target.value)}
+                    className="flex-1 bg-white/10 border-white/20 text-white"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') addCustomGoal();
                       if (e.key === 'Escape') setShowAddCustom(false);
                     }}
                   />
-                  <Button onClick={addCustomGoal} disabled={!customGoalTitle.trim()}>
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add
+                  <Button onClick={addCustomGoal} disabled={!customGoalTitle.trim()} size="sm">
+                    <Plus className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" onClick={() => setShowAddCustom(false)}>
+                  <Button variant="ghost" onClick={() => setShowAddCustom(false)} size="sm">
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
-              </Card>
+              </div>
             ) : (
               <Button
                 variant="outline"
-                className="w-full h-12 border-dashed"
+                className="w-full h-10 border-dashed bg-white/5 border-white/20 text-white/70 hover:bg-white/10"
                 onClick={() => setShowAddCustom(true)}
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -305,31 +252,29 @@ export default function GoalProposal() {
             )}
           </div>
 
-          {/* Selected summary */}
-          <div className="text-center text-sm text-muted-foreground">
+          <p className="text-center text-white/50 text-xs mt-4">
             {selectedCount} goal{selectedCount !== 1 ? 's' : ''} selected
-          </div>
+          </p>
+        </ScrollArea>
 
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/onboarding/preferences')}
-              className="flex-1 h-12 rounded-xl"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-            <Button
-              onClick={handleComplete}
-              disabled={selectedCount === 0}
-              className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Start My Journey
-            </Button>
-          </div>
+        <div className="flex gap-3 pt-4 shrink-0">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/onboarding/preferences')}
+            className="flex-1 h-12 rounded-xl bg-white/10 border-white/20 text-white hover:bg-white/20"
+          >
+            Back
+          </Button>
+          <Button
+            onClick={handleComplete}
+            disabled={selectedCount === 0}
+            className="flex-1 h-12 rounded-xl"
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            Start My Journey
+          </Button>
         </div>
       </div>
-    </div>
+    </OnboardingLayout>
   );
 }
