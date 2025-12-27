@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { OnboardingProgress } from '@/components/sai/OnboardingProgress';
 import { SelectableCard } from '@/components/sai/SelectableCard';
 import { useSAI } from '@/contexts/SAIContext';
 import { symptomsList } from '@/data/saiCategories';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function Symptoms() {
   const navigate = useNavigate();
@@ -24,28 +25,19 @@ export default function Symptoms() {
   };
 
   const handleNext = () => {
-    // Store as a general symptom mapping
     setSelectedSymptoms([{ condition: 'general', symptoms }]);
     navigate('/onboarding/preferences');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-calm p-6">
-      <div className="max-w-2xl mx-auto">
-        <OnboardingProgress currentStep={6} totalSteps={9} />
-        
-        <div className="space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl font-display font-bold text-foreground">
-              What symptoms do you experience?
-            </h1>
-            <p className="text-lg text-muted-foreground">
-              This helps me understand how to pace our conversations and what to watch for.
-            </p>
-          </div>
-
-          <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
-            <div className="grid gap-2 max-h-[450px] overflow-y-auto pr-2">
+    <OnboardingLayout 
+      saiMessage={`What symptoms do you experience? This helps me understand how to pace our time together. ${symptoms.length > 0 ? `${symptoms.length} selected.` : ''}`}
+      saiState="attentive"
+    >
+      <div className="flex-1 flex flex-col">
+        <ScrollArea className="flex-1 -mx-2 px-2">
+          <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-4">
+            <div className="grid gap-2 max-h-[350px] overflow-y-auto pr-2">
               {symptomsList.map(symptom => (
                 <SelectableCard
                   key={symptom.id}
@@ -58,38 +50,34 @@ export default function Symptoms() {
             </div>
           </div>
 
-          {/* Privacy disclaimer */}
-          <div className="bg-sai-calm/30 rounded-xl p-4 border border-sai-calm-dark/20">
-            <p className="text-sm text-foreground">
-              <strong>Nothing you enter here is saved as personal information.</strong> SAI uses these selections only to shape the structure of your support goals. This information is not stored, tracked, or shared.
-            </p>
+          {/* Privacy notes */}
+          <div className="mt-4 space-y-2">
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+              <p className="text-white/60 text-xs text-center">
+                Nothing here is saved as personal information. Staff see progress percentages only.
+              </p>
+            </div>
           </div>
+        </ScrollArea>
 
-          <div className="bg-sai-lavender/50 rounded-xl p-4 border border-sai-lavender-dark/20">
-            <p className="text-sm text-foreground">
-              <strong>Staff see progress percentages only.</strong> They do not see symptoms, behaviors, or personal details.
-            </p>
-          </div>
-
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/onboarding/conditions')}
-              className="flex-1 h-12 rounded-xl"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-            <Button
-              onClick={handleNext}
-              className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90"
-            >
-              Next
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
+        <div className="flex gap-3 pt-4 shrink-0">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/onboarding/conditions')}
+            className="flex-1 h-12 rounded-xl bg-white/10 border-white/20 text-white hover:bg-white/20"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+          <Button
+            onClick={handleNext}
+            className="flex-1 h-12 rounded-xl"
+          >
+            Next
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
         </div>
       </div>
-    </div>
+    </OnboardingLayout>
   );
 }

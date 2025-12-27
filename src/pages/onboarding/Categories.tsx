@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { OnboardingProgress } from '@/components/sai/OnboardingProgress';
 import { SelectableCard } from '@/components/sai/SelectableCard';
 import { useSAI } from '@/contexts/SAIContext';
 import { disabilityCategories } from '@/data/saiCategories';
 import type { DisabilityCategory } from '@/types/sai';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function Categories() {
   const navigate = useNavigate();
@@ -29,23 +30,16 @@ export default function Categories() {
     navigate('/onboarding/conditions');
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-calm p-6">
-      <div className="max-w-2xl mx-auto">
-        <OnboardingProgress currentStep={4} totalSteps={9} />
-        
-        <div className="space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl font-display font-bold text-foreground">
-              What are you living with?
-            </h1>
-            <p className="text-lg text-muted-foreground">
-              Select the categories that apply to you. We'll get more specific next.
-            </p>
-          </div>
+  const saiMessage = categories.length === 0
+    ? "So I know how to move with you, not against you. What are you living with? Select what applies — you can skip anything."
+    : `${categories.length} selected. Take your time, or say "next" when you're ready.`;
 
-          <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
-            <div className="grid gap-3 sm:grid-cols-2">
+  return (
+    <OnboardingLayout saiMessage={saiMessage} saiState="attentive">
+      <div className="flex-1 flex flex-col">
+        <ScrollArea className="flex-1 -mx-2 px-2">
+          <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-4">
+            <div className="grid gap-2 sm:grid-cols-2">
               {disabilityCategories.map(category => (
                 <SelectableCard
                   key={category.id}
@@ -59,40 +53,33 @@ export default function Categories() {
             </div>
           </div>
 
-          {/* Privacy disclaimer */}
-          <div className="bg-sai-calm/30 rounded-xl p-4 border border-sai-calm-dark/20">
-            <p className="text-sm text-foreground">
-              <strong>Nothing you select here is saved as personal information.</strong> SAI uses these selections only to shape the size and structure of your support goals. This information is not stored, tracked, or shared.
+          {/* Privacy note */}
+          <div className="mt-4 bg-white/5 rounded-xl p-3 border border-white/10">
+            <p className="text-white/60 text-xs text-center">
+              Nothing here is saved as personal information. These selections only shape your support structure.
             </p>
           </div>
+        </ScrollArea>
 
-          <div className="bg-sai-warm/50 rounded-xl p-4 border border-sai-warm-dark/20">
-            <p className="text-sm text-foreground">
-              <strong>You don't need a diagnosis.</strong> If you experience something, 
-              it counts. This is about understanding your needs, not proving them.
-            </p>
-          </div>
-
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/onboarding/who-model')}
-              className="flex-1 h-12 rounded-xl"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-            <Button
-              onClick={handleNext}
-              disabled={categories.length === 0}
-              className="flex-1 h-12 rounded-xl"
-            >
-              Next
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
+        <div className="flex gap-3 pt-4 shrink-0">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/onboarding/who-model')}
+            className="flex-1 h-12 rounded-xl bg-white/10 border-white/20 text-white hover:bg-white/20"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+          <Button
+            onClick={handleNext}
+            disabled={categories.length === 0}
+            className="flex-1 h-12 rounded-xl"
+          >
+            Next
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
         </div>
       </div>
-    </div>
+    </OnboardingLayout>
   );
 }

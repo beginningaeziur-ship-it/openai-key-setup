@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { PaperTestForm } from './PaperTestForm';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
-import { Check, X, Volume2, VolumeX, SkipForward } from 'lucide-react';
+import { Check, X, SkipForward } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { OnboardingLayout } from './OnboardingLayout';
+import { Button } from '@/components/ui/button';
 
 interface WHOQuestion {
   id: string;
@@ -45,11 +46,9 @@ export function WHOQuestionFlow({ questions, onComplete, onBack }: WHOQuestionFl
   }, [currentQuestion, voiceEnabled, speak]);
 
   useEffect(() => {
-    // Reset state for new question
     setHasHeardQuestion(false);
     questionSpokenRef.current = false;
     
-    // Speak the new question after a brief delay
     const timer = setTimeout(() => {
       if (!questionSpokenRef.current) {
         speakQuestion();
@@ -70,14 +69,11 @@ export function WHOQuestionFlow({ questions, onComplete, onBack }: WHOQuestionFl
 
     if (answer === 'yes') {
       setSelectedIds(prev => [...prev, currentQuestion.id]);
-      
-      // Optional: SAI acknowledges
       if (voiceEnabled) {
         await speak("Got it.");
       }
     }
 
-    // Move to next question or complete
     setTimeout(() => {
       if (isLastQuestion) {
         const finalSelections = answer === 'yes' 
@@ -100,131 +96,69 @@ export function WHOQuestionFlow({ questions, onComplete, onBack }: WHOQuestionFl
     }
   };
 
-  const handleMute = () => {
-    stopSpeaking();
-    setHasHeardQuestion(true);
-  };
-
-  // Determine what text to show
-  const showQuestionText = !voiceEnabled || captionsEnabled || hasHeardQuestion;
-
   return (
-    <PaperTestForm>
-      {/* Progress bar */}
-      <div className="mb-6">
-        <div className="flex justify-between text-xs text-stone-500 mb-1 font-mono">
-          <span>Question {currentIndex + 1} of {questions.length}</span>
-          <span>{Math.round(progress)}%</span>
-        </div>
-        <div className="h-2 bg-stone-200 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-stone-600 transition-all duration-300 ease-out"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Category label */}
-      <div className="mb-4">
-        <span className="text-xs font-mono uppercase tracking-widest text-stone-400 bg-stone-200 px-2 py-1 rounded">
-          {currentQuestion?.category}
-        </span>
-      </div>
-
-      {/* Speaking indicator */}
-      {isSpeaking && (
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex gap-1">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="w-1 bg-stone-600 rounded-full animate-pulse"
-                style={{
-                  height: `${8 + Math.random() * 8}px`,
-                  animationDelay: `${i * 0.1}s`,
-                }}
-              />
-            ))}
+    <OnboardingLayout 
+      saiMessage={currentQuestion?.spokenQuestion || ''}
+      saiState={isSpeaking ? 'speaking' : 'attentive'}
+    >
+      <div className="flex-1 flex flex-col">
+        {/* Progress bar */}
+        <div className="mb-4">
+          <div className="flex justify-between text-xs text-white/50 mb-1">
+            <span>Question {currentIndex + 1} of {questions.length}</span>
+            <span>{currentQuestion?.category}</span>
           </div>
-          <span className="text-stone-500 text-sm">SAI asking...</span>
-          <button 
-            onClick={handleMute}
-            className="p-1.5 rounded-full hover:bg-stone-200 transition-colors"
-            aria-label="Stop and show text"
-          >
-            <VolumeX className="w-4 h-4 text-stone-400" />
-          </button>
+          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
         </div>
-      )}
 
-      {/* Question display */}
-      <div className="min-h-[120px] flex items-center">
-        {showQuestionText ? (
-          <h2 
+        {/* Answer buttons - centered */}
+        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+          <Button
+            onClick={() => handleAnswer('yes')}
+            disabled={!hasHeardQuestion || isTransitioning}
+            size="lg"
             className={cn(
-              "text-xl md:text-2xl font-serif text-stone-800 leading-relaxed",
-              isTransitioning && "opacity-50"
+              "w-full max-w-xs h-14 rounded-xl text-lg gap-2",
+              "bg-emerald-600 hover:bg-emerald-500"
             )}
           >
-            {currentQuestion?.spokenQuestion}
-          </h2>
-        ) : (
-          <p className="text-stone-400 italic">Listening...</p>
+            <Check className="w-5 h-5" />
+            Yes
+          </Button>
+          
+          <Button
+            onClick={() => handleAnswer('no')}
+            disabled={!hasHeardQuestion || isTransitioning}
+            variant="outline"
+            size="lg"
+            className="w-full max-w-xs h-14 rounded-xl text-lg gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20"
+          >
+            <X className="w-5 h-5" />
+            No
+          </Button>
+
+          {/* Skip */}
+          <button
+            onClick={handleSkip}
+            className="text-white/40 text-sm hover:text-white/60 transition-colors inline-flex items-center gap-1 mt-2"
+          >
+            <SkipForward className="w-3 h-3" />
+            Skip
+          </button>
+        </div>
+
+        {/* Selected count */}
+        {selectedIds.length > 0 && (
+          <div className="text-center text-white/50 text-xs pt-4">
+            {selectedIds.length} area{selectedIds.length !== 1 ? 's' : ''} identified
+          </div>
         )}
       </div>
-
-      {/* Answer buttons */}
-      <div className="flex gap-4 mt-8">
-        <button
-          onClick={() => handleAnswer('yes')}
-          disabled={!hasHeardQuestion || isTransitioning}
-          className={cn(
-            "flex-1 py-4 rounded-lg border-2 transition-all",
-            "flex items-center justify-center gap-2 text-lg font-medium",
-            "disabled:opacity-40 disabled:cursor-not-allowed",
-            "border-green-600 text-green-700 hover:bg-green-50 active:bg-green-100",
-            "focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-          )}
-        >
-          <Check className="w-5 h-5" />
-          Yes
-        </button>
-        
-        <button
-          onClick={() => handleAnswer('no')}
-          disabled={!hasHeardQuestion || isTransitioning}
-          className={cn(
-            "flex-1 py-4 rounded-lg border-2 transition-all",
-            "flex items-center justify-center gap-2 text-lg font-medium",
-            "disabled:opacity-40 disabled:cursor-not-allowed",
-            "border-stone-400 text-stone-600 hover:bg-stone-100 active:bg-stone-200",
-            "focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2"
-          )}
-        >
-          <X className="w-5 h-5" />
-          No
-        </button>
-      </div>
-
-      {/* Skip option */}
-      <div className="mt-6 text-center">
-        <button
-          onClick={handleSkip}
-          className="text-stone-400 text-sm hover:text-stone-600 transition-colors inline-flex items-center gap-1"
-        >
-          <SkipForward className="w-3 h-3" />
-          Skip this question
-        </button>
-      </div>
-
-      {/* Selected count */}
-      {selectedIds.length > 0 && (
-        <div className="mt-6 pt-4 border-t border-stone-200">
-          <p className="text-stone-500 text-sm text-center">
-            {selectedIds.length} area{selectedIds.length !== 1 ? 's' : ''} identified so far
-          </p>
-        </div>
-      )}
-    </PaperTestForm>
+    </OnboardingLayout>
   );
 }

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { OnboardingProgress } from '@/components/sai/OnboardingProgress';
 import { ThreeChoicePrompt, threeChoicePresets } from '@/components/sai/ThreeChoicePrompt';
 import { useSAI } from '@/contexts/SAIContext';
-import { ArrowLeft, ArrowRight, Heart } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type ChoiceType = 'gentle' | 'standard' | 'challenge';
 
@@ -30,12 +30,7 @@ export default function Preferences() {
     if (userProfile) {
       setUserProfile({
         ...userProfile,
-        preferences: {
-          pace,
-          intensity,
-          supportStyle,
-          goalSize,
-        },
+        preferences: { pace, intensity, supportStyle, goalSize },
       });
     }
     setOnboardingStep(8);
@@ -45,93 +40,70 @@ export default function Preferences() {
   const allSelected = pace && intensity && supportStyle && goalSize;
 
   return (
-    <div className="min-h-screen bg-gradient-calm p-6">
-      <div className="max-w-2xl mx-auto">
-        <OnboardingProgress currentStep={7} totalSteps={9} />
-        
-        <div className="space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl font-display font-bold text-foreground">
-              How should we work together?
-            </h1>
-            <p className="text-lg text-muted-foreground">
-              These choices help me adapt to your needs. You can change them anytime.
-            </p>
-          </div>
-
-          {/* SAI Message */}
-          <Card className="p-4 bg-sai-lavender/30 border-sai-lavender-dark/30">
-            <div className="flex gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <Heart className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  There's no wrong answer here. Each option teaches healthy 
-                  decision-making — choosing what's right for you <em>right now</em>.
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <div className="space-y-8">
-            {/* Pace Selection */}
-            <Card className="p-6 bg-card border-border">
+    <OnboardingLayout 
+      saiMessage="How should we work together? There's no wrong answer — each option is healthy. Choose what's right for you right now."
+      saiState="attentive"
+    >
+      <div className="flex-1 flex flex-col">
+        <ScrollArea className="flex-1 -mx-2 px-2">
+          <div className="space-y-4">
+            {/* Pace */}
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-4">
               <ThreeChoicePrompt
                 {...threeChoicePresets.pace}
                 selected={pace}
                 onSelect={(id) => setPace(id as ChoiceType)}
               />
-            </Card>
+            </div>
 
-            {/* Intensity Selection */}
-            <Card className="p-6 bg-card border-border">
+            {/* Intensity */}
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-4">
               <ThreeChoicePrompt
                 {...threeChoicePresets.intensity}
                 selected={intensity}
                 onSelect={(id) => setIntensity(id as ChoiceType)}
               />
-            </Card>
+            </div>
 
-            {/* Support Style Selection */}
-            <Card className="p-6 bg-card border-border">
+            {/* Support Style */}
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-4">
               <ThreeChoicePrompt
                 {...threeChoicePresets.support}
                 selected={supportStyle}
                 onSelect={(id) => setSupportStyle(id as ChoiceType)}
               />
-            </Card>
+            </div>
 
-            {/* Goal Size Selection */}
-            <Card className="p-6 bg-card border-border">
+            {/* Goal Size */}
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-4">
               <ThreeChoicePrompt
                 {...threeChoicePresets.goalSize}
                 selected={goalSize}
                 onSelect={(id) => setGoalSize(id as ChoiceType)}
               />
-            </Card>
+            </div>
           </div>
+        </ScrollArea>
 
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/onboarding/symptoms')}
-              className="flex-1 h-12 rounded-xl"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-            <Button
-              onClick={handleNext}
-              disabled={!allSelected}
-              className="flex-1 h-12 rounded-xl"
-            >
-              Next
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
+        <div className="flex gap-3 pt-4 shrink-0">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/onboarding/symptoms')}
+            className="flex-1 h-12 rounded-xl bg-white/10 border-white/20 text-white hover:bg-white/20"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+          <Button
+            onClick={handleNext}
+            disabled={!allSelected}
+            className="flex-1 h-12 rounded-xl"
+          >
+            Next
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
         </div>
       </div>
-    </div>
+    </OnboardingLayout>
   );
 }
