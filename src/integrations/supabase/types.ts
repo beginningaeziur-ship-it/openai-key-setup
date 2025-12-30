@@ -56,6 +56,209 @@ export type Database = {
         }
         Relationships: []
       }
+      sai_memory: {
+        Row: {
+          context: string | null
+          created_at: string
+          id: string
+          interaction_type: string
+          pattern_data: Json | null
+          user_id: string
+        }
+        Insert: {
+          context?: string | null
+          created_at?: string
+          id?: string
+          interaction_type: string
+          pattern_data?: Json | null
+          user_id: string
+        }
+        Update: {
+          context?: string | null
+          created_at?: string
+          id?: string
+          interaction_type?: string
+          pattern_data?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sai_user_profiles: {
+        Row: {
+          adaptation_notes: string | null
+          communication_style: string | null
+          created_at: string
+          id: string
+          interaction_count: number | null
+          last_mood: string | null
+          pacing_preference: string | null
+          sensitivity_flags: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          adaptation_notes?: string | null
+          communication_style?: string | null
+          created_at?: string
+          id?: string
+          interaction_count?: number | null
+          last_mood?: string | null
+          pacing_preference?: string | null
+          sensitivity_flags?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          adaptation_notes?: string | null
+          communication_style?: string | null
+          created_at?: string
+          id?: string
+          interaction_count?: number | null
+          last_mood?: string | null
+          pacing_preference?: string | null
+          sensitivity_flags?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_assessments: {
+        Row: {
+          circumstance_details: string[] | null
+          circumstances: string[] | null
+          created_at: string
+          disabilities: string[] | null
+          has_disabilities: boolean | null
+          has_life_circumstances: boolean | null
+          id: string
+          symptoms: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          circumstance_details?: string[] | null
+          circumstances?: string[] | null
+          created_at?: string
+          disabilities?: string[] | null
+          has_disabilities?: boolean | null
+          has_life_circumstances?: boolean | null
+          id?: string
+          symptoms?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          circumstance_details?: string[] | null
+          circumstances?: string[] | null
+          created_at?: string
+          disabilities?: string[] | null
+          has_disabilities?: boolean | null
+          has_life_circumstances?: boolean | null
+          id?: string
+          symptoms?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_goals: {
+        Row: {
+          aligned_safety_items: string[] | null
+          assessment_id: string | null
+          created_at: string
+          description: string | null
+          goal_size: string
+          id: string
+          progress: number | null
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aligned_safety_items?: string[] | null
+          assessment_id?: string | null
+          created_at?: string
+          description?: string | null
+          goal_size: string
+          id?: string
+          progress?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aligned_safety_items?: string[] | null
+          assessment_id?: string | null
+          created_at?: string
+          description?: string | null
+          goal_size?: string
+          id?: string
+          progress?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_goals_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "user_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_safety_plans: {
+        Row: {
+          calming_activity: string | null
+          coping_strategies: string[] | null
+          created_at: string
+          emergency_contacts: Json | null
+          id: string
+          is_emergency_plan: boolean | null
+          professional_resources: Json | null
+          reasons_to_live: string[] | null
+          safe_place: string | null
+          trusted_person: string | null
+          updated_at: string
+          user_id: string
+          warning_signs: string[] | null
+        }
+        Insert: {
+          calming_activity?: string | null
+          coping_strategies?: string[] | null
+          created_at?: string
+          emergency_contacts?: Json | null
+          id?: string
+          is_emergency_plan?: boolean | null
+          professional_resources?: Json | null
+          reasons_to_live?: string[] | null
+          safe_place?: string | null
+          trusted_person?: string | null
+          updated_at?: string
+          user_id: string
+          warning_signs?: string[] | null
+        }
+        Update: {
+          calming_activity?: string | null
+          coping_strategies?: string[] | null
+          created_at?: string
+          emergency_contacts?: Json | null
+          id?: string
+          is_emergency_plan?: boolean | null
+          professional_resources?: Json | null
+          reasons_to_live?: string[] | null
+          safe_place?: string | null
+          trusted_person?: string | null
+          updated_at?: string
+          user_id?: string
+          warning_signs?: string[] | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
