@@ -39,6 +39,9 @@ import HomeEntrance from "./pages/onboarding/HomeEntrance";
 import PlayRoom from "./pages/PlayRoom";
 import BedroomHome from "./pages/BedroomHome";
 import SAIHome from "./pages/SAIHome";
+import BeachScene from "./pages/BeachScene";
+import ForestScene from "./pages/ForestScene";
+import CabinScene from "./pages/CabinScene";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +86,9 @@ const App = () => (
                                 <Route path="/chat" element={<Chat />} />
                                 <Route path="/settings" element={<Settings />} />
                                 <Route path="/watcher" element={<Watcher />} />
+                                <Route path="/beach" element={<BeachScene />} />
+                                <Route path="/forest" element={<ForestScene />} />
+                                <Route path="/cabin" element={<CabinScene />} />
                                 
                                 {/* Catch-all */}
                                 <Route path="*" element={<NotFound />} />
