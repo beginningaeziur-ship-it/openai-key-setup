@@ -8,13 +8,13 @@ import { LogoSplash } from "@/components/onboarding/LogoSplash";
  * Index - Entry point
  * 
  * Flow:
- * 1. Logo splash (alone, cinematic, 5-6 seconds)
- * 2. → Welcome Intro (SAI appears for first time)
+ * 1. Logo splash (30 seconds with cinematic music)
+ * 2. → Waiting Room (SAI appears for first time)
  * 
  * RULES:
  * - Logo NEVER shows with SAI
  * - SAI appears only after logo unmounts
- * - No SAI service dog visibility until Welcome screen
+ * - No SAI service dog visibility until Waiting Room screen
  */
 
 const Index = () => {
@@ -44,8 +44,8 @@ const Index = () => {
       await enableMicrophone();
     }
     
-    // Navigate to welcome intro where SAI appears
-    navigate('/onboarding/welcome', { replace: true });
+    // Navigate to waiting room where SAI appears
+    navigate('/onboarding/waiting-room', { replace: true });
   };
 
   // Show logo splash
@@ -53,10 +53,10 @@ const Index = () => {
     return <LogoSplash onComplete={handleSplashComplete} />;
   }
 
-  // If splash already seen, redirect to welcome
+  // If splash already seen, redirect to waiting room
   useEffect(() => {
     if (!showSplash && !onboarding.completed) {
-      navigate('/onboarding/welcome', { replace: true });
+      navigate('/onboarding/waiting-room', { replace: true });
     }
   }, [showSplash, onboarding.completed, navigate]);
 
