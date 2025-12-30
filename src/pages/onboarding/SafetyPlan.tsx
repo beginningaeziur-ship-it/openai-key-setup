@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Phone, Heart } from 'lucide-react';
+import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
 import comfortOfficeBg from '@/assets/comfort-office-bg.jpg';
 
 /**
@@ -20,9 +21,13 @@ const SAI_NARRATION = [
 
 export default function SafetyPlan() {
   const navigate = useNavigate();
+  const { speak, voiceEnabled } = useVoiceSettings();
   const [narrationIndex, setNarrationIndex] = useState(0);
   const [narrationText, setNarrationText] = useState('');
   const [isNarrating, setIsNarrating] = useState(true);
+  
+  // Track which narrations we've already spoken
+  const hasSpokenRef = useRef<Set<number>>(new Set());
   
   // Checklist items
   const [hasCalmedBefore, setHasCalmedBefore] = useState(false);
@@ -43,6 +48,12 @@ export default function SafetyPlan() {
     let charIndex = 0;
     setIsNarrating(true);
     setNarrationText('');
+    
+    // Speak the narration if voice enabled and not already spoken
+    if (voiceEnabled && !hasSpokenRef.current.has(narrationIndex)) {
+      hasSpokenRef.current.add(narrationIndex);
+      speak(text);
+    }
 
     const typeInterval = setInterval(() => {
       if (charIndex < text.length) {
@@ -59,7 +70,7 @@ export default function SafetyPlan() {
     }, 30);
 
     return () => clearInterval(typeInterval);
-  }, [narrationIndex]);
+  }, [narrationIndex, speak, voiceEnabled]);
 
   const handleContinue = () => {
     navigate('/onboarding/exit');

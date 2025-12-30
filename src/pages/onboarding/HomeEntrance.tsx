@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { FullBodySAI } from '@/components/sai/FullBodySAI';
-import { Lock, Delete } from 'lucide-react';
+import { Lock, Delete, Mic } from 'lucide-react';
 import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
+import { useMicrophone } from '@/contexts/MicrophoneContext';
 import cozyCabinBg from '@/assets/cozy-cabin-bg.jpg';
 
 /**
@@ -21,9 +22,24 @@ const INTRO_MESSAGES = [
   "Enter a code you'll remember."
 ];
 
+// Word to digit mapping for voice input
+const WORD_TO_DIGIT: Record<string, string> = {
+  'zero': '0', 'oh': '0', 'o': '0',
+  'one': '1', 'won': '1',
+  'two': '2', 'to': '2', 'too': '2',
+  'three': '3', 'tree': '3',
+  'four': '4', 'for': '4', 'fore': '4',
+  'five': '5',
+  'six': '6', 'sicks': '6',
+  'seven': '7',
+  'eight': '8', 'ate': '8',
+  'nine': '9', 'niner': '9',
+};
+
 export default function HomeEntrance() {
   const navigate = useNavigate();
   const { speak, isSpeaking, voiceEnabled } = useVoiceSettings();
+  const { isMicEnabled, lastTranscript, clearTranscript } = useMicrophone();
   
   const [introIndex, setIntroIndex] = useState(0);
   const [introText, setIntroText] = useState('');
@@ -34,7 +50,8 @@ export default function HomeEntrance() {
   const [isConfirming, setIsConfirming] = useState(false);
   const [error, setError] = useState('');
   
-  const hasSpokenRef = useRef<Set<number>>(new Set());
+  const hasSpokenRef = useRef<Set<number | string>>(new Set());
+  const lastProcessedTranscriptRef = useRef<string>('');
 
   // Speak intro messages
   const speakIntroMessage = useCallback(async () => {
@@ -69,13 +86,67 @@ export default function HomeEntrance() {
       if (voiceEnabled && !isSpeaking) {
         // Only speak once when state changes
         const key = isConfirming ? 'confirm' : 'enter';
-        if (!hasSpokenRef.current.has(key as any)) {
-          hasSpokenRef.current.add(key as any);
+        if (!hasSpokenRef.current.has(key)) {
+          hasSpokenRef.current.add(key);
           speak(prompt);
         }
       }
     }
   }, [showPinPad, isConfirming, voiceEnabled, isSpeaking, speak]);
+
+  // Voice input for PIN digits
+  useEffect(() => {
+    if (!showPinPad || !lastTranscript || lastTranscript === lastProcessedTranscriptRef.current) return;
+    
+    lastProcessedTranscriptRef.current = lastTranscript;
+    const words = lastTranscript.toLowerCase().split(/\s+/);
+    
+    // Extract digits from transcript
+    let digitsToAdd = '';
+    for (const word of words) {
+      // Check if it's a direct digit
+      if (/^[0-9]$/.test(word)) {
+        digitsToAdd += word;
+      } 
+      // Check if it's a word that maps to a digit
+      else if (WORD_TO_DIGIT[word]) {
+        digitsToAdd += WORD_TO_DIGIT[word];
+      }
+    }
+    
+    // Add digits one by one
+    if (digitsToAdd) {
+      for (const digit of digitsToAdd) {
+        if (isConfirming) {
+          if (confirmPin.length < 4) {
+            setConfirmPin(prev => (prev + digit).slice(0, 4));
+          }
+        } else {
+          if (pin.length < 4) {
+            setPin(prev => (prev + digit).slice(0, 4));
+          }
+        }
+      }
+      setError('');
+    }
+    
+    // Check for clear/delete commands
+    if (words.some(w => ['clear', 'reset', 'start over', 'delete all'].includes(w))) {
+      if (isConfirming) {
+        setConfirmPin('');
+      } else {
+        setPin('');
+      }
+    } else if (words.some(w => ['delete', 'back', 'remove', 'undo'].includes(w))) {
+      if (isConfirming) {
+        setConfirmPin(prev => prev.slice(0, -1));
+      } else {
+        setPin(prev => prev.slice(0, -1));
+      }
+    }
+    
+    clearTranscript();
+  }, [lastTranscript, showPinPad, isConfirming, pin, confirmPin, clearTranscript]);
 
   const handleDigitPress = (digit: string) => {
     setError('');
@@ -138,7 +209,7 @@ export default function HomeEntrance() {
   }, [confirmPin, isConfirming, pin, navigate, voiceEnabled, speak]);
 
   const currentPin = isConfirming ? confirmPin : pin;
-  const saiState = isSpeaking ? 'speaking' : 'attentive';
+  const saiState = isSpeaking ? 'speaking' : isMicEnabled ? 'listening' : 'attentive';
 
   return (
     <div 
@@ -243,10 +314,18 @@ export default function HomeEntrance() {
                 </Button>
               </div>
 
-              {/* Status */}
-              <p className="text-center text-sm text-muted-foreground mt-4">
-                {isConfirming ? "Confirm your code" : "Create your code"}
-              </p>
+              {/* Status with mic indicator */}
+              <div className="flex items-center justify-center gap-2 mt-4">
+                {isMicEnabled && (
+                  <div className="flex items-center gap-1 text-primary animate-pulse">
+                    <Mic className="w-4 h-4" />
+                    <span className="text-xs">Say digits</span>
+                  </div>
+                )}
+                <p className="text-center text-sm text-muted-foreground">
+                  {isConfirming ? "Confirm your code" : "Create your code"}
+                </p>
+              </div>
             </div>
           )}
         </div>
