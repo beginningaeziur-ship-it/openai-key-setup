@@ -13,6 +13,7 @@ import { SpeechOnlyProvider } from "@/contexts/SpeechOnlyContext";
 import { ServiceDogProvider } from "@/contexts/ServiceDogContext";
 import { SAINarratorProvider } from "@/contexts/SAINarratorContext";
 import { AccessibilityProvider } from "@/contexts/AccessibilityContext";
+import { SAIDailyEngineProvider } from "@/contexts/SAIDailyEngineContext";
 import { TourProvider } from "@/components/tour/TourProvider";
 import { GlobalMicButton } from "@/components/voice/GlobalMicButton";
 import { MicrophoneActivationPrompt } from "@/components/voice/MicrophoneWarningDialog";
@@ -53,7 +54,8 @@ const App = () => (
                   <SelfStartProvider>
                     <ServiceDogProvider>
                       <SAINarratorProvider>
-                        <TooltipProvider>
+                        <SAIDailyEngineProvider>
+                          <TooltipProvider>
                           <Toaster />
                           <Sonner />
                           <BrowserRouter>
@@ -99,7 +101,8 @@ const App = () => (
                               <MicrophoneActivationPrompt />
                             </TourProvider>
                           </BrowserRouter>
-                        </TooltipProvider>
+                          </TooltipProvider>
+                        </SAIDailyEngineProvider>
                       </SAINarratorProvider>
                     </ServiceDogProvider>
                   </SelfStartProvider>
