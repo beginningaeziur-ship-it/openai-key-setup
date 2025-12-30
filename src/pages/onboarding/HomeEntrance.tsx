@@ -196,7 +196,7 @@ export default function HomeEntrance() {
           speak("Perfect. Welcome to your safe home.");
         }
         setTimeout(() => {
-          navigate('/sai-room');
+          navigate('/bedroom');
         }, 1500);
       } else {
         setError("Codes don't match. Try again.");

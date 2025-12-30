@@ -35,6 +35,8 @@ import Assessment from "./pages/onboarding/Assessment";
 import SafetyPlan from "./pages/onboarding/SafetyPlan";
 import OfficeExit from "./pages/onboarding/OfficeExit";
 import HomeEntrance from "./pages/onboarding/HomeEntrance";
+import PlayRoom from "./pages/PlayRoom";
+import BedroomHome from "./pages/BedroomHome";
 
 const queryClient = new QueryClient();
 
@@ -65,7 +67,11 @@ const App = () => (
                                 <Route path="/onboarding/assessment" element={<Assessment />} />
                                 <Route path="/onboarding/safety-plan" element={<SafetyPlan />} />
                                 <Route path="/onboarding/exit" element={<OfficeExit />} />
+                                <Route path="/onboarding/play-room" element={<PlayRoom />} />
                                 <Route path="/onboarding/home-entrance" element={<HomeEntrance />} />
+                                
+                                {/* Main app with PIN gate */}
+                                <Route path="/bedroom" element={<BedroomHome />} />
                                 
                                 {/* Main app */}
                                 <Route path="/sai-room" element={<SAIRoom />} />
