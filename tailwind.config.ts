@@ -116,6 +116,14 @@ export default {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-8px)" },
         },
+        tailWag: {
+          "0%, 100%": { transform: "rotate(-8deg)" },
+          "50%": { transform: "rotate(8deg)" },
+        },
+        mouthMove: {
+          "0%, 100%": { transform: "scaleY(1)" },
+          "50%": { transform: "scaleY(1.3)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -125,6 +133,8 @@ export default {
         breathe: "breathe 4s ease-in-out infinite",
         "gentle-pulse": "gentle-pulse 3s ease-in-out infinite",
         float: "float 6s ease-in-out infinite",
+        "tail-wag": "tailWag 0.3s ease-in-out infinite",
+        "mouth-move": "mouthMove 0.25s ease-in-out infinite",
       },
     },
   },

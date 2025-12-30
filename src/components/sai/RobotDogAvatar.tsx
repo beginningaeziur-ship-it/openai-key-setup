@@ -15,6 +15,12 @@ interface RobotDogAvatarProps {
   showNeedIndicators?: boolean;
 }
 
+/**
+ * RobotDogAvatar - Cute dalmatian-style robot dog face
+ * 
+ * Head-only view for smaller displays and avatars
+ * Features: animated mouth when speaking, dalmatian spots
+ */
 export function RobotDogAvatar({ 
   size = 'md', 
   className,
@@ -26,7 +32,6 @@ export function RobotDogAvatar({
 }: RobotDogAvatarProps) {
   const { isNarrating, isListening } = useSAINarrator();
   
-  // Derive state from narrator context if not explicitly provided
   const state: DogState = propState || (
     isNarrating ? 'speaking' : 
     isListening ? 'listening' : 
@@ -34,15 +39,14 @@ export function RobotDogAvatar({
   );
 
   const sizeConfig = {
-    sm: { container: 'w-12 h-12', head: 48, ear: 8, eye: 4 },
-    md: { container: 'w-20 h-20', head: 80, ear: 12, eye: 6 },
-    lg: { container: 'w-28 h-28', head: 112, ear: 16, eye: 8 },
-    xl: { container: 'w-40 h-40', head: 160, ear: 22, eye: 12 },
+    sm: { container: 'w-12 h-12', viewBox: '0 0 100 100' },
+    md: { container: 'w-20 h-20', viewBox: '0 0 100 100' },
+    lg: { container: 'w-28 h-28', viewBox: '0 0 100 100' },
+    xl: { container: 'w-40 h-40', viewBox: '0 0 100 100' },
   };
 
   const config = sizeConfig[size];
 
-  // Energy-based opacity and saturation
   const getEnergyModifier = () => {
     switch (energyLevel) {
       case 'high': return { opacity: 1, saturation: 1, speed: 1 };
@@ -54,48 +58,36 @@ export function RobotDogAvatar({
 
   const energyMod = getEnergyModifier();
 
-  // State-based styling with energy consideration
-  const getEyeGlow = () => {
-    const baseColors = {
-      alert: 'hsl(var(--primary))',
-      attentive: 'hsl(142 76% 45%)', // Soft green
-      listening: 'hsl(200 95% 60%)', // Calm blue
-      speaking: 'hsl(45 93% 58%)', // Warm amber
-      resting: 'hsl(var(--primary) / 0.6)', // Dimmed for resting
-    };
-    
-    // Dim further based on energy
+  const getEyeColor = () => {
     if (energyLevel === 'resting' || energyLevel === 'low') {
-      return 'hsl(var(--primary) / 0.3)';
+      return 'hsl(25 40% 25%)';
     }
     
-    return baseColors[state];
+    const colors = {
+      alert: 'hsl(25 70% 35%)',
+      attentive: 'hsl(25 60% 35%)',
+      listening: 'hsl(25 70% 40%)',
+      speaking: 'hsl(25 80% 45%)',
+      resting: 'hsl(25 50% 30%)',
+    };
+    return colors[state];
   };
 
   const getEarRotation = () => {
-    // Lower ears when low energy
     if (energyLevel === 'resting' || energyLevel === 'low') {
-      return { left: 5, right: -5 }; // Droopy ears
+      return { left: 5, right: -5 };
     }
     
     switch (state) {
-      case 'alert': return { left: -15, right: 15 };
-      case 'attentive': return { left: -8, right: 8 };
-      case 'listening': return { left: -20, right: 20 };
+      case 'alert': return { left: -10, right: 10 };
+      case 'attentive': return { left: -5, right: 5 };
+      case 'listening': return { left: -15, right: 15 };
       default: return { left: 0, right: 0 };
     }
   };
 
   const earRotation = getEarRotation();
 
-  // Get head tilt based on energy (lower head when tired)
-  const getHeadTilt = () => {
-    if (energyLevel === 'resting') return 5;
-    if (energyLevel === 'low') return 3;
-    return 0;
-  };
-
-  // Get lowest need for indicator
   const getLowestNeedInfo = () => {
     if (!needLevels) return null;
     
@@ -130,16 +122,8 @@ export function RobotDogAvatar({
       config.container,
       className
     )}>
-      {/* Subtle glow behind for active states */}
-      {state !== 'resting' && energyLevel !== 'resting' && (
-        <div 
-          className="absolute inset-0 rounded-full opacity-30 blur-xl transition-opacity duration-1000"
-          style={{ backgroundColor: getEyeGlow() }}
-        />
-      )}
-
       <svg 
-        viewBox="0 0 100 100" 
+        viewBox={config.viewBox}
         className={cn(
           'w-full h-full transition-all duration-700',
           showBreathing && state === 'resting' && 'animate-[breathe_4s_ease-in-out_infinite]'
@@ -147,200 +131,155 @@ export function RobotDogAvatar({
         style={{ 
           opacity: energyMod.opacity,
           filter: `saturate(${energyMod.saturation})`,
-          transform: `rotate(${getHeadTilt()}deg)`,
         }}
       >
         <defs>
-          {/* Metallic gradient for robot body */}
-          <linearGradient id="metalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="hsl(var(--muted))" />
-            <stop offset="50%" stopColor="hsl(var(--muted-foreground) / 0.3)" />
-            <stop offset="100%" stopColor="hsl(var(--muted))" />
+          <linearGradient id="avatarDalmatianBody" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#f5f0e8" />
+            <stop offset="50%" stopColor="#ebe6de" />
+            <stop offset="100%" stopColor="#f5f0e8" />
           </linearGradient>
-          
-          {/* Eye glow filter */}
-          <filter id="eyeGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
 
-          {/* Subtle shadow */}
-          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.2" />
+          <filter id="avatarSoftShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.15" />
           </filter>
         </defs>
 
-        {/* Main head shape - rounded rectangle resembling dog face */}
-        <g filter="url(#shadow)">
-          {/* Head base */}
-          <rect 
-            x="20" y="25" 
-            width="60" height="55" 
-            rx="20" ry="20"
-            fill="url(#metalGradient)"
-            stroke="hsl(var(--border))"
-            strokeWidth="1.5"
-            className="transition-all duration-500"
-          />
-
-          {/* Snout */}
-          <rect 
-            x="32" y="55" 
-            width="36" height="22" 
-            rx="11" ry="11"
-            fill="hsl(var(--muted))"
-            stroke="hsl(var(--border))"
-            strokeWidth="1"
-          />
-
-          {/* Nose */}
+        <g filter="url(#avatarSoftShadow)">
+          {/* Head */}
           <ellipse 
-            cx="50" cy="62" 
-            rx="6" ry="4"
-            fill="hsl(var(--foreground) / 0.8)"
-            className={cn(
-              'transition-all duration-300',
-              state === 'attentive' && energyLevel !== 'resting' && 'animate-[pulse_2s_ease-in-out_infinite]'
-            )}
+            cx="50" cy="50" 
+            rx="38" ry="35"
+            fill="url(#avatarDalmatianBody)"
+            stroke="#d4cfc5"
+            strokeWidth="2"
           />
+
+          {/* Head spots */}
+          <ellipse cx="28" cy="35" rx="6" ry="5" fill="#3d3d3d" />
+          <ellipse cx="75" cy="32" rx="5" ry="6" fill="#3d3d3d" />
+          <circle cx="40" cy="22" r="4" fill="#3d3d3d" />
+          <ellipse cx="68" cy="65" rx="4" ry="3" fill="#3d3d3d" />
 
           {/* Left ear */}
           <g 
-            className="transition-transform duration-500 origin-bottom"
-            style={{ transform: `rotate(${earRotation.left}deg)`, transformOrigin: '30px 30px' }}
+            className="transition-transform duration-500"
+            style={{ transform: `rotate(${earRotation.left}deg)`, transformOrigin: '25px 30px' }}
           >
-            <path 
-              d="M 22 28 Q 15 10 28 18 L 30 28 Z"
-              fill="url(#metalGradient)"
-              stroke="hsl(var(--border))"
-              strokeWidth="1"
+            <ellipse 
+              cx="15" cy="42" 
+              rx="14" ry="22"
+              fill="url(#avatarDalmatianBody)"
+              stroke="#d4cfc5"
+              strokeWidth="1.5"
             />
+            <ellipse cx="12" cy="38" rx="5" ry="6" fill="#3d3d3d" />
+            <circle cx="18" cy="50" r="3" fill="#3d3d3d" />
           </g>
 
           {/* Right ear */}
           <g 
-            className="transition-transform duration-500 origin-bottom"
-            style={{ transform: `rotate(${earRotation.right}deg)`, transformOrigin: '70px 30px' }}
+            className="transition-transform duration-500"
+            style={{ transform: `rotate(${earRotation.right}deg)`, transformOrigin: '75px 30px' }}
           >
-            <path 
-              d="M 78 28 Q 85 10 72 18 L 70 28 Z"
-              fill="url(#metalGradient)"
-              stroke="hsl(var(--border))"
-              strokeWidth="1"
+            <ellipse 
+              cx="85" cy="42" 
+              rx="14" ry="22"
+              fill="url(#avatarDalmatianBody)"
+              stroke="#d4cfc5"
+              strokeWidth="1.5"
             />
+            <ellipse cx="88" cy="36" rx="6" ry="5" fill="#3d3d3d" />
+            <circle cx="82" cy="48" r="3" fill="#3d3d3d" />
           </g>
 
-          {/* Left eye socket */}
+          {/* Snout */}
           <ellipse 
-            cx="36" cy="42" 
-            rx="8" ry="7"
-            fill="hsl(var(--background))"
-            stroke="hsl(var(--border))"
-            strokeWidth="1"
+            cx="50" cy="62" 
+            rx="16" ry="12"
+            fill="url(#avatarDalmatianBody)"
+            stroke="#d4cfc5"
+            strokeWidth="1.5"
           />
 
-          {/* Right eye socket */}
-          <ellipse 
-            cx="64" cy="42" 
-            rx="8" ry="7"
-            fill="hsl(var(--background))"
-            stroke="hsl(var(--border))"
-            strokeWidth="1"
-          />
+          {/* Nose */}
+          <ellipse cx="50" cy="56" rx="7" ry="5" fill="#2d2d2d" />
+          <ellipse cx="48" cy="54" rx="2" ry="1" fill="#4d4d4d" />
 
-          {/* Left eye - glowing */}
-          <ellipse 
-            cx="36" cy="42" 
-            rx="5" 
-            ry={energyLevel === 'resting' ? 1 : energyLevel === 'low' ? 2 : 4}
-            fill={getEyeGlow()}
-            filter="url(#eyeGlow)"
-            className={cn(
-              'transition-all duration-500',
-              state === 'speaking' && energyLevel !== 'resting' && 'animate-[pulse_1.5s_ease-in-out_infinite]',
-              state === 'listening' && energyLevel !== 'resting' && 'animate-[pulse_2s_ease-in-out_infinite]'
-            )}
-          >
-            {state === 'resting' && energyLevel === 'high' && (
-              <animate 
-                attributeName="ry" 
-                values="4;1;4" 
-                dur="4s" 
-                repeatCount="indefinite"
-                keyTimes="0;0.1;1"
+          {/* Mouth - animated when speaking */}
+          <g className={cn(
+            state === 'speaking' && energyLevel !== 'resting' && 'animate-[mouthMove_0.25s_ease-in-out_infinite]'
+          )}>
+            {state === 'speaking' && energyLevel !== 'resting' ? (
+              <>
+                <path 
+                  d="M 40 68 Q 50 76 60 68"
+                  fill="none"
+                  stroke="#2d2d2d"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <ellipse cx="50" cy="72" rx="5" ry="3" fill="#e8a0a0" />
+              </>
+            ) : (
+              <path 
+                d="M 40 68 Q 50 73 60 68"
+                fill="none"
+                stroke="#2d2d2d"
+                strokeWidth="1.5"
+                strokeLinecap="round"
               />
             )}
-          </ellipse>
+          </g>
 
-          {/* Right eye - glowing */}
+          {/* Left eye */}
+          <ellipse cx="36" cy="44" rx="10" ry="11" fill="#ffffff" stroke="#d4cfc5" strokeWidth="1" />
           <ellipse 
-            cx="64" cy="42" 
-            rx="5" 
-            ry={energyLevel === 'resting' ? 1 : energyLevel === 'low' ? 2 : 4}
-            fill={getEyeGlow()}
-            filter="url(#eyeGlow)"
+            cx="36" cy="45" 
+            rx="6" ry="7"
+            fill={getEyeColor()}
             className={cn(
               'transition-all duration-500',
-              state === 'speaking' && energyLevel !== 'resting' && 'animate-[pulse_1.5s_ease-in-out_infinite]',
-              state === 'listening' && energyLevel !== 'resting' && 'animate-[pulse_2s_ease-in-out_infinite]'
+              state === 'speaking' && energyLevel !== 'resting' && 'animate-[pulse_1.5s_ease-in-out_infinite]'
             )}
-          >
-            {state === 'resting' && energyLevel === 'high' && (
-              <animate 
-                attributeName="ry" 
-                values="4;1;4" 
-                dur="4s" 
-                repeatCount="indefinite"
-                keyTimes="0;0.1;1"
-              />
-            )}
-          </ellipse>
-
-          {/* Collar/neck plate */}
-          <rect 
-            x="35" y="78" 
-            width="30" height="8" 
-            rx="2"
-            fill="hsl(var(--primary) / 0.3)"
-            stroke="hsl(var(--primary) / 0.5)"
-            strokeWidth="1"
           />
+          <circle cx="34" cy="42" r="3" fill="#ffffff" />
+          <circle cx="38" cy="47" r="1.5" fill="#ffffff" opacity="0.6" />
 
-          {/* Status indicator light on collar - color based on energy */}
-          <circle 
-            cx="50" cy="82" 
-            r="2"
-            fill={
-              energyLevel === 'high' ? 'hsl(142 76% 45%)' :
-              energyLevel === 'medium' ? 'hsl(45 93% 58%)' :
-              energyLevel === 'low' ? 'hsl(25 95% 53%)' :
-              'hsl(0 72% 50%)'
-            }
+          {/* Right eye */}
+          <ellipse cx="64" cy="44" rx="10" ry="11" fill="#ffffff" stroke="#d4cfc5" strokeWidth="1" />
+          <ellipse 
+            cx="64" cy="45" 
+            rx="6" ry="7"
+            fill={getEyeColor()}
             className={cn(
-              energyLevel !== 'resting' && 'animate-[pulse_2s_ease-in-out_infinite]'
+              'transition-all duration-500',
+              state === 'speaking' && energyLevel !== 'resting' && 'animate-[pulse_1.5s_ease-in-out_infinite]'
             )}
           />
+          <circle cx="62" cy="42" r="3" fill="#ffffff" />
+          <circle cx="66" cy="47" r="1.5" fill="#ffffff" opacity="0.6" />
 
-          {/* Panel lines for robotic detail */}
-          <line 
-            x1="30" y1="35" x2="30" y2="50" 
-            stroke="hsl(var(--border))" 
-            strokeWidth="0.5" 
-            opacity="0.5"
-          />
-          <line 
-            x1="70" y1="35" x2="70" y2="50" 
-            stroke="hsl(var(--border))" 
-            strokeWidth="0.5" 
-            opacity="0.5"
-          />
+          {/* Sleepy eyes when resting/low energy */}
+          {(energyLevel === 'resting' || energyLevel === 'low') && (
+            <>
+              <line x1="26" y1="44" x2="46" y2="44" stroke="#d4cfc5" strokeWidth="3" strokeLinecap="round" />
+              <line x1="54" y1="44" x2="74" y2="44" stroke="#d4cfc5" strokeWidth="3" strokeLinecap="round" />
+            </>
+          )}
         </g>
+
+        <style>
+          {`
+            @keyframes mouthMove {
+              0%, 100% { transform: scaleY(1); }
+              50% { transform: scaleY(1.3); }
+            }
+          `}
+        </style>
       </svg>
 
-      {/* Speaking indicator waves */}
+      {/* Speaking indicator */}
       {state === 'speaking' && energyLevel !== 'resting' && (
         <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-0.5">
           <div className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -361,7 +300,7 @@ export function RobotDogAvatar({
         </div>
       )}
 
-      {/* Need indicator bubble */}
+      {/* Need indicator */}
       {showNeedIndicators && lowestNeed && (
         <div className="absolute -top-2 -left-2 w-6 h-6 bg-card border border-border rounded-full flex items-center justify-center text-xs shadow-lg animate-pulse">
           {lowestNeed.icon}
