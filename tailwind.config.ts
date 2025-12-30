@@ -124,6 +124,11 @@ export default {
           "0%, 100%": { transform: "scaleY(1)" },
           "50%": { transform: "scaleY(1.3)" },
         },
+        earWiggle: {
+          "0%, 100%": { transform: "rotate(0deg)" },
+          "25%": { transform: "rotate(-8deg)" },
+          "75%": { transform: "rotate(8deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -135,6 +140,7 @@ export default {
         float: "float 6s ease-in-out infinite",
         "tail-wag": "tailWag 0.3s ease-in-out infinite",
         "mouth-move": "mouthMove 0.25s ease-in-out infinite",
+        "ear-wiggle": "earWiggle 0.4s ease-in-out infinite",
       },
     },
   },

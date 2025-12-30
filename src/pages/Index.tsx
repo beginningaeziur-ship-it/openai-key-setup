@@ -32,7 +32,7 @@ const Index = () => {
   useEffect(() => {
     // If onboarding is complete, go to main app
     if (onboarding.completed) {
-      navigate("/sai-room", { replace: true });
+      navigate("/sai-home", { replace: true });
     }
   }, [onboarding.completed, navigate]);
 

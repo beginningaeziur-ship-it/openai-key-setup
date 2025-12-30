@@ -236,9 +236,12 @@ export function FullBodySAI({
           <ellipse cx="70" cy="35" rx="3" ry="2" fill="#3d3d3d" />
           <circle cx="48" cy="12" r="3" fill="#3d3d3d" />
 
-          {/* Left ear - floppy dalmatian style */}
+          {/* Left ear - floppy dalmatian style with wiggle when listening */}
           <g 
-            className="transition-transform duration-500"
+            className={cn(
+              "transition-transform duration-500",
+              state === 'listening' && 'animate-[earWiggle_0.4s_ease-in-out_infinite]'
+            )}
             style={{ transform: `rotate(${earRotation.left}deg)`, transformOrigin: '38px 18px' }}
           >
             <ellipse 
@@ -253,10 +256,13 @@ export function FullBodySAI({
             <circle cx="32" cy="35" r="3" fill="#3d3d3d" />
           </g>
 
-          {/* Right ear - floppy dalmatian style */}
+          {/* Right ear - floppy dalmatian style with wiggle when listening */}
           <g 
-            className="transition-transform duration-500"
-            style={{ transform: `rotate(${earRotation.right}deg)`, transformOrigin: '82px 18px' }}
+            className={cn(
+              "transition-transform duration-500",
+              state === 'listening' && 'animate-[earWiggle_0.4s_ease-in-out_infinite]'
+            )}
+            style={{ transform: `rotate(${earRotation.right}deg)`, transformOrigin: '82px 18px', animationDelay: '0.1s' }}
           >
             <ellipse 
               cx="90" cy="28" 

@@ -37,6 +37,7 @@ import OfficeExit from "./pages/onboarding/OfficeExit";
 import HomeEntrance from "./pages/onboarding/HomeEntrance";
 import PlayRoom from "./pages/PlayRoom";
 import BedroomHome from "./pages/BedroomHome";
+import SAIHome from "./pages/SAIHome";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,7 @@ const App = () => (
                                 
                                 {/* Main app */}
                                 <Route path="/sai-room" element={<SAIRoom />} />
+                                <Route path="/sai-home" element={<SAIHome />} />
                                 <Route path="/dashboard" element={<Dashboard />} />
                                 <Route path="/chat" element={<Chat />} />
                                 <Route path="/settings" element={<Settings />} />
