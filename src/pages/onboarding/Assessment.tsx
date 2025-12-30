@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
 import comfortOfficeBg from '@/assets/comfort-office-bg.jpg';
-
 /**
  * Assessment - Notebook paper on desk (no dog visible)
  * 
@@ -84,9 +84,13 @@ const SAI_NARRATION = {
 
 export default function Assessment() {
   const navigate = useNavigate();
+  const { speak, isSpeaking, voiceEnabled } = useVoiceSettings();
   const [phase, setPhase] = useState<AssessmentPhase>('initial');
   const [narrationText, setNarrationText] = useState('');
   const [isNarrating, setIsNarrating] = useState(true);
+  
+  // Track which phases we've already spoken
+  const hasSpokenRef = useRef<Set<string>>(new Set());
   
   // Selections (in-memory only, not stored)
   const [hasDisabilities, setHasDisabilities] = useState(false);
@@ -96,7 +100,7 @@ export default function Assessment() {
   const [selectedCircumstances, setSelectedCircumstances] = useState<string[]>([]);
   const [selectedDetails, setSelectedDetails] = useState<string[]>([]);
 
-  // Typewriter for SAI narration
+  // Typewriter for SAI narration + voice
   useEffect(() => {
     const text = SAI_NARRATION[phase];
     if (!text) return;
@@ -104,6 +108,12 @@ export default function Assessment() {
     let charIndex = 0;
     setIsNarrating(true);
     setNarrationText('');
+    
+    // Speak the narration if voice enabled and not already spoken
+    if (voiceEnabled && !hasSpokenRef.current.has(phase)) {
+      hasSpokenRef.current.add(phase);
+      speak(text);
+    }
 
     const typeInterval = setInterval(() => {
       if (charIndex < text.length) {
@@ -116,7 +126,7 @@ export default function Assessment() {
     }, 30);
 
     return () => clearInterval(typeInterval);
-  }, [phase]);
+  }, [phase, speak, voiceEnabled]);
 
   const handleInitialContinue = () => {
     if (hasDisabilities) {
