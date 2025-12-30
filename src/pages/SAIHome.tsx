@@ -7,6 +7,10 @@ import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
 import { useServiceDog } from '@/contexts/ServiceDogContext';
 import { useSAI } from '@/contexts/SAIContext';
 import { useSAINarrator } from '@/contexts/SAINarratorContext';
+import { useSAIDailyEngine } from '@/contexts/SAIDailyEngineContext';
+import { MorningCheckIn } from '@/components/checkin/MorningCheckIn';
+import { EveningCheckIn } from '@/components/checkin/EveningCheckIn';
+import { DailyTaskList } from '@/components/checkin/DailyTaskList';
 import { 
   UtensilsCrossed, 
   Droplets, 
@@ -22,7 +26,9 @@ import {
   Trees,
   MessageCircle,
   Menu,
-  X
+  X,
+  Sun,
+  Moon
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -37,8 +43,10 @@ import cozyBedroomBg from '@/assets/cozy-bedroom-bg.jpg';
 /**
  * SAIHome - Main interactive space with SAI
  * 
- * Playroom-style layout with:
- * - Voice toggle from the start (text shows when voice off)
+ * Features:
+ * - Morning and evening check-ins
+ * - Daily task management
+ * - Voice toggle (text shows when voice off)
  * - Care actions: feed, water, take outside
  * - Navigation menu to different scenes
  */
@@ -79,6 +87,13 @@ export default function SAIHome() {
   const { fulfillNeed, dogState } = useServiceDog();
   const { userProfile } = useSAI();
   const { startListeningWindow, isListening } = useSAINarrator();
+  const { 
+    needsMorningCheckIn, 
+    needsEveningCheckIn, 
+    todaysTasks,
+    todaysFocus,
+    morningCheckInComplete 
+  } = useSAIDailyEngine();
   
   const saiName = userProfile?.saiNickname || 'SAI';
   const userName = userProfile?.nickname || 'Friend';
@@ -87,6 +102,8 @@ export default function SAIHome() {
   const [showMenu, setShowMenu] = useState(false);
   const [lastCareAction, setLastCareAction] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showMorningCheckIn, setShowMorningCheckIn] = useState(false);
+  const [showEveningCheckIn, setShowEveningCheckIn] = useState(false);
   const hasGreetedRef = useRef(false);
 
   // Get random greeting
@@ -95,21 +112,27 @@ export default function SAIHome() {
     return `${greeting}`;
   }, []);
 
-  // Initial greeting with voice choice
+  // Prompt for check-in on mount if needed
   useEffect(() => {
     if (!isInitialized && !hasGreetedRef.current) {
       hasGreetedRef.current = true;
-      const greeting = getGreeting();
-      setCurrentMessage(greeting);
       
-      // Only speak if voice is enabled
-      if (voiceEnabled) {
-        speak(greeting);
+      // Check if we need morning or evening check-in
+      if (needsMorningCheckIn) {
+        setShowMorningCheckIn(true);
+      } else if (needsEveningCheckIn) {
+        setShowEveningCheckIn(true);
+      } else {
+        const greeting = getGreeting();
+        setCurrentMessage(greeting);
+        if (voiceEnabled) {
+          speak(greeting);
+        }
       }
       
       setTimeout(() => setIsInitialized(true), 500);
     }
-  }, [isInitialized, voiceEnabled, speak, getGreeting]);
+  }, [isInitialized, voiceEnabled, speak, getGreeting, needsMorningCheckIn, needsEveningCheckIn]);
 
   // Handle care action
   const handleCareAction = useCallback(async (action: CareAction) => {
@@ -164,6 +187,25 @@ export default function SAIHome() {
     }
   };
 
+  // Handle check-in completion
+  const handleMorningCheckInComplete = useCallback(() => {
+    setShowMorningCheckIn(false);
+    const message = "You've got this. I'm here with you.";
+    setCurrentMessage(message);
+    if (voiceEnabled) {
+      speak(message);
+    }
+  }, [voiceEnabled, speak]);
+
+  const handleEveningCheckInComplete = useCallback(() => {
+    setShowEveningCheckIn(false);
+    const message = "Rest well. I'll be here tomorrow.";
+    setCurrentMessage(message);
+    if (voiceEnabled) {
+      speak(message);
+    }
+  }, [voiceEnabled, speak]);
+
   // Determine SAI state
   const getSAIState = () => {
     if (isSpeaking) return 'speaking';
@@ -171,15 +213,33 @@ export default function SAIHome() {
     return 'attentive';
   };
 
+  // Get time-based indicator
+  const getTimeIcon = () => {
+    const hour = new Date().getHours();
+    if (hour >= 6 && hour < 18) {
+      return <Sun className="w-4 h-4 text-amber-500" />;
+    }
+    return <Moon className="w-4 h-4 text-indigo-400" />;
+  };
+
   return (
-    <div 
-      className="min-h-screen relative flex flex-col"
-      style={{
-        backgroundImage: `url(${cozyBedroomBg})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
+    <>
+      {/* Check-in Modals */}
+      {showMorningCheckIn && (
+        <MorningCheckIn onComplete={handleMorningCheckInComplete} />
+      )}
+      {showEveningCheckIn && (
+        <EveningCheckIn onComplete={handleEveningCheckInComplete} />
+      )}
+
+      <div 
+        className="min-h-screen relative flex flex-col"
+        style={{
+          backgroundImage: `url(${cozyBedroomBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
       {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
       
@@ -188,9 +248,14 @@ export default function SAIHome() {
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-              <Heart className="w-4 h-4 text-primary animate-pulse" />
+              {getTimeIcon()}
             </div>
-            <span className="font-display font-semibold text-foreground">Safe Home</span>
+            <div>
+              <span className="font-display font-semibold text-foreground">Safe Home</span>
+              {morningCheckInComplete && todaysFocus && (
+                <p className="text-xs text-muted-foreground">{todaysFocus.icon} {todaysFocus.label}</p>
+              )}
+            </div>
           </div>
           
           <div className="flex items-center gap-2">
@@ -284,6 +349,13 @@ export default function SAIHome() {
             Talk to {saiName}
           </Button>
 
+          {/* Daily Tasks (if morning check-in done) */}
+          {morningCheckInComplete && todaysTasks.length > 0 && (
+            <div className="w-full max-w-xs mb-4">
+              <DailyTaskList compact />
+            </div>
+          )}
+
           {/* Care Actions */}
           <div className="grid grid-cols-3 gap-3 w-full max-w-xs">
             {CARE_ACTIONS.map((action) => {
@@ -335,5 +407,6 @@ export default function SAIHome() {
         </div>
       </main>
     </div>
+    </>
   );
 }
