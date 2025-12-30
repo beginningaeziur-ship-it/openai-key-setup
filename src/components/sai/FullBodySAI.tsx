@@ -288,34 +288,14 @@ export function FullBodySAI({
           {/* Nose shine */}
           <ellipse cx="58" cy="33" rx="2" ry="1" fill="#4d4d4d" />
 
-          {/* Mouth - animated when speaking */}
-          <g className={cn(
-            state === 'speaking' && 'animate-[mouthMove_0.25s_ease-in-out_infinite]'
-          )}>
-            {state === 'speaking' ? (
-              <>
-                {/* Open mouth when speaking */}
-                <path 
-                  d="M 52 42 Q 60 48 68 42"
-                  fill="none"
-                  stroke="#2d2d2d"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                {/* Tongue */}
-                <ellipse cx="60" cy="45" rx="4" ry="3" fill="#e8a0a0" />
-              </>
-            ) : (
-              /* Closed smile */
-              <path 
-                d="M 52 42 Q 60 46 68 42"
-                fill="none"
-                stroke="#2d2d2d"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            )}
-          </g>
+          {/* Mouth - static smile */}
+          <path 
+            d="M 52 42 Q 60 46 68 42"
+            fill="none"
+            stroke="#2d2d2d"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
 
           {/* Left eye - large puppy eyes */}
           <ellipse 

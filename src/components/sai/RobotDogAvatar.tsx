@@ -206,31 +206,14 @@ export function RobotDogAvatar({
           <ellipse cx="50" cy="56" rx="7" ry="5" fill="#2d2d2d" />
           <ellipse cx="48" cy="54" rx="2" ry="1" fill="#4d4d4d" />
 
-          {/* Mouth - animated when speaking */}
-          <g className={cn(
-            state === 'speaking' && energyLevel !== 'resting' && 'animate-[mouthMove_0.25s_ease-in-out_infinite]'
-          )}>
-            {state === 'speaking' && energyLevel !== 'resting' ? (
-              <>
-                <path 
-                  d="M 40 68 Q 50 76 60 68"
-                  fill="none"
-                  stroke="#2d2d2d"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <ellipse cx="50" cy="72" rx="5" ry="3" fill="#e8a0a0" />
-              </>
-            ) : (
-              <path 
-                d="M 40 68 Q 50 73 60 68"
-                fill="none"
-                stroke="#2d2d2d"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            )}
-          </g>
+          {/* Mouth - static smile */}
+          <path 
+            d="M 40 68 Q 50 73 60 68"
+            fill="none"
+            stroke="#2d2d2d"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
 
           {/* Left eye */}
           <ellipse cx="36" cy="44" rx="10" ry="11" fill="#ffffff" stroke="#d4cfc5" strokeWidth="1" />
