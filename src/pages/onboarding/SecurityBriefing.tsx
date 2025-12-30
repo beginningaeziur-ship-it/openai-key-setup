@@ -1,15 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { FullBodySAI } from '@/components/sai/FullBodySAI';
 import { Shield, Eye, Lock, UserCheck } from 'lucide-react';
+import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
+import { useMicrophone } from '@/contexts/MicrophoneContext';
 import comfortOfficeBg from '@/assets/comfort-office-bg.jpg';
 
 /**
  * SecurityBriefing - Office with desk
  * 
- * SAI explains security warnings and the Watcher app
+ * SAI explains security warnings and the Watcher app with VOICE
+ * Microphone activates when SAI asks questions
  */
 
 const SECURITY_MESSAGES = [
@@ -34,50 +37,96 @@ const SECURITY_MESSAGES = [
     icon: Lock,
   },
   {
-    text: "Now, let's get to know each other a bit so I can support you properly.",
+    text: "Does this all make sense? Any questions before we continue?",
     icon: null,
   },
 ];
 
 export default function SecurityBriefing() {
   const navigate = useNavigate();
+  const { speak, isSpeaking, stopSpeaking, voiceEnabled } = useVoiceSettings();
+  const { enableMicrophone, isMicEnabled, lastTranscript, clearTranscript } = useMicrophone();
+  
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState('');
-  const [isTyping, setIsTyping] = useState(true);
   const [showContinue, setShowContinue] = useState(false);
+  const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+  const [saiResponse, setSaiResponse] = useState<string | null>(null);
+  
+  const hasSpokenRef = useRef<Set<number>>(new Set());
+  const lastProcessedTranscriptRef = useRef<string>('');
+
+  // Handle speaking current message
+  const speakCurrentMessage = useCallback(async () => {
+    const message = SECURITY_MESSAGES[currentMessageIndex];
+    setDisplayedText(message.text);
+    
+    if (!hasSpokenRef.current.has(currentMessageIndex)) {
+      hasSpokenRef.current.add(currentMessageIndex);
+      
+      if (voiceEnabled) {
+        await speak(message.text);
+      }
+      
+      // After last message, wait for user response
+      if (currentMessageIndex === SECURITY_MESSAGES.length - 1) {
+        setIsWaitingForResponse(true);
+        if (!isMicEnabled) {
+          try {
+            await enableMicrophone();
+          } catch (e) {
+            console.log('Mic enable failed');
+          }
+        }
+        setTimeout(() => setShowContinue(true), 1000);
+      } else {
+        setTimeout(() => {
+          setCurrentMessageIndex(prev => prev + 1);
+        }, 2500);
+      }
+    }
+  }, [currentMessageIndex, speak, voiceEnabled, enableMicrophone, isMicEnabled]);
 
   useEffect(() => {
-    const message = SECURITY_MESSAGES[currentMessageIndex];
-    let charIndex = 0;
-    setIsTyping(true);
-    setDisplayedText('');
+    speakCurrentMessage();
+  }, [currentMessageIndex, speakCurrentMessage]);
 
-    const typeInterval = setInterval(() => {
-      if (charIndex < message.text.length) {
-        setDisplayedText(message.text.substring(0, charIndex + 1));
-        charIndex++;
-      } else {
-        clearInterval(typeInterval);
-        setIsTyping(false);
-        
-        if (currentMessageIndex === SECURITY_MESSAGES.length - 1) {
-          setTimeout(() => setShowContinue(true), 500);
-        } else {
-          setTimeout(() => {
-            setCurrentMessageIndex(prev => prev + 1);
-          }, 2500);
+  // Handle user voice response
+  useEffect(() => {
+    if (isWaitingForResponse && lastTranscript && lastTranscript !== lastProcessedTranscriptRef.current) {
+      lastProcessedTranscriptRef.current = lastTranscript;
+      
+      const lowerTranscript = lastTranscript.toLowerCase();
+      
+      if (lowerTranscript.includes('question') || lowerTranscript.includes('?') || lowerTranscript.includes('what') || lowerTranscript.includes('watcher') || lowerTranscript.includes('explain')) {
+        const response = "The Watcher is completely optional. It's just a way for someone you trust to check on your general wellbeing — they never see your private conversations. You're always in control.";
+        setSaiResponse(response);
+        setDisplayedText(response);
+        if (voiceEnabled) {
+          speak(response);
+        }
+      } else if (lowerTranscript.includes('yes') || lowerTranscript.includes('understand') || lowerTranscript.includes('makes sense') || lowerTranscript.includes('okay') || lowerTranscript.includes('continue')) {
+        handleContinue();
+      } else if (lowerTranscript.includes('no') || lowerTranscript.includes('confused')) {
+        const response = "That's okay, I can explain more. Your privacy is my top priority. Nothing leaves this space without your permission. Would you like to continue when you're ready?";
+        setSaiResponse(response);
+        setDisplayedText(response);
+        if (voiceEnabled) {
+          speak(response);
         }
       }
-    }, 35);
-
-    return () => clearInterval(typeInterval);
-  }, [currentMessageIndex]);
+      
+      clearTranscript();
+    }
+  }, [lastTranscript, isWaitingForResponse, voiceEnabled, speak, clearTranscript]);
 
   const handleContinue = () => {
+    stopSpeaking();
     navigate('/onboarding/assessment');
   };
 
-  const CurrentIcon = SECURITY_MESSAGES[currentMessageIndex].icon;
+  const CurrentIcon = SECURITY_MESSAGES[currentMessageIndex]?.icon;
+  const saiState = isSpeaking ? 'speaking' : isWaitingForResponse ? 'listening' : 'attentive';
 
   return (
     <div 
@@ -95,8 +144,16 @@ export default function SecurityBriefing() {
         <div className="flex-shrink-0">
           <FullBodySAI 
             size="lg" 
-            state={isTyping ? 'speaking' : 'attentive'} 
+            state={saiState} 
           />
+          
+          {/* Listening indicator */}
+          {isWaitingForResponse && isMicEnabled && (
+            <div className="flex items-center justify-center gap-2 text-primary animate-pulse mt-4">
+              <div className="w-3 h-3 rounded-full bg-primary animate-ping" />
+              <span className="text-sm">Listening...</span>
+            </div>
+          )}
         </div>
 
         {/* Desk area on right */}
@@ -113,7 +170,7 @@ export default function SecurityBriefing() {
             
             <p className="text-lg text-foreground leading-relaxed text-center min-h-[80px]">
               {displayedText}
-              {isTyping && <span className="animate-pulse">|</span>}
+              {isSpeaking && <span className="animate-pulse ml-1">|</span>}
             </p>
           </div>
 

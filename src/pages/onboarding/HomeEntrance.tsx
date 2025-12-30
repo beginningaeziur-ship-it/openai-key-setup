@@ -1,15 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { FullBodySAI } from '@/components/sai/FullBodySAI';
 import { Lock, Delete } from 'lucide-react';
+import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
 import cozyCabinBg from '@/assets/cozy-cabin-bg.jpg';
 
 /**
  * HomeEntrance - SAI at door with pin pad
  * 
- * User sets their 4-digit security code
+ * SAI speaks the intro, user sets their 4-digit security code
  * This is the final onboarding step before entering the safe home
  */
 
@@ -22,43 +23,59 @@ const INTRO_MESSAGES = [
 
 export default function HomeEntrance() {
   const navigate = useNavigate();
+  const { speak, isSpeaking, voiceEnabled } = useVoiceSettings();
+  
   const [introIndex, setIntroIndex] = useState(0);
   const [introText, setIntroText] = useState('');
-  const [isIntroTyping, setIsIntroTyping] = useState(true);
   const [showPinPad, setShowPinPad] = useState(false);
   
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [isConfirming, setIsConfirming] = useState(false);
   const [error, setError] = useState('');
+  
+  const hasSpokenRef = useRef<Set<number>>(new Set());
 
-  // Intro typewriter
-  useEffect(() => {
+  // Speak intro messages
+  const speakIntroMessage = useCallback(async () => {
     const text = INTRO_MESSAGES[introIndex];
     if (!text) return;
     
-    let charIndex = 0;
-    setIsIntroTyping(true);
-    setIntroText('');
-
-    const typeInterval = setInterval(() => {
-      if (charIndex < text.length) {
-        setIntroText(text.substring(0, charIndex + 1));
-        charIndex++;
+    setIntroText(text);
+    
+    if (!hasSpokenRef.current.has(introIndex)) {
+      hasSpokenRef.current.add(introIndex);
+      
+      if (voiceEnabled) {
+        await speak(text);
+      }
+      
+      if (introIndex < INTRO_MESSAGES.length - 1) {
+        setTimeout(() => setIntroIndex(prev => prev + 1), 1500);
       } else {
-        clearInterval(typeInterval);
-        setIsIntroTyping(false);
-        
-        if (introIndex < INTRO_MESSAGES.length - 1) {
-          setTimeout(() => setIntroIndex(prev => prev + 1), 1500);
-        } else {
-          setTimeout(() => setShowPinPad(true), 500);
+        setTimeout(() => setShowPinPad(true), 500);
+      }
+    }
+  }, [introIndex, speak, voiceEnabled]);
+
+  useEffect(() => {
+    speakIntroMessage();
+  }, [introIndex, speakIntroMessage]);
+
+  // Speak confirmation prompts
+  useEffect(() => {
+    if (showPinPad) {
+      const prompt = isConfirming ? "Confirm your code." : "Enter a 4-digit code.";
+      if (voiceEnabled && !isSpeaking) {
+        // Only speak once when state changes
+        const key = isConfirming ? 'confirm' : 'enter';
+        if (!hasSpokenRef.current.has(key as any)) {
+          hasSpokenRef.current.add(key as any);
+          speak(prompt);
         }
       }
-    }, 35);
-
-    return () => clearInterval(typeInterval);
-  }, [introIndex]);
+    }
+  }, [showPinPad, isConfirming, voiceEnabled, isSpeaking, speak]);
 
   const handleDigitPress = (digit: string) => {
     setError('');
@@ -104,17 +121,24 @@ export default function HomeEntrance() {
       if (confirmPin === pin) {
         // Success - save pin and navigate
         localStorage.setItem('sai_security_pin', pin);
+        if (voiceEnabled) {
+          speak("Perfect. Welcome to your safe home.");
+        }
         setTimeout(() => {
           navigate('/sai-room');
-        }, 500);
+        }, 1500);
       } else {
         setError("Codes don't match. Try again.");
+        if (voiceEnabled) {
+          speak("Those codes don't match. Please try again.");
+        }
         setConfirmPin('');
       }
     }
-  }, [confirmPin, isConfirming, pin, navigate]);
+  }, [confirmPin, isConfirming, pin, navigate, voiceEnabled, speak]);
 
   const currentPin = isConfirming ? confirmPin : pin;
+  const saiState = isSpeaking ? 'speaking' : 'attentive';
 
   return (
     <div 
@@ -132,7 +156,7 @@ export default function HomeEntrance() {
         <div className="flex-shrink-0">
           <FullBodySAI 
             size="lg" 
-            state={isIntroTyping ? 'speaking' : 'attentive'} 
+            state={saiState} 
           />
         </div>
 
@@ -144,7 +168,7 @@ export default function HomeEntrance() {
               {showPinPad 
                 ? (isConfirming ? "Confirm your code." : "Enter a 4-digit code.") 
                 : introText}
-              {isIntroTyping && <span className="animate-pulse">|</span>}
+              {isSpeaking && <span className="animate-pulse ml-1">|</span>}
             </p>
           </div>
 

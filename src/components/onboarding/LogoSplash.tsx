@@ -8,13 +8,13 @@ interface LogoSplashProps {
 }
 
 /**
- * LogoSplash - Cinematic Logo Reveal (30 seconds)
+ * LogoSplash - Cinematic Logo Reveal (15 seconds)
  * 
  * HARD RULES:
- * - Logo shows alone for 30 seconds with cinematic music fade-in
+ * - Logo shows alone for 15 seconds with cinematic music fade-in
  * - Logo must fully unmount before SAI mounts
  * - No logo + SAI overlap, ever
- * - Music fades in over 3 seconds, plays throughout, fades out at end
+ * - Music fades in over 2 seconds, plays throughout, fades out at end
  */
 export const LogoSplash = ({ onComplete }: LogoSplashProps) => {
   const [phase, setPhase] = useState<'fade-in' | 'visible' | 'fade-out'>('fade-in');
@@ -26,9 +26,9 @@ export const LogoSplash = ({ onComplete }: LogoSplashProps) => {
     // Create audio element
     audioRef.current = new Audio(cinematicRoar);
     audioRef.current.volume = 0;
-    audioRef.current.loop = true; // Loop if audio is shorter than 30 seconds
+    audioRef.current.loop = true;
     
-    // Fade in audio over 3 seconds (0 to 0.6 volume)
+    // Fade in audio over 2 seconds (0 to 0.6 volume)
     const fadeInAudio = () => {
       if (audioRef.current) {
         audioRef.current.play().catch(() => {
@@ -37,7 +37,7 @@ export const LogoSplash = ({ onComplete }: LogoSplashProps) => {
         
         let vol = 0;
         const targetVol = 0.6;
-        const fadeInDuration = 3000; // 3 seconds
+        const fadeInDuration = 2000; // 2 seconds
         const stepTime = 50;
         const stepIncrease = (targetVol / fadeInDuration) * stepTime;
         
@@ -74,10 +74,10 @@ export const LogoSplash = ({ onComplete }: LogoSplashProps) => {
       }
     };
 
-    // Timeline:
+    // Timeline (15 seconds total):
     // 0-2s: Fade in
-    // 2-28s: Visible with music
-    // 28-30s: Fade out
+    // 2-13s: Visible with music
+    // 13-15s: Fade out
     
     fadeInAudio();
     
@@ -86,13 +86,13 @@ export const LogoSplash = ({ onComplete }: LogoSplashProps) => {
       setPhase('visible');
     }, 2000);
 
-    // Phase: visible → fade-out (at 28 seconds)
+    // Phase: visible → fade-out (at 13 seconds)
     const fadeOutTimer = setTimeout(() => {
       setPhase('fade-out');
       fadeOutAudio();
-    }, 28000);
+    }, 13000);
 
-    // Complete and unmount (at 30 seconds)
+    // Complete and unmount (at 15 seconds)
     const completeTimer = setTimeout(() => {
       setIsVisible(false);
       if (audioRef.current) {
@@ -100,9 +100,9 @@ export const LogoSplash = ({ onComplete }: LogoSplashProps) => {
         audioRef.current = null;
       }
       onComplete();
-    }, 30000);
+    }, 15000);
 
-    // FAILSAFE: Complete in 32 seconds max no matter what
+    // FAILSAFE: Complete in 17 seconds max no matter what
     failsafeRef.current = setTimeout(() => {
       setIsVisible(false);
       if (audioRef.current) {
@@ -110,7 +110,7 @@ export const LogoSplash = ({ onComplete }: LogoSplashProps) => {
         audioRef.current = null;
       }
       onComplete();
-    }, 32000);
+    }, 17000);
 
     return () => {
       clearTimeout(fadeInTimer);

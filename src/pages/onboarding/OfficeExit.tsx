@@ -1,16 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { FullBodySAI } from '@/components/sai/FullBodySAI';
 import { DoorOpen, Shield, Eye, Lock } from 'lucide-react';
+import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
+import { useMicrophone } from '@/contexts/MicrophoneContext';
 import comfortOfficeBg from '@/assets/comfort-office-bg.jpg';
 
 /**
  * OfficeExit - Full-bodied SAI with exit door
  * 
- * SAI recaps security, reminds of everything discussed,
- * then leads user to their new safe home
+ * SAI recaps security, reminds of everything discussed with VOICE
+ * Microphone activates when SAI asks if ready
  */
 
 const EXIT_MESSAGES = [
@@ -33,43 +35,72 @@ const MESSAGE_ICONS = [
 
 export default function OfficeExit() {
   const navigate = useNavigate();
+  const { speak, isSpeaking, stopSpeaking, voiceEnabled } = useVoiceSettings();
+  const { enableMicrophone, isMicEnabled, lastTranscript, clearTranscript } = useMicrophone();
+  
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState('');
-  const [isTyping, setIsTyping] = useState(true);
   const [showContinue, setShowContinue] = useState(false);
+  const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+  
+  const hasSpokenRef = useRef<Set<number>>(new Set());
+  const lastProcessedTranscriptRef = useRef<string>('');
+
+  const speakCurrentMessage = useCallback(async () => {
+    const message = EXIT_MESSAGES[currentMessageIndex];
+    setDisplayedText(message);
+    
+    if (!hasSpokenRef.current.has(currentMessageIndex)) {
+      hasSpokenRef.current.add(currentMessageIndex);
+      
+      if (voiceEnabled) {
+        await speak(message);
+      }
+      
+      if (currentMessageIndex === EXIT_MESSAGES.length - 1) {
+        setIsWaitingForResponse(true);
+        if (!isMicEnabled) {
+          try {
+            await enableMicrophone();
+          } catch (e) {
+            console.log('Mic enable failed');
+          }
+        }
+        setTimeout(() => setShowContinue(true), 500);
+      } else {
+        setTimeout(() => {
+          setCurrentMessageIndex(prev => prev + 1);
+        }, 2000);
+      }
+    }
+  }, [currentMessageIndex, speak, voiceEnabled, enableMicrophone, isMicEnabled]);
 
   useEffect(() => {
-    const message = EXIT_MESSAGES[currentMessageIndex];
-    let charIndex = 0;
-    setIsTyping(true);
-    setDisplayedText('');
+    speakCurrentMessage();
+  }, [currentMessageIndex, speakCurrentMessage]);
 
-    const typeInterval = setInterval(() => {
-      if (charIndex < message.length) {
-        setDisplayedText(message.substring(0, charIndex + 1));
-        charIndex++;
-      } else {
-        clearInterval(typeInterval);
-        setIsTyping(false);
-        
-        if (currentMessageIndex === EXIT_MESSAGES.length - 1) {
-          setTimeout(() => setShowContinue(true), 500);
-        } else {
-          setTimeout(() => {
-            setCurrentMessageIndex(prev => prev + 1);
-          }, 2000);
-        }
+  // Handle user voice response
+  useEffect(() => {
+    if (isWaitingForResponse && lastTranscript && lastTranscript !== lastProcessedTranscriptRef.current) {
+      lastProcessedTranscriptRef.current = lastTranscript;
+      
+      const lowerTranscript = lastTranscript.toLowerCase();
+      
+      if (lowerTranscript.includes('yes') || lowerTranscript.includes('ready') || lowerTranscript.includes('go') || lowerTranscript.includes('let\'s')) {
+        handleExit();
       }
-    }, 35);
-
-    return () => clearInterval(typeInterval);
-  }, [currentMessageIndex]);
+      
+      clearTranscript();
+    }
+  }, [lastTranscript, isWaitingForResponse, clearTranscript]);
 
   const handleExit = () => {
+    stopSpeaking();
     navigate('/onboarding/home-entrance');
   };
 
   const CurrentIcon = MESSAGE_ICONS[currentMessageIndex];
+  const saiState = isSpeaking ? 'speaking' : isWaitingForResponse ? 'listening' : 'attentive';
 
   return (
     <div 
@@ -87,8 +118,15 @@ export default function OfficeExit() {
         <div className="flex-shrink-0">
           <FullBodySAI 
             size="xl" 
-            state={isTyping ? 'speaking' : 'attentive'} 
+            state={saiState} 
           />
+          
+          {isWaitingForResponse && isMicEnabled && (
+            <div className="flex items-center justify-center gap-2 text-primary animate-pulse mt-4">
+              <div className="w-3 h-3 rounded-full bg-primary animate-ping" />
+              <span className="text-sm">Listening...</span>
+            </div>
+          )}
         </div>
 
         {/* Exit area */}
@@ -105,7 +143,7 @@ export default function OfficeExit() {
             
             <p className="text-lg text-foreground leading-relaxed text-center min-h-[60px]">
               {displayedText}
-              {isTyping && <span className="animate-pulse">|</span>}
+              {isSpeaking && <span className="animate-pulse ml-1">|</span>}
             </p>
           </div>
 
