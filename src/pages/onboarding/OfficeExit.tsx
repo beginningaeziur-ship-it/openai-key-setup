@@ -96,7 +96,7 @@ export default function OfficeExit() {
 
   const handleExit = () => {
     stopSpeaking();
-    navigate('/onboarding/home-entrance');
+    navigate('/onboarding/play-room');
   };
 
   const CurrentIcon = MESSAGE_ICONS[currentMessageIndex];

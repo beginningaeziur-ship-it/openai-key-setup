@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSAI } from '@/contexts/SAIContext';
+import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
 import { Button } from '@/components/ui/button';
 import { SceneBackground, SceneType } from '@/components/sai-room/SceneBackground';
 import { SAIPresence } from '@/components/sai-room/SAIPresence';
@@ -10,6 +11,7 @@ import { SceneSelector } from '@/components/sai-room/SceneSelector';
 import { BedroomTour } from '@/components/sai-room/BedroomTour';
 import { CrisisSafetyPlan } from '@/components/safety/CrisisSafetyPlan';
 import { AmbientSoundControl } from '@/components/sai-room/AmbientSoundControl';
+import { DogCarePanel } from '@/components/dog-care/DogCarePanel';
 import { useAmbientSound } from '@/hooks/useAmbientSound';
 import { FireplacePanel } from '@/components/room-panels/FireplacePanel';
 import { LampPanel } from '@/components/room-panels/LampPanel';
@@ -21,7 +23,8 @@ import {
   Settings, 
   MessageCircle,
   Heart,
-  Keyboard
+  Keyboard,
+  PawPrint
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -58,6 +61,7 @@ export default function SAIRoom() {
   const [showBookshelf, setShowBookshelf] = useState(false);
   const [showCoffeeTable, setShowCoffeeTable] = useState(false);
   const [showBed, setShowBed] = useState(false);
+  const [showDogCare, setShowDogCare] = useState(false);
   
   // Tour state
   const [showTour, setShowTour] = useState(() => {
@@ -251,6 +255,17 @@ export default function SAIRoom() {
             onActionSelect={handleActionSelect}
           />
           
+          {/* Dog Care Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDogCare(true)}
+            className="gap-2"
+          >
+            <PawPrint className="w-4 h-4" />
+            Care for {saiName}
+          </Button>
+          
           {/* Keyboard toggle */}
           <button
             onClick={() => setShowKeyboard(!showKeyboard)}
@@ -311,6 +326,12 @@ export default function SAIRoom() {
         open={showBed}
         onClose={() => setShowBed(false)}
         userName={userName}
+      />
+      
+      {/* Dog Care Panel */}
+      <DogCarePanel
+        open={showDogCare}
+        onClose={() => setShowDogCare(false)}
       />
     </SceneBackground>
   );
