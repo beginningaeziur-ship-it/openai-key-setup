@@ -112,10 +112,21 @@ export default function SAIRoom() {
   // Handle dropdown action selection
   const handleActionSelect = (actionId: string) => {
     switch (actionId) {
+      // Main area navigation
+      case 'forest-resources': 
+        // TODO: Navigate to forest resources panel
+        setShowBookshelf(true); // Temporary - uses bookshelf for resources
+        break;
+      case 'cabin-settings': 
+        navigate('/settings');
+        break;
+      case 'beach-tools': 
+        setShowRug(true); // Temporary - uses rug for grounding tools
+        break;
+      // Quick actions
       case 'grounding': setShowRug(true); break;
       case 'comfort': setShowFireplace(true); break;
       case 'rest': setShowBed(true); break;
-      case 'research': setShowBookshelf(true); break;
       case 'tools': setShowCoffeeTable(true); break;
       case 'settings': setShowLamp(true); break;
       default: break;
