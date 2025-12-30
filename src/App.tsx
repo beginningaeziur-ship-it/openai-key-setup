@@ -28,11 +28,13 @@ import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import Watcher from "./pages/Watcher";
 
-// Onboarding Pages
-import WelcomeIntro from "./pages/onboarding/WelcomeIntro";
+// Onboarding Pages - New Flow
+import WaitingRoom from "./pages/onboarding/WaitingRoom";
+import SecurityBriefing from "./pages/onboarding/SecurityBriefing";
 import Assessment from "./pages/onboarding/Assessment";
 import SafetyPlan from "./pages/onboarding/SafetyPlan";
-import GoalProposal from "./pages/onboarding/GoalProposal";
+import OfficeExit from "./pages/onboarding/OfficeExit";
+import HomeEntrance from "./pages/onboarding/HomeEntrance";
 
 const queryClient = new QueryClient();
 
@@ -57,11 +59,13 @@ const App = () => (
                                 {/* Main entry - logo splash */}
                                 <Route path="/" element={<Index />} />
                                 
-                                {/* Simplified onboarding flow */}
-                                <Route path="/onboarding/welcome" element={<WelcomeIntro />} />
+                                {/* New onboarding flow */}
+                                <Route path="/onboarding/waiting-room" element={<WaitingRoom />} />
+                                <Route path="/onboarding/security" element={<SecurityBriefing />} />
                                 <Route path="/onboarding/assessment" element={<Assessment />} />
                                 <Route path="/onboarding/safety-plan" element={<SafetyPlan />} />
-                                <Route path="/onboarding/goals" element={<GoalProposal />} />
+                                <Route path="/onboarding/exit" element={<OfficeExit />} />
+                                <Route path="/onboarding/home-entrance" element={<HomeEntrance />} />
                                 
                                 {/* Main app */}
                                 <Route path="/sai-room" element={<SAIRoom />} />

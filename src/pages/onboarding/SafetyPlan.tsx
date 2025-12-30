@@ -1,430 +1,201 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SAIAnchoredLayout } from '@/components/onboarding/SAIAnchoredLayout';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Shield, 
-  Plus, 
-  X, 
-  Phone, 
-  Heart, 
-  AlertTriangle,
-  Sparkles,
-  ArrowRight,
-  ChevronDown,
-  ChevronUp
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { Phone, Heart } from 'lucide-react';
+import comfortOfficeBg from '@/assets/comfort-office-bg.jpg';
 
-interface CopingStrategy {
-  id: string;
-  title: string;
-  category: 'distraction' | 'soothing' | 'physical' | 'social' | 'mindfulness';
-}
+/**
+ * SafetyPlan - Notebook paper on desk
+ * 
+ * Simple checklist with minimal fill-ins
+ * SAI voice narrates but is not visually present
+ */
 
-interface EmergencyContact {
-  id: string;
-  name: string;
-  phone: string;
-  relationship: string;
-}
+const SAI_NARRATION = [
+  "Now let's create your safety plan. This is a simple checklist — not a contract, just a reference for difficult moments.",
+  "Check what you already have in place, and fill in a few key details.",
+];
 
-interface SafetyPlan {
-  warningSignals: string[];
-  copingStrategies: CopingStrategy[];
-  emergencyContacts: EmergencyContact[];
-  reasonsToLive: string[];
-}
-
-const categoryLabels: Record<CopingStrategy['category'], string> = {
-  distraction: 'Distraction',
-  soothing: 'Self-Soothing',
-  physical: 'Physical',
-  social: 'Social',
-  mindfulness: 'Mindfulness',
-};
-
-const SafetyPlan: React.FC = () => {
+export default function SafetyPlan() {
   const navigate = useNavigate();
+  const [narrationIndex, setNarrationIndex] = useState(0);
+  const [narrationText, setNarrationText] = useState('');
+  const [isNarrating, setIsNarrating] = useState(true);
   
-  const [safetyPlan, setSafetyPlan] = useState<SafetyPlan>(() => {
-    const saved = localStorage.getItem('sai_safety_plan');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return {
-        warningSignals: parsed.warningSignals || [],
-        copingStrategies: parsed.copingStrategies || [],
-        emergencyContacts: parsed.emergencyContacts || [],
-        reasonsToLive: parsed.reasonsToLive || [],
-      };
-    }
-    return {
-      warningSignals: [],
-      copingStrategies: [],
-      emergencyContacts: [],
-      reasonsToLive: [],
-    };
-  });
-
-  const [expandedSection, setExpandedSection] = useState<string | null>('warning');
+  // Checklist items
+  const [hasCalmedBefore, setHasCalmedBefore] = useState(false);
+  const [hasDistraction, setHasDistraction] = useState(false);
+  const [hasSafePlace, setHasSafePlace] = useState(false);
+  const [hasContact, setHasContact] = useState(false);
+  const [hasProfessional, setHasProfessional] = useState(false);
   
-  // Form states
-  const [newWarning, setNewWarning] = useState('');
-  const [newCoping, setNewCoping] = useState({ title: '', category: 'distraction' as CopingStrategy['category'] });
-  const [newContact, setNewContact] = useState({ name: '', phone: '', relationship: '' });
-  const [newReason, setNewReason] = useState('');
+  // Fill-ins
+  const [calmingActivity, setCalmingActivity] = useState('');
+  const [emergencyContact, setEmergencyContact] = useState('');
+  const [safeLocation, setSafeLocation] = useState('');
 
-  const savePlan = (updated: SafetyPlan) => {
-    setSafetyPlan(updated);
-    // Merge with any existing data in localStorage
-    const existing = localStorage.getItem('sai_safety_plan');
-    const existingData = existing ? JSON.parse(existing) : {};
-    localStorage.setItem('sai_safety_plan', JSON.stringify({ ...existingData, ...updated }));
-  };
+  useEffect(() => {
+    const text = SAI_NARRATION[narrationIndex];
+    if (!text) return;
+    
+    let charIndex = 0;
+    setIsNarrating(true);
+    setNarrationText('');
 
-  const addWarning = () => {
-    if (!newWarning.trim()) return;
-    savePlan({
-      ...safetyPlan,
-      warningSignals: [...safetyPlan.warningSignals, newWarning.trim()],
-    });
-    setNewWarning('');
-    toast.success('Warning signal added');
-  };
+    const typeInterval = setInterval(() => {
+      if (charIndex < text.length) {
+        setNarrationText(text.substring(0, charIndex + 1));
+        charIndex++;
+      } else {
+        clearInterval(typeInterval);
+        setIsNarrating(false);
+        
+        if (narrationIndex < SAI_NARRATION.length - 1) {
+          setTimeout(() => setNarrationIndex(prev => prev + 1), 1500);
+        }
+      }
+    }, 30);
 
-  const addCoping = () => {
-    if (!newCoping.title.trim()) return;
-    const strategy: CopingStrategy = {
-      id: crypto.randomUUID(),
-      title: newCoping.title.trim(),
-      category: newCoping.category,
-    };
-    savePlan({
-      ...safetyPlan,
-      copingStrategies: [...safetyPlan.copingStrategies, strategy],
-    });
-    setNewCoping({ title: '', category: 'distraction' });
-    toast.success('Coping strategy added');
-  };
-
-  const addContact = () => {
-    if (!newContact.name.trim() || !newContact.phone.trim()) return;
-    const contact: EmergencyContact = {
-      id: crypto.randomUUID(),
-      ...newContact,
-    };
-    savePlan({
-      ...safetyPlan,
-      emergencyContacts: [...safetyPlan.emergencyContacts, contact],
-    });
-    setNewContact({ name: '', phone: '', relationship: '' });
-    toast.success('Contact added');
-  };
-
-  const addReason = () => {
-    if (!newReason.trim()) return;
-    savePlan({
-      ...safetyPlan,
-      reasonsToLive: [...safetyPlan.reasonsToLive, newReason.trim()],
-    });
-    setNewReason('');
-    toast.success('Reason added');
-  };
-
-  const removeWarning = (index: number) => {
-    savePlan({
-      ...safetyPlan,
-      warningSignals: safetyPlan.warningSignals.filter((_, i) => i !== index),
-    });
-  };
-
-  const removeCoping = (id: string) => {
-    savePlan({
-      ...safetyPlan,
-      copingStrategies: safetyPlan.copingStrategies.filter(s => s.id !== id),
-    });
-  };
-
-  const removeContact = (id: string) => {
-    savePlan({
-      ...safetyPlan,
-      emergencyContacts: safetyPlan.emergencyContacts.filter(c => c.id !== id),
-    });
-  };
-
-  const removeReason = (index: number) => {
-    savePlan({
-      ...safetyPlan,
-      reasonsToLive: safetyPlan.reasonsToLive.filter((_, i) => i !== index),
-    });
-  };
+    return () => clearInterval(typeInterval);
+  }, [narrationIndex]);
 
   const handleContinue = () => {
-    localStorage.setItem('sai_safety_plan_completed', 'true');
-    navigate('/sai-room');
+    navigate('/onboarding/exit');
   };
-
-  const handleSkip = () => {
-    localStorage.setItem('sai_safety_plan_completed', 'true');
-    navigate('/sai-room');
-  };
-
-  const toggleSection = (section: string) => {
-    setExpandedSection(expandedSection === section ? null : section);
-  };
-
-  const hasAnyContent = 
-    safetyPlan.warningSignals.length > 0 ||
-    safetyPlan.copingStrategies.length > 0 ||
-    safetyPlan.emergencyContacts.length > 0 ||
-    safetyPlan.reasonsToLive.length > 0;
 
   return (
-    <SAIAnchoredLayout
-      saiMessage="Let's create a safety plan together. This is your personal toolkit for difficult moments. You can always update it later."
-      saiState="attentive"
-      overlayStyle="paper"
+    <div 
+      className="min-h-screen relative flex items-center justify-center p-4"
+      style={{
+        backgroundImage: `url(${comfortOfficeBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
     >
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Shield className="w-5 h-5 text-amber-600" />
-          <h2 className="text-lg font-semibold text-stone-800">Your Safety Plan</h2>
+      <div className="absolute inset-0 bg-black/60" />
+      
+      <div className="relative z-10 w-full max-w-2xl">
+        {/* SAI narration */}
+        <div className="bg-card/80 backdrop-blur-sm rounded-t-xl p-4 border-x border-t border-border/50">
+          <p className="text-sm text-muted-foreground italic text-center min-h-[40px]">
+            {narrationText}
+            {isNarrating && <span className="animate-pulse">|</span>}
+          </p>
         </div>
 
-        {/* Warning Signals Section */}
-        <CollapsibleSection
-          title="Warning Signals"
-          icon={<AlertTriangle className="w-4 h-4 text-amber-600" />}
-          description="Signs that tell you a crisis might be approaching"
-          isExpanded={expandedSection === 'warning'}
-          onToggle={() => toggleSection('warning')}
-          count={safetyPlan.warningSignals.length}
+        {/* Paper */}
+        <div 
+          className="bg-amber-50 dark:bg-amber-100/90 rounded-b-xl p-6 shadow-2xl"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(transparent, transparent 27px, #91d1d3 28px)',
+            backgroundPosition: '0 10px',
+          }}
         >
-          <div className="space-y-2">
-            {safetyPlan.warningSignals.map((signal, index) => (
-              <Badge key={index} className="bg-amber-100 text-amber-800 border-amber-300 gap-1 mr-1">
-                {signal}
-                <X className="w-3 h-3 cursor-pointer hover:text-red-600" onClick={() => removeWarning(index)} />
-              </Badge>
-            ))}
-            <div className="flex gap-2 mt-2">
-              <Input
-                value={newWarning}
-                onChange={(e) => setNewWarning(e.target.value)}
-                placeholder="e.g., Racing thoughts"
-                className="bg-white/80 border-stone-300 text-stone-800 placeholder:text-stone-400 text-sm"
-                onKeyDown={(e) => e.key === 'Enter' && addWarning()}
+          <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+            <Heart className="w-5 h-5 text-rose-500" />
+            My Safety Plan
+          </h2>
+
+          <div className="space-y-5">
+            {/* Checklist items */}
+            <label className="flex items-start gap-3 cursor-pointer">
+              <Checkbox 
+                checked={hasCalmedBefore}
+                onCheckedChange={(checked) => setHasCalmedBefore(!!checked)}
+                className="mt-1 border-gray-400"
               />
-              <Button size="sm" onClick={addWarning} className="shrink-0">
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </CollapsibleSection>
+              <div className="flex-1">
+                <span className="text-gray-800">I have something that helps me calm down</span>
+                {hasCalmedBefore && (
+                  <Input 
+                    placeholder="What helps? (e.g., deep breathing, music)"
+                    value={calmingActivity}
+                    onChange={(e) => setCalmingActivity(e.target.value)}
+                    className="mt-2 bg-white/80 border-gray-300 text-gray-800 placeholder:text-gray-500"
+                  />
+                )}
+              </div>
+            </label>
 
-        {/* Coping Strategies Section */}
-        <CollapsibleSection
-          title="Coping Strategies"
-          icon={<Sparkles className="w-4 h-4 text-purple-600" />}
-          description="Things that help when you're struggling"
-          isExpanded={expandedSection === 'coping'}
-          onToggle={() => toggleSection('coping')}
-          count={safetyPlan.copingStrategies.length}
-        >
-          <div className="space-y-2">
-            {safetyPlan.copingStrategies.map((strategy) => (
-              <Badge key={strategy.id} className="bg-purple-100 text-purple-800 border-purple-300 gap-1 mr-1">
-                {strategy.title}
-                <span className="text-xs opacity-70">({categoryLabels[strategy.category]})</span>
-                <X className="w-3 h-3 cursor-pointer hover:text-red-600" onClick={() => removeCoping(strategy.id)} />
-              </Badge>
-            ))}
-            <div className="flex gap-2 mt-2">
-              <Input
-                value={newCoping.title}
-                onChange={(e) => setNewCoping({ ...newCoping, title: e.target.value })}
-                placeholder="e.g., Go for a walk"
-                className="bg-white/80 border-stone-300 text-stone-800 placeholder:text-stone-400 text-sm"
-                onKeyDown={(e) => e.key === 'Enter' && addCoping()}
+            <label className="flex items-start gap-3 cursor-pointer">
+              <Checkbox 
+                checked={hasDistraction}
+                onCheckedChange={(checked) => setHasDistraction(!!checked)}
+                className="mt-1 border-gray-400"
               />
-              <Button size="sm" onClick={addCoping} className="shrink-0">
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </CollapsibleSection>
+              <span className="text-gray-800">I have healthy distractions I can use</span>
+            </label>
 
-        {/* Emergency Contacts Section */}
-        <CollapsibleSection
-          title="Safe People"
-          icon={<Phone className="w-4 h-4 text-emerald-600" />}
-          description="People you can reach out to"
-          isExpanded={expandedSection === 'contacts'}
-          onToggle={() => toggleSection('contacts')}
-          count={safetyPlan.emergencyContacts.length}
-        >
-          <div className="space-y-2">
-            {safetyPlan.emergencyContacts.map((contact) => (
-              <div key={contact.id} className="flex items-center justify-between bg-white/60 rounded p-2 text-sm">
-                <div>
-                  <span className="font-medium text-stone-800">{contact.name}</span>
-                  {contact.relationship && (
-                    <span className="text-stone-500 ml-1">({contact.relationship})</span>
-                  )}
-                  <span className="text-stone-600 block">{contact.phone}</span>
-                </div>
-                <X className="w-4 h-4 text-stone-400 cursor-pointer hover:text-red-600" onClick={() => removeContact(contact.id)} />
-              </div>
-            ))}
-            <div className="space-y-2 mt-2">
-              <div className="flex gap-2">
-                <Input
-                  value={newContact.name}
-                  onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
-                  placeholder="Name"
-                  className="bg-white/80 border-stone-300 text-stone-800 placeholder:text-stone-400 text-sm"
-                />
-                <Input
-                  value={newContact.phone}
-                  onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
-                  placeholder="Phone"
-                  className="bg-white/80 border-stone-300 text-stone-800 placeholder:text-stone-400 text-sm"
-                />
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  value={newContact.relationship}
-                  onChange={(e) => setNewContact({ ...newContact, relationship: e.target.value })}
-                  placeholder="Relationship (optional)"
-                  className="bg-white/80 border-stone-300 text-stone-800 placeholder:text-stone-400 text-sm flex-1"
-                />
-                <Button size="sm" onClick={addContact} className="shrink-0">
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CollapsibleSection>
-
-        {/* Reasons to Keep Going Section */}
-        <CollapsibleSection
-          title="Reasons to Keep Going"
-          icon={<Heart className="w-4 h-4 text-pink-600" />}
-          description="Things worth staying for"
-          isExpanded={expandedSection === 'reasons'}
-          onToggle={() => toggleSection('reasons')}
-          count={safetyPlan.reasonsToLive.length}
-        >
-          <div className="space-y-2">
-            {safetyPlan.reasonsToLive.map((reason, index) => (
-              <Badge key={index} className="bg-pink-100 text-pink-800 border-pink-300 gap-1 mr-1">
-                {reason}
-                <X className="w-3 h-3 cursor-pointer hover:text-red-600" onClick={() => removeReason(index)} />
-              </Badge>
-            ))}
-            <div className="flex gap-2 mt-2">
-              <Input
-                value={newReason}
-                onChange={(e) => setNewReason(e.target.value)}
-                placeholder="e.g., My pet, future goals"
-                className="bg-white/80 border-stone-300 text-stone-800 placeholder:text-stone-400 text-sm"
-                onKeyDown={(e) => e.key === 'Enter' && addReason()}
+            <label className="flex items-start gap-3 cursor-pointer">
+              <Checkbox 
+                checked={hasSafePlace}
+                onCheckedChange={(checked) => setHasSafePlace(!!checked)}
+                className="mt-1 border-gray-400"
               />
-              <Button size="sm" onClick={addReason} className="shrink-0">
-                <Plus className="w-4 h-4" />
-              </Button>
+              <div className="flex-1">
+                <span className="text-gray-800">I have a safe place I can go</span>
+                {hasSafePlace && (
+                  <Input 
+                    placeholder="Where? (optional)"
+                    value={safeLocation}
+                    onChange={(e) => setSafeLocation(e.target.value)}
+                    className="mt-2 bg-white/80 border-gray-300 text-gray-800 placeholder:text-gray-500"
+                  />
+                )}
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <Checkbox 
+                checked={hasContact}
+                onCheckedChange={(checked) => setHasContact(!!checked)}
+                className="mt-1 border-gray-400"
+              />
+              <div className="flex-1">
+                <span className="text-gray-800">I have someone I can call for support</span>
+                {hasContact && (
+                  <Input 
+                    placeholder="Name or phone (optional)"
+                    value={emergencyContact}
+                    onChange={(e) => setEmergencyContact(e.target.value)}
+                    className="mt-2 bg-white/80 border-gray-300 text-gray-800 placeholder:text-gray-500"
+                  />
+                )}
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <Checkbox 
+                checked={hasProfessional}
+                onCheckedChange={(checked) => setHasProfessional(!!checked)}
+                className="mt-1 border-gray-400"
+              />
+              <span className="text-gray-800">I have access to professional help if needed</span>
+            </label>
+          </div>
+
+          {/* Crisis resources */}
+          <div className="mt-8 p-4 bg-white/60 rounded-lg">
+            <div className="flex items-center gap-2 text-gray-700 text-sm font-medium mb-2">
+              <Phone className="w-4 h-4" />
+              24/7 Crisis Resources
+            </div>
+            <div className="text-xs text-gray-600 space-y-1">
+              <p><strong>988</strong> — Suicide & Crisis Lifeline</p>
+              <p><strong>741741</strong> — Crisis Text Line (text HOME)</p>
+              <p><strong>911</strong> — Emergency services</p>
             </div>
           </div>
-        </CollapsibleSection>
 
-        {/* Crisis Resources */}
-        <div className="bg-red-50 border border-red-200 rounded p-3 text-sm">
-          <p className="font-medium text-red-800 mb-1">24/7 Crisis Resources</p>
-          <ul className="text-red-700 space-y-0.5 text-xs">
-            <li>• National Suicide Prevention: 988</li>
-            <li>• Crisis Text Line: Text HOME to 741741</li>
-            <li>• SAMHSA Helpline: 1-800-662-4357</li>
-          </ul>
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-3 pt-4">
-          <Button
-            variant="outline"
-            onClick={handleSkip}
-            className="flex-1 border-stone-400 text-stone-600 hover:bg-stone-100"
-          >
-            Skip for now
-          </Button>
-          <Button
-            onClick={handleContinue}
-            className="flex-1 gap-2"
-          >
-            {hasAnyContent ? 'Continue' : 'Enter Home-Base'}
-            <ArrowRight className="w-4 h-4" />
-          </Button>
+          <div className="flex justify-end pt-6">
+            <Button onClick={handleContinue} disabled={isNarrating && narrationIndex < SAI_NARRATION.length - 1}>
+              Continue
+            </Button>
+          </div>
         </div>
       </div>
-    </SAIAnchoredLayout>
-  );
-};
-
-interface CollapsibleSectionProps {
-  title: string;
-  icon: React.ReactNode;
-  description: string;
-  isExpanded: boolean;
-  onToggle: () => void;
-  count: number;
-  children: React.ReactNode;
-}
-
-const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
-  title,
-  icon,
-  description,
-  isExpanded,
-  onToggle,
-  count,
-  children,
-}) => {
-  return (
-    <div className="border border-stone-200 rounded-lg overflow-hidden bg-white/40">
-      <button
-        onClick={onToggle}
-        className={cn(
-          "w-full flex items-center justify-between p-3 text-left transition-colors",
-          isExpanded ? "bg-white/60" : "hover:bg-white/50"
-        )}
-      >
-        <div className="flex items-center gap-2">
-          {icon}
-          <div>
-            <span className="font-medium text-stone-800 text-sm">{title}</span>
-            {count > 0 && (
-              <span className="ml-2 text-xs bg-stone-200 text-stone-600 px-1.5 py-0.5 rounded-full">
-                {count}
-              </span>
-            )}
-          </div>
-        </div>
-        {isExpanded ? (
-          <ChevronUp className="w-4 h-4 text-stone-400" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-stone-400" />
-        )}
-      </button>
-      {isExpanded && (
-        <div className="p-3 pt-0 border-t border-stone-200">
-          <p className="text-xs text-stone-500 mb-3">{description}</p>
-          {children}
-        </div>
-      )}
     </div>
   );
-};
-
-export default SafetyPlan;
+}

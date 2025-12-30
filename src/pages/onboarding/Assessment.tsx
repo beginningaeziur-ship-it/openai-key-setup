@@ -1,424 +1,414 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RobotDogAvatar } from '@/components/sai/RobotDogAvatar';
-import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
-import { useSAI } from '@/contexts/SAIContext';
-import { Volume2, VolumeX, ChevronRight } from 'lucide-react';
 import comfortOfficeBg from '@/assets/comfort-office-bg.jpg';
 
 /**
- * Assessment - Two-option first question, then verbal sub-lists
+ * Assessment - Notebook paper on desk (no dog visible)
  * 
  * Flow:
- * 1. First question with two checkboxes
- * 2. If disabilities checked → verbal disability list
- * 3. If circumstances checked → verbal circumstances list
- * 4. Then proceed to safety plan
+ * 1. Initial question with two checkboxes
+ * 2. If disabilities checked → show disabilities list
+ * 3. Then symptoms for those disabilities
+ * 4. If circumstances checked → show circumstances list
+ * 5. More detailed options for what they chose
  * 
- * NO DATA STORAGE - just builds goals/path/logic
+ * SAI voice narrates but is not visually present
+ * NO DATA STORAGE - just builds goals/path
  */
 
 type AssessmentPhase = 
-  | 'first-question'
-  | 'disabilities-list'
-  | 'circumstances-list'
-  | 'complete';
+  | 'initial' 
+  | 'disabilities' 
+  | 'symptoms' 
+  | 'circumstances' 
+  | 'circumstance-details';
 
-// Disability options for verbal list
 const DISABILITY_OPTIONS = [
-  { id: 'autism', label: 'Autism Spectrum' },
-  { id: 'adhd', label: 'ADHD' },
-  { id: 'ptsd', label: 'PTSD or Complex PTSD' },
-  { id: 'anxiety', label: 'Anxiety Disorders' },
-  { id: 'depression', label: 'Depression' },
-  { id: 'bipolar', label: 'Bipolar Disorder' },
-  { id: 'chronic_pain', label: 'Chronic Pain' },
-  { id: 'sensory', label: 'Sensory Processing Issues' },
-  { id: 'epilepsy', label: 'Epilepsy or Seizures' },
-  { id: 'learning', label: 'Learning Disabilities' },
-  { id: 'substance', label: 'Substance Recovery' },
-  { id: 'eating', label: 'Eating Disorder Recovery' },
+  { id: 'anxiety', label: 'Anxiety', description: 'Persistent worry, panic, or fear that affects daily life' },
+  { id: 'depression', label: 'Depression', description: 'Ongoing sadness, low energy, or loss of interest' },
+  { id: 'ptsd', label: 'PTSD / Trauma', description: 'Responses to past difficult or traumatic experiences' },
+  { id: 'adhd', label: 'ADHD', description: 'Difficulty with focus, organization, or impulse control' },
+  { id: 'bipolar', label: 'Bipolar Disorder', description: 'Cycles of high and low mood states' },
+  { id: 'autism', label: 'Autism Spectrum', description: 'Different ways of processing social and sensory information' },
+  { id: 'ocd', label: 'OCD', description: 'Intrusive thoughts and repetitive behaviors' },
+  { id: 'chronic-pain', label: 'Chronic Pain', description: 'Ongoing physical pain that affects daily function' },
+  { id: 'chronic-illness', label: 'Chronic Illness', description: 'Long-term health conditions requiring ongoing management' },
+  { id: 'physical-disability', label: 'Physical Disability', description: 'Mobility or physical function differences' },
 ];
 
-// Circumstances options for verbal list
+const SYMPTOM_MAP: Record<string, string[]> = {
+  anxiety: ['Racing thoughts', 'Difficulty sleeping', 'Avoidance behaviors', 'Physical tension', 'Panic attacks'],
+  depression: ['Low motivation', 'Sleep changes', 'Appetite changes', 'Difficulty concentrating', 'Feelings of worthlessness'],
+  ptsd: ['Flashbacks', 'Nightmares', 'Hypervigilance', 'Avoidance', 'Emotional numbness'],
+  adhd: ['Difficulty focusing', 'Forgetfulness', 'Impulsivity', 'Restlessness', 'Time blindness'],
+  bipolar: ['Mood swings', 'Racing thoughts', 'Impulsive decisions', 'Energy fluctuations', 'Sleep disruption'],
+  autism: ['Sensory sensitivities', 'Social exhaustion', 'Need for routine', 'Special interests', 'Communication differences'],
+  ocd: ['Intrusive thoughts', 'Compulsive behaviors', 'Need for certainty', 'Checking behaviors', 'Mental rituals'],
+  'chronic-pain': ['Daily pain management', 'Energy limitations', 'Sleep disruption', 'Mobility challenges', 'Flare-ups'],
+  'chronic-illness': ['Symptom management', 'Medical appointments', 'Energy pacing', 'Medication routines', 'Unpredictable days'],
+  'physical-disability': ['Accessibility needs', 'Energy management', 'Adaptive strategies', 'Medical care', 'Independence support'],
+};
+
 const CIRCUMSTANCE_OPTIONS = [
-  { id: 'homelessness', label: 'Homelessness or Housing Instability' },
-  { id: 'probation', label: 'Probation or Parole' },
-  { id: 'court', label: 'Court Involvement' },
-  { id: 'custody', label: 'Custody Matters' },
-  { id: 'dv', label: 'Domestic Violence Survivor' },
-  { id: 'trafficking', label: 'Trafficking Survivor' },
-  { id: 'reentry', label: 'Re-entry from Incarceration' },
-  { id: 'financial', label: 'Financial Crisis' },
-  { id: 'job_loss', label: 'Job Loss' },
-  { id: 'cps', label: 'CPS Involvement' },
-  { id: 'unsafe_living', label: 'Unsafe Living Situation' },
+  { id: 'housing', label: 'Housing Instability', description: 'Uncertain living situation or risk of homelessness' },
+  { id: 'financial', label: 'Financial Hardship', description: 'Difficulty meeting basic financial needs' },
+  { id: 'legal', label: 'Legal / Court Issues', description: 'Involvement with legal system or court requirements' },
+  { id: 'addiction', label: 'Addiction / Recovery', description: 'Substance use or recovery journey' },
+  { id: 'criminal', label: 'Criminal Justice', description: 'Probation, parole, or reentry challenges' },
+  { id: 'family', label: 'Family Conflict', description: 'Difficult family relationships or dynamics' },
+  { id: 'isolation', label: 'Social Isolation', description: 'Limited social support or connections' },
+  { id: 'employment', label: 'Employment Challenges', description: 'Job loss, underemployment, or work difficulties' },
 ];
+
+const CIRCUMSTANCE_DETAILS: Record<string, string[]> = {
+  housing: ['Currently homeless', 'Couch surfing', 'Behind on rent', 'Eviction risk', 'Unsafe living situation'],
+  financial: ['Unable to pay bills', 'No savings', 'Debt stress', 'Food insecurity', 'No healthcare access'],
+  legal: ['Court dates pending', 'Probation requirements', 'Custody issues', 'Civil matters', 'Immigration status'],
+  addiction: ['Active use', 'Early recovery', 'Long-term recovery', 'Harm reduction', 'Family member addiction'],
+  criminal: ['Currently incarcerated', 'Recently released', 'On probation', 'On parole', 'Record barriers'],
+  family: ['Estrangement', 'Caregiver stress', 'Domestic conflict', 'Parenting challenges', 'Generational trauma'],
+  isolation: ['No close friends', 'Far from family', 'Social anxiety', 'Trust difficulties', 'Recent move'],
+  employment: ['Unemployed', 'Underemployed', 'Workplace stress', 'Job searching', 'Unable to work'],
+};
+
+const SAI_NARRATION = {
+  initial: "Let's start with a simple question. Check what applies to you — there's no judgment here.",
+  disabilities: "Tell me more about what you're living with. Check all that apply.",
+  symptoms: "Based on what you shared, here are some common experiences. Mark any that feel familiar.",
+  circumstances: "Life circumstances can be just as important as health. Check what applies.",
+  'circumstance-details': "Can you tell me a bit more about your situation?",
+};
 
 export default function Assessment() {
   const navigate = useNavigate();
-  const { setOnboardingStep } = useSAI();
-  const { speak, voiceEnabled, setVoiceEnabled, isSpeaking, stopSpeaking } = useVoiceSettings();
+  const [phase, setPhase] = useState<AssessmentPhase>('initial');
+  const [narrationText, setNarrationText] = useState('');
+  const [isNarrating, setIsNarrating] = useState(true);
   
-  const [phase, setPhase] = useState<AssessmentPhase>('first-question');
+  // Selections (in-memory only, not stored)
   const [hasDisabilities, setHasDisabilities] = useState(false);
   const [hasCircumstances, setHasCircumstances] = useState(false);
   const [selectedDisabilities, setSelectedDisabilities] = useState<string[]>([]);
+  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [selectedCircumstances, setSelectedCircumstances] = useState<string[]>([]);
-  const [currentSpeakingItem, setCurrentSpeakingItem] = useState<string | null>(null);
-  const [hasHeardIntro, setHasHeardIntro] = useState(false);
-  
-  const speakingRef = useRef(false);
+  const [selectedDetails, setSelectedDetails] = useState<string[]>([]);
 
-  // SAI messages for each phase
-  const phaseMessages: Record<AssessmentPhase, string> = {
-    'first-question': "To understand how I can best support you, I need to ask two questions. Check the boxes that apply to you.",
-    'disabilities-list': "I'll read through some conditions. Tap any that apply to you. Take your time.",
-    'circumstances-list': "Now I'll go through some life circumstances. Again, just tap what applies.",
-    'complete': '',
-  };
-
-  // Speak intro when phase changes
+  // Typewriter for SAI narration
   useEffect(() => {
-    if (phase === 'first-question' && voiceEnabled && !hasHeardIntro) {
-      const timer = setTimeout(() => {
-        speak(phaseMessages['first-question']).then(() => {
-          setHasHeardIntro(true);
-        });
-      }, 600);
-      return () => clearTimeout(timer);
-    }
-  }, [phase, voiceEnabled, hasHeardIntro]);
-
-  // Speak options for sub-lists
-  useEffect(() => {
-    if (phase === 'disabilities-list' && voiceEnabled && !speakingRef.current) {
-      speakingRef.current = true;
-      speakOptions(DISABILITY_OPTIONS, phaseMessages['disabilities-list']);
-    } else if (phase === 'circumstances-list' && voiceEnabled && !speakingRef.current) {
-      speakingRef.current = true;
-      speakOptions(CIRCUMSTANCE_OPTIONS, phaseMessages['circumstances-list']);
-    }
-  }, [phase, voiceEnabled]);
-
-  const speakOptions = async (options: typeof DISABILITY_OPTIONS, intro: string) => {
-    await speak(intro);
-    await new Promise(resolve => setTimeout(resolve, 400));
+    const text = SAI_NARRATION[phase];
+    if (!text) return;
     
-    for (const option of options) {
-      setCurrentSpeakingItem(option.id);
-      await speak(option.label);
-      await new Promise(resolve => setTimeout(resolve, 300));
-    }
-    setCurrentSpeakingItem(null);
-    speakingRef.current = false;
-  };
+    let charIndex = 0;
+    setIsNarrating(true);
+    setNarrationText('');
 
-  const handleFirstQuestionContinue = () => {
-    stopSpeaking();
-    speakingRef.current = false;
-    
+    const typeInterval = setInterval(() => {
+      if (charIndex < text.length) {
+        setNarrationText(text.substring(0, charIndex + 1));
+        charIndex++;
+      } else {
+        clearInterval(typeInterval);
+        setIsNarrating(false);
+      }
+    }, 30);
+
+    return () => clearInterval(typeInterval);
+  }, [phase]);
+
+  const handleInitialContinue = () => {
     if (hasDisabilities) {
-      setPhase('disabilities-list');
+      setPhase('disabilities');
     } else if (hasCircumstances) {
-      setPhase('circumstances-list');
+      setPhase('circumstances');
     } else {
-      // Neither selected, go to safety plan
-      handleComplete();
+      navigate('/onboarding/safety-plan');
     }
   };
 
   const handleDisabilitiesContinue = () => {
-    stopSpeaking();
-    speakingRef.current = false;
-    
-    if (hasCircumstances) {
-      setPhase('circumstances-list');
+    if (selectedDisabilities.length > 0) {
+      setPhase('symptoms');
+    } else if (hasCircumstances) {
+      setPhase('circumstances');
     } else {
-      handleComplete();
+      navigate('/onboarding/safety-plan');
+    }
+  };
+
+  const handleSymptomsContinue = () => {
+    if (hasCircumstances) {
+      setPhase('circumstances');
+    } else {
+      navigate('/onboarding/safety-plan');
     }
   };
 
   const handleCircumstancesContinue = () => {
-    stopSpeaking();
-    handleComplete();
+    if (selectedCircumstances.length > 0) {
+      setPhase('circumstance-details');
+    } else {
+      navigate('/onboarding/safety-plan');
+    }
   };
 
-  const handleComplete = () => {
-    // Just proceed - no persistent storage of assessment data
-    // SAI uses selections in-memory for goal logic only
-    setOnboardingStep(4);
+  const handleDetailsContinue = () => {
     navigate('/onboarding/safety-plan');
   };
 
-  const toggleVoice = () => {
-    if (voiceEnabled) stopSpeaking();
-    setVoiceEnabled(!voiceEnabled);
+  const toggleSelection = (id: string, list: string[], setter: (val: string[]) => void) => {
+    if (list.includes(id)) {
+      setter(list.filter(item => item !== id));
+    } else {
+      setter([...list, id]);
+    }
   };
 
-  const toggleDisability = (id: string) => {
-    setSelectedDisabilities(prev => 
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
-  };
+  // Get symptoms for selected disabilities
+  const availableSymptoms = selectedDisabilities.flatMap(d => 
+    (SYMPTOM_MAP[d] || []).map(s => ({ symptom: s, from: d }))
+  );
 
-  const toggleCircumstance = (id: string) => {
-    setSelectedCircumstances(prev => 
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
-  };
+  // Get details for selected circumstances
+  const availableDetails = selectedCircumstances.flatMap(c => 
+    (CIRCUMSTANCE_DETAILS[c] || []).map(d => ({ detail: d, from: c }))
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden">
-      {/* Office background */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${comfortOfficeBg})` }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
+    <div 
+      className="min-h-screen relative flex items-center justify-center p-4"
+      style={{
+        backgroundImage: `url(${comfortOfficeBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      <div className="absolute inset-0 bg-black/60" />
+      
+      {/* Notebook paper on desk */}
+      <div className="relative z-10 w-full max-w-2xl">
+        {/* SAI narration at top */}
+        <div className="bg-card/80 backdrop-blur-sm rounded-t-xl p-4 border-x border-t border-border/50">
+          <p className="text-sm text-muted-foreground italic text-center min-h-[40px]">
+            {narrationText}
+            {isNarrating && <span className="animate-pulse">|</span>}
+          </p>
+        </div>
 
-      {/* Top controls */}
-      <div className="relative z-20 flex items-center justify-between p-4">
-        <button
-          onClick={toggleVoice}
-          className={cn(
-            "p-2.5 rounded-full transition-all",
-            "bg-black/40 backdrop-blur-md border border-white/10",
-            "hover:bg-black/60",
-            isSpeaking && "ring-2 ring-primary/50"
-          )}
+        {/* Paper texture */}
+        <div 
+          className="bg-amber-50 dark:bg-amber-100/90 rounded-b-xl p-6 shadow-2xl min-h-[400px]"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(transparent, transparent 27px, #91d1d3 28px)',
+            backgroundPosition: '0 10px',
+          }}
         >
-          {voiceEnabled ? (
-            <Volume2 className={cn("w-5 h-5", isSpeaking ? "text-primary animate-pulse" : "text-white/80")} />
-          ) : (
-            <VolumeX className="w-5 h-5 text-white/50" />
-          )}
-        </button>
-
-        <div className={cn(
-          "px-3 py-1.5 rounded-full text-xs font-medium",
-          "bg-black/40 backdrop-blur-md border border-white/10",
-          isSpeaking ? "text-primary" : "text-white/70"
-        )}>
-          {isSpeaking ? "SAI speaking..." : "Ready"}
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="relative z-10 flex-1 flex flex-col items-center px-4 pb-6 overflow-y-auto">
-        {/* SAI */}
-        <div className="flex flex-col items-center gap-3 py-4 shrink-0">
-          <div className="relative">
-            <div 
-              className={cn(
-                "absolute inset-0 rounded-full transition-all duration-500",
-                isSpeaking ? "opacity-100 scale-[2]" : "opacity-40 scale-150"
-              )}
-              style={{
-                background: 'radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%)',
-                filter: 'blur(20px)',
-              }}
-            />
-            <RobotDogAvatar 
-              size="lg" 
-              state={isSpeaking ? 'speaking' : 'attentive'}
-              energyLevel="high"
-              showBreathing={!isSpeaking}
-            />
-          </div>
-          
-          <span className="text-white/80 text-sm font-medium tracking-wide">SAI</span>
-          
-          {/* Message bubble */}
-          <div className="max-w-sm bg-black/50 backdrop-blur-md rounded-xl px-4 py-3 border border-white/10">
-            <p className="text-white/90 text-sm text-center leading-relaxed">
-              {phaseMessages[phase]}
-            </p>
-          </div>
-        </div>
-
-        {/* Paper form overlay */}
-        <div className="flex-1 w-full max-w-lg">
-          <div className="relative">
-            {/* Paper shadow */}
-            <div 
-              className="absolute inset-0 bg-black/30 rounded-sm blur-md"
-              style={{ transform: 'translate(6px, 6px)' }}
-            />
-            
-            {/* Paper */}
-            <div 
-              className={cn(
-                "relative bg-amber-50 rounded-sm p-6",
-                "shadow-[0_4px_20px_rgba(0,0,0,0.3)]",
-                "border border-amber-200/50"
-              )}
-              style={{
-                backgroundImage: `
-                  linear-gradient(transparent 0px, transparent 26px, #e5d5c0 26px, #e5d5c0 27px),
-                  linear-gradient(90deg, #f5efe6 0px, #faf8f4 100%)
-                `,
-                backgroundSize: '100% 28px, 100% 100%',
-              }}
-            >
-              {/* Red margin line */}
-              <div className="absolute left-10 top-0 bottom-0 w-[2px] bg-red-300/50" />
+          {/* Initial question */}
+          {phase === 'initial' && (
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6">
+                What brings you here today?
+              </h2>
               
-              {/* Hole punches */}
-              <div className="absolute left-3 top-1/4 w-2.5 h-2.5 rounded-full bg-stone-700/70 shadow-inner" />
-              <div className="absolute left-3 top-1/2 w-2.5 h-2.5 rounded-full bg-stone-700/70 shadow-inner" />
-              <div className="absolute left-3 top-3/4 w-2.5 h-2.5 rounded-full bg-stone-700/70 shadow-inner" />
-              
-              {/* Content */}
-              <div className="ml-6 space-y-4 text-stone-800">
-                {/* FIRST QUESTION PHASE */}
-                {phase === 'first-question' && (
-                  <>
-                    <h2 className="text-xl font-semibold text-stone-900 mb-6">
-                      Check all that apply:
-                    </h2>
-                    
-                    <div className="space-y-4">
-                      {/* Disabilities checkbox */}
-                      <label className={cn(
-                        "flex items-start gap-4 p-4 rounded-lg cursor-pointer transition-all",
-                        "border-2",
-                        hasDisabilities 
-                          ? "bg-primary/10 border-primary" 
-                          : "bg-stone-100 border-stone-200 hover:border-stone-300"
-                      )}>
-                        <Checkbox
-                          checked={hasDisabilities}
-                          onCheckedChange={(checked) => setHasDisabilities(checked === true)}
-                          className="mt-1"
-                        />
-                        <div>
-                          <span className="font-medium text-stone-900 block">
-                            Medical or Mental Health Disabilities
-                          </span>
-                          <span className="text-sm text-stone-600">
-                            Includes conditions, diagnoses, or recovery paths
-                          </span>
-                        </div>
-                      </label>
+              <label className="flex items-start gap-4 p-4 rounded-lg hover:bg-white/50 cursor-pointer transition-colors">
+                <Checkbox 
+                  checked={hasDisabilities}
+                  onCheckedChange={(checked) => setHasDisabilities(!!checked)}
+                  className="mt-1 border-gray-400"
+                />
+                <div>
+                  <span className="text-gray-800 font-medium">Medical or Mental Health Disabilities</span>
+                  <p className="text-sm text-gray-600 mt-1">Physical health, mental health, or neurodevelopmental conditions</p>
+                </div>
+              </label>
 
-                      {/* Circumstances checkbox */}
-                      <label className={cn(
-                        "flex items-start gap-4 p-4 rounded-lg cursor-pointer transition-all",
-                        "border-2",
-                        hasCircumstances 
-                          ? "bg-primary/10 border-primary" 
-                          : "bg-stone-100 border-stone-200 hover:border-stone-300"
-                      )}>
-                        <Checkbox
-                          checked={hasCircumstances}
-                          onCheckedChange={(checked) => setHasCircumstances(checked === true)}
-                          className="mt-1"
-                        />
-                        <div>
-                          <span className="font-medium text-stone-900 block">
-                            Criminal, Court, Housing, or Financial
-                          </span>
-                          <span className="text-sm text-stone-600">
-                            Life circumstances that affect daily stability
-                          </span>
-                        </div>
-                      </label>
-                    </div>
+              <label className="flex items-start gap-4 p-4 rounded-lg hover:bg-white/50 cursor-pointer transition-colors">
+                <Checkbox 
+                  checked={hasCircumstances}
+                  onCheckedChange={(checked) => setHasCircumstances(!!checked)}
+                  className="mt-1 border-gray-400"
+                />
+                <div>
+                  <span className="text-gray-800 font-medium">Life Circumstances</span>
+                  <p className="text-sm text-gray-600 mt-1">Housing, financial, legal, criminal, or relational challenges</p>
+                </div>
+              </label>
 
-                    <Button
-                      onClick={handleFirstQuestionContinue}
-                      className="w-full mt-6 h-12"
-                    >
-                      Continue
-                      <ChevronRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </>
-                )}
-
-                {/* DISABILITIES LIST PHASE */}
-                {phase === 'disabilities-list' && (
-                  <>
-                    <h2 className="text-lg font-semibold text-stone-900 mb-4">
-                      Check all that apply:
-                    </h2>
-                    
-                    <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2">
-                      {DISABILITY_OPTIONS.map((option) => (
-                        <label 
-                          key={option.id}
-                          className={cn(
-                            "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all",
-                            "border",
-                            selectedDisabilities.includes(option.id)
-                              ? "bg-primary/10 border-primary"
-                              : "bg-stone-100 border-stone-200 hover:border-stone-300",
-                            currentSpeakingItem === option.id && "ring-2 ring-primary"
-                          )}
-                        >
-                          <Checkbox
-                            checked={selectedDisabilities.includes(option.id)}
-                            onCheckedChange={() => toggleDisability(option.id)}
-                          />
-                          <span className="text-stone-800">{option.label}</span>
-                        </label>
-                      ))}
-                    </div>
-
-                    <Button
-                      onClick={handleDisabilitiesContinue}
-                      className="w-full mt-4 h-12"
-                    >
-                      Continue
-                      <ChevronRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </>
-                )}
-
-                {/* CIRCUMSTANCES LIST PHASE */}
-                {phase === 'circumstances-list' && (
-                  <>
-                    <h2 className="text-lg font-semibold text-stone-900 mb-4">
-                      Check all that apply:
-                    </h2>
-                    
-                    <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2">
-                      {CIRCUMSTANCE_OPTIONS.map((option) => (
-                        <label 
-                          key={option.id}
-                          className={cn(
-                            "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all",
-                            "border",
-                            selectedCircumstances.includes(option.id)
-                              ? "bg-primary/10 border-primary"
-                              : "bg-stone-100 border-stone-200 hover:border-stone-300",
-                            currentSpeakingItem === option.id && "ring-2 ring-primary"
-                          )}
-                        >
-                          <Checkbox
-                            checked={selectedCircumstances.includes(option.id)}
-                            onCheckedChange={() => toggleCircumstance(option.id)}
-                          />
-                          <span className="text-stone-800">{option.label}</span>
-                        </label>
-                      ))}
-                    </div>
-
-                    <Button
-                      onClick={handleCircumstancesContinue}
-                      className="w-full mt-4 h-12"
-                    >
-                      Continue
-                      <ChevronRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </>
-                )}
+              <div className="flex justify-end pt-4">
+                <Button onClick={handleInitialContinue} disabled={isNarrating}>
+                  Continue
+                </Button>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Disabilities list */}
+          {phase === 'disabilities' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                Check all that apply
+              </h2>
+              
+              <div className="max-h-[350px] overflow-y-auto space-y-2 pr-2">
+                {DISABILITY_OPTIONS.map(option => (
+                  <label 
+                    key={option.id}
+                    className={cn(
+                      "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors",
+                      selectedDisabilities.includes(option.id) 
+                        ? "bg-primary/10" 
+                        : "hover:bg-white/50"
+                    )}
+                  >
+                    <Checkbox 
+                      checked={selectedDisabilities.includes(option.id)}
+                      onCheckedChange={() => toggleSelection(option.id, selectedDisabilities, setSelectedDisabilities)}
+                      className="mt-0.5 border-gray-400"
+                    />
+                    <div>
+                      <span className="text-gray-800 font-medium">{option.label}</span>
+                      <p className="text-xs text-gray-600">{option.description}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex justify-between pt-4">
+                <Button variant="ghost" onClick={() => setPhase('initial')} className="text-gray-600">
+                  Back
+                </Button>
+                <Button onClick={handleDisabilitiesContinue} disabled={isNarrating}>
+                  Continue
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Symptoms list */}
+          {phase === 'symptoms' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                Common experiences — check what feels familiar
+              </h2>
+              
+              <div className="max-h-[350px] overflow-y-auto space-y-2 pr-2">
+                {availableSymptoms.map(({ symptom, from }, index) => (
+                  <label 
+                    key={`${from}-${symptom}-${index}`}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors",
+                      selectedSymptoms.includes(symptom) 
+                        ? "bg-primary/10" 
+                        : "hover:bg-white/50"
+                    )}
+                  >
+                    <Checkbox 
+                      checked={selectedSymptoms.includes(symptom)}
+                      onCheckedChange={() => toggleSelection(symptom, selectedSymptoms, setSelectedSymptoms)}
+                      className="border-gray-400"
+                    />
+                    <span className="text-gray-800">{symptom}</span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex justify-between pt-4">
+                <Button variant="ghost" onClick={() => setPhase('disabilities')} className="text-gray-600">
+                  Back
+                </Button>
+                <Button onClick={handleSymptomsContinue} disabled={isNarrating}>
+                  Continue
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Circumstances list */}
+          {phase === 'circumstances' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                Life circumstances — check all that apply
+              </h2>
+              
+              <div className="max-h-[350px] overflow-y-auto space-y-2 pr-2">
+                {CIRCUMSTANCE_OPTIONS.map(option => (
+                  <label 
+                    key={option.id}
+                    className={cn(
+                      "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors",
+                      selectedCircumstances.includes(option.id) 
+                        ? "bg-primary/10" 
+                        : "hover:bg-white/50"
+                    )}
+                  >
+                    <Checkbox 
+                      checked={selectedCircumstances.includes(option.id)}
+                      onCheckedChange={() => toggleSelection(option.id, selectedCircumstances, setSelectedCircumstances)}
+                      className="mt-0.5 border-gray-400"
+                    />
+                    <div>
+                      <span className="text-gray-800 font-medium">{option.label}</span>
+                      <p className="text-xs text-gray-600">{option.description}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex justify-between pt-4">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => hasDisabilities && selectedDisabilities.length > 0 ? setPhase('symptoms') : setPhase('initial')} 
+                  className="text-gray-600"
+                >
+                  Back
+                </Button>
+                <Button onClick={handleCircumstancesContinue} disabled={isNarrating}>
+                  Continue
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Circumstance details */}
+          {phase === 'circumstance-details' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                Tell me more about your situation
+              </h2>
+              
+              <div className="max-h-[350px] overflow-y-auto space-y-2 pr-2">
+                {availableDetails.map(({ detail, from }, index) => (
+                  <label 
+                    key={`${from}-${detail}-${index}`}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors",
+                      selectedDetails.includes(detail) 
+                        ? "bg-primary/10" 
+                        : "hover:bg-white/50"
+                    )}
+                  >
+                    <Checkbox 
+                      checked={selectedDetails.includes(detail)}
+                      onCheckedChange={() => toggleSelection(detail, selectedDetails, setSelectedDetails)}
+                      className="border-gray-400"
+                    />
+                    <span className="text-gray-800">{detail}</span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex justify-between pt-4">
+                <Button variant="ghost" onClick={() => setPhase('circumstances')} className="text-gray-600">
+                  Back
+                </Button>
+                <Button onClick={handleDetailsContinue} disabled={isNarrating}>
+                  Continue
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
