@@ -175,8 +175,11 @@ export function MorningCheckIn({ onComplete }: MorningCheckInProps) {
           {/* Phase-specific content */}
           {phase === 'greeting' && (
             <div className="text-center">
-              <p className="text-muted-foreground mb-4">
+              <p className="text-muted-foreground mb-2">
                 Good morning, {userName}. Let's start the day together.
+              </p>
+              <p className="text-xs text-muted-foreground/70 mb-4">
+                We'll build your goals gradually. These goals are guides, not rules.
               </p>
               <Button onClick={handleNext} className="w-full">
                 Continue
@@ -256,7 +259,7 @@ export function MorningCheckIn({ onComplete }: MorningCheckInProps) {
                 </div>
               ))}
               <p className="text-xs text-muted-foreground text-center">
-                Tap the refresh icon to get a different task
+                Tap the refresh icon to get a different task. Skipping is always okay.
               </p>
               <Button onClick={handleNext} className="w-full">
                 Accept These Tasks
@@ -268,10 +271,15 @@ export function MorningCheckIn({ onComplete }: MorningCheckInProps) {
           {phase === 'confirm' && (
             <div className="text-center space-y-4">
               <div className="text-4xl">🌟</div>
-              <p className="text-muted-foreground">
-                Remember: If this is too much, we'll adjust. 
-                I'm here with you all day.
-              </p>
+              <div className="space-y-2">
+                <p className="text-muted-foreground">
+                  Remember: If this is too much, we'll adjust. 
+                  I'm here with you all day.
+                </p>
+                <p className="text-xs text-muted-foreground/70">
+                  Nothing here decides who you are. One small step is enough.
+                </p>
+              </div>
               <Button onClick={handleNext} className="w-full">
                 Start My Day
                 <ChevronRight className="w-4 h-4 ml-2" />

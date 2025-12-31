@@ -127,6 +127,13 @@ export default function Preferences() {
           </div>
         </ScrollArea>
 
+        {/* Identity-safe framing */}
+        <div className="text-xs text-stone-500 italic text-center space-y-1 border-t border-stone-200 pt-3">
+          <p>These preferences help us suggest goals that may support you.</p>
+          <p className="text-stone-400">They do not define you. They are not permanent.</p>
+          <p className="text-stone-400">You'll have the next week to finish, change, or remove anything.</p>
+        </div>
+
         {/* Navigation */}
         <div className="flex gap-3 pt-1">
           <Button

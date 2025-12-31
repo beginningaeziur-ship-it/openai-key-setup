@@ -133,17 +133,29 @@ export default function SAIHome() {
     }
   }, [isInitialized, voiceEnabled, speak, getGreeting, needsMorningCheckIn, needsEveningCheckIn]);
 
-  // Handle care action
+  // Handle care action with consent-based language
   const handleCareAction = useCallback(async (action: CareAction) => {
     fulfillNeed(action.needKey);
     
-    const praises: Record<string, string> = {
-      food: `Thank you for feeding me, ${userName}. Have you eaten today?`,
-      water: `Refreshing! Remember to drink water yourself.`,
-      outside: `Fresh air feels good. Let's both take a breath.`,
+    // Consent-based, gentle responses
+    const gentleResponses: Record<string, string[]> = {
+      food: [
+        `If you'd like, we can think about nourishment together.`,
+        `Eating can be hard sometimes. No pressure here.`,
+        `When you're ready, we can talk about food in a way that feels manageable.`,
+      ],
+      water: [
+        `Hydration can help. No pressure, just a gentle reminder.`,
+        `Water is here when you're ready.`,
+      ],
+      outside: [
+        `If your body feels ready, fresh air can help. Only if it feels right.`,
+        `Movement is here when you want it. No rush.`,
+      ],
     };
     
-    const message = praises[action.id];
+    const responses = gentleResponses[action.id];
+    const message = responses[Math.floor(Math.random() * responses.length)];
     setCurrentMessage(message);
     setLastCareAction(action.id);
     
@@ -153,7 +165,7 @@ export default function SAIHome() {
     
     // Clear action highlight after a moment
     setTimeout(() => setLastCareAction(null), 2000);
-  }, [fulfillNeed, userName, voiceEnabled, speak]);
+  }, [fulfillNeed, voiceEnabled, speak]);
 
   // Toggle voice on/off
   const handleVoiceToggle = useCallback(() => {
@@ -369,7 +381,7 @@ export default function SAIHome() {
                   variant={wasJustUsed ? "default" : isLow ? "secondary" : "outline"}
                   size="lg"
                   className={cn(
-                    "h-20 flex-col gap-1 transition-all relative",
+                    "h-24 flex-col gap-1 transition-all relative",
                     wasJustUsed && "ring-2 ring-primary ring-offset-2",
                     isLow && "animate-pulse"
                   )}
@@ -381,6 +393,7 @@ export default function SAIHome() {
                     wasJustUsed && "text-primary-foreground"
                   )} />
                   <span className="text-xs">{action.label}</span>
+                  <span className="text-[10px] text-muted-foreground">Skipping is okay</span>
                   
                   {/* Need indicator */}
                   <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-muted rounded-full overflow-hidden">

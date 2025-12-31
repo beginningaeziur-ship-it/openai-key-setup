@@ -76,10 +76,11 @@ export default function Categories() {
           </div>
         </ScrollArea>
 
-        {/* Privacy note */}
-        <p className="text-xs text-stone-500 italic text-center">
-          Nothing saved as personal information. These only shape your support.
-        </p>
+        {/* Privacy and consent note */}
+        <div className="text-xs text-stone-500 italic text-center space-y-1">
+          <p>Nothing saved as personal information. These only shape your support.</p>
+          <p className="text-stone-400">You don't have to answer everything today. You can pause, skip, or come back later.</p>
+        </div>
 
         {/* Navigation */}
         <div className="flex gap-3 pt-1">

@@ -155,6 +155,11 @@ export default function Conditions() {
           </Accordion>
         </ScrollArea>
 
+        {/* Consent note */}
+        <p className="text-xs text-stone-400 italic text-center">
+          You don't have to answer everything today. You can pause, skip, or come back later.
+        </p>
+
         {/* Navigation */}
         <div className="flex gap-3 pt-1">
           <Button
