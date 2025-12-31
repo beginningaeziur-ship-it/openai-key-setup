@@ -74,10 +74,11 @@ export default function Symptoms() {
           </div>
         </ScrollArea>
 
-        {/* Privacy note */}
-        <p className="text-xs text-stone-500 italic text-center">
-          Nothing saved as personal information. Staff see progress percentages only.
-        </p>
+        {/* Privacy and consent note */}
+        <div className="text-xs text-stone-500 italic text-center space-y-1">
+          <p>Nothing saved as personal information. Staff see progress percentages only.</p>
+          <p className="text-stone-400">You're in control of the pace. Skipping is always okay.</p>
+        </div>
 
         {/* Navigation */}
         <div className="flex gap-3 pt-1">

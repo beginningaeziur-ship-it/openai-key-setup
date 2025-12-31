@@ -111,6 +111,9 @@ export function EveningCheckIn({ onComplete }: EveningCheckInProps) {
               <p className="text-muted-foreground">
                 Time to wind down, {userName}. Let's look at your day together.
               </p>
+              <p className="text-xs text-muted-foreground/70">
+                Incomplete doesn't mean failure. You showed up, and that matters.
+              </p>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={handleSkip} className="flex-1">
                   <SkipForward className="w-4 h-4 mr-2" />
@@ -209,6 +212,9 @@ export function EveningCheckIn({ onComplete }: EveningCheckInProps) {
                 <p className="font-medium">You made it through another day.</p>
                 <p className="text-sm text-muted-foreground">
                   Rest well, {userName}. I'll be here tomorrow.
+                </p>
+                <p className="text-xs text-muted-foreground/70">
+                  Nothing is locked in. Tomorrow is a new start.
                 </p>
               </div>
               <Button onClick={handleNext} className="w-full">

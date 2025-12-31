@@ -105,3 +105,61 @@ export const ERROR_MESSAGES = {
   network: "Connection issue. Your information is safe.",
   voice: "Voice isn't working right now. We can continue with text.",
 } as const;
+
+// Consent and pacing language
+export const CONSENT_LANGUAGE = {
+  pauseReminder: "You don't have to answer everything today. You can pause, skip, or come back later.",
+  paceControl: "You're in control of the pace.",
+  skipOkay: "Skipping is always okay.",
+  noRush: "There's no rush here.",
+} as const;
+
+// Identity-safe framing for assessments
+export const IDENTITY_SAFE = {
+  preAssessment: "These questions help us suggest goals that may support you. They do not define you. They are not diagnoses. They are not permanent.",
+  weekToFinish: "You'll have the next week to finish, change, or remove anything.",
+  notLocked: "Nothing here is locked in.",
+} as const;
+
+// Gradual goal building
+export const GOAL_BUILD = {
+  gradualIntro: "We'll build your goals gradually over the next week. These goals are guides, not rules.",
+  notDefining: "Nothing here decides who you are.",
+  progressNotPerfection: "We'll focus on progress, not perfection.",
+} as const;
+
+// First week check-in copy (days 1-7)
+export const FIRST_WEEK_CHECKIN = {
+  day1: {
+    morning: "Today is just about settling in. No goals to complete.",
+    evening: "You made it through your first day. That's enough.",
+  },
+  midWeek: {
+    morning: "We're building your goals slowly. One small step is enough.",
+    evening: "Any progress today counts. Even rest is progress.",
+  },
+  day7: {
+    morning: "This is the last day of your first week. Nothing is locked in.",
+    evening: "This week helped us understand what supports you. Nothing is locked in.",
+  },
+} as const;
+
+// Food and care language (consent-based, not obligatory)
+export const CARE_LANGUAGE = {
+  food: {
+    gentle: [
+      "If you'd like, we can take a moment to think about nourishment together.",
+      "Eating can be hard sometimes. If this feels like a good moment, we can check in about food.",
+      "There's no rush here. When you're ready, we can talk about nourishment in a way that feels manageable.",
+    ],
+    skipNote: "Skipping is always okay.",
+  },
+  water: {
+    gentle: "Hydration can help. No pressure, just a gentle reminder.",
+    skipNote: "Skipping is always okay.",
+  },
+  movement: {
+    gentle: "If your body feels ready, movement can help. Only if it feels right.",
+    skipNote: "Skipping is always okay.",
+  },
+} as const;

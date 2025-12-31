@@ -438,12 +438,33 @@ export function SAIDailyEngineProvider({ children }: { children: ReactNode }) {
   }, [userName]);
 
   const getTaskEncouragement = useCallback(() => {
+    // Check if in first week (based on localStorage onboarding date)
+    const onboardingDate = localStorage.getItem('sai_onboarding_complete');
+    const isFirstWeek = onboardingDate 
+      ? (Date.now() - new Date(onboardingDate).getTime()) < 7 * 24 * 60 * 60 * 1000
+      : true;
+    
+    const daysSinceOnboarding = onboardingDate
+      ? Math.floor((Date.now() - new Date(onboardingDate).getTime()) / (24 * 60 * 60 * 1000))
+      : 0;
+
+    // First week specific messaging
+    if (isFirstWeek) {
+      if (daysSinceOnboarding === 0) {
+        return "Today is just about settling in. No goals to complete.";
+      } else if (daysSinceOnboarding < 5) {
+        return "We're building your goals slowly. One small step is enough.";
+      } else {
+        return "This week helped us understand what supports you. Nothing is locked in.";
+      }
+    }
+
     const phrases = [
       "We'll focus on progress, not perfection.",
       "If this is too much, we'll adjust.",
       "Small steps count.",
       "You don't have to do it all today.",
-      "I believe in you.",
+      "Nothing here decides who you are.",
     ];
     return phrases[Math.floor(Math.random() * phrases.length)];
   }, []);
