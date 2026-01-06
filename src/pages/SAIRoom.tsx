@@ -42,6 +42,14 @@ export default function SAIRoom() {
   const getInitialPhase = (): RoomPhase => {
     const introSeen = localStorage.getItem('sai_intro_completed') === 'true';
     const tutorialSeen = localStorage.getItem('sai_tutorial_completed') === 'true';
+    const onboardingComplete = localStorage.getItem('sai_onboarding');
+    const isOnboardingDone = onboardingComplete ? JSON.parse(onboardingComplete).completed : false;
+    
+    // If onboarding is complete and user already selected a scene, skip intro/scene-select
+    if (isOnboardingDone && savedScene) {
+      if (!tutorialSeen) return 'tutorial';
+      return 'room';
+    }
     
     if (!introSeen) return 'intro';
     if (!savedScene) return 'scene-select';
