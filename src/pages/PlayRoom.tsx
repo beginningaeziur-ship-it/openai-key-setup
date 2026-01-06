@@ -7,7 +7,7 @@ import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
 import { useServiceDog } from '@/contexts/ServiceDogContext';
 import { useSAI } from '@/contexts/SAIContext';
 import { UtensilsCrossed, Droplets, TreePine, Heart, ArrowRight } from 'lucide-react';
-import forestWoodsBg from '@/assets/forest-woods-bg.jpg';
+import cozyBedroomBg from '@/assets/cozy-bedroom-bg.jpg';
 
 /**
  * PlayRoom - Introduction to SAI dog care
@@ -179,7 +179,7 @@ export default function PlayRoom() {
     <div 
       className="min-h-screen relative flex items-center justify-center p-4"
       style={{
-        backgroundImage: `url(${forestWoodsBg})`,
+        backgroundImage: `url(${cozyBedroomBg})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}

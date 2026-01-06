@@ -298,7 +298,7 @@ export default function SAIHome() {
                   {showMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-card border-border">
+              <DropdownMenuContent align="end" className="w-48 bg-card/95 backdrop-blur-md border-border shadow-xl z-50">
                 <DropdownMenuLabel>Navigate To</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {SCENES.map((scene) => {

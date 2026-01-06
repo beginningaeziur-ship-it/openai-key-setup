@@ -156,9 +156,7 @@ export function MorningCheckIn({ onComplete }: MorningCheckInProps) {
       <Card className="max-w-md w-full animate-in fade-in-50 slide-in-from-bottom-4">
         <CardHeader className="text-center pb-4">
           <div className="flex justify-center mb-4">
-            <div className="w-24 h-24">
-              <FullBodySAI size="lg" state={isSpeaking ? 'speaking' : 'attentive'} />
-            </div>
+            <FullBodySAI size="md" state={isSpeaking ? 'speaking' : 'attentive'} />
           </div>
           <CardTitle className="flex items-center justify-center gap-2 text-xl">
             <Sun className="w-5 h-5 text-amber-500" />
