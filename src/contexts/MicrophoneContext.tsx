@@ -75,16 +75,18 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
     !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
   // Initialize from localStorage after mount
+  // AEZUIR RULE: Mic disabled by default and gated to Safe House
   useEffect(() => {
-    const storedEnabled = localStorage.getItem('sai_mic_enabled') === 'true';
     const storedMuted = localStorage.getItem('sai_mic_muted') === 'true';
     const storedWarning = localStorage.getItem('sai_mic_warning_seen') === 'true';
+    const hasReachedSafeHouse = localStorage.getItem('sai_reached_safe_house') === 'true';
     
     setIsMicMuted(storedMuted);
     setHasSeenWarning(storedWarning);
     
-    // Only set enabled if we need to auto-reconnect
-    if (storedEnabled) {
+    // AEZUIR: Only auto-enable mic if user has reached Safe House AND previously enabled
+    const storedEnabled = localStorage.getItem('sai_mic_enabled') === 'true';
+    if (storedEnabled && hasReachedSafeHouse) {
       setIsMicEnabled(storedEnabled);
     }
   }, []);

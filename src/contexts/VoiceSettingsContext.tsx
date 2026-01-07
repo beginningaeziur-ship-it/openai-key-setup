@@ -55,10 +55,11 @@ interface VoiceSettingsProviderProps {
 }
 
 export function VoiceSettingsProvider({ children }: VoiceSettingsProviderProps) {
-  // Initialize from localStorage
+  // Initialize from localStorage - AEZUIR: voice disabled by default
   const [voiceEnabled, setVoiceEnabledState] = useState<boolean>(() => {
     const stored = localStorage.getItem(STORAGE_KEYS.VOICE_ENABLED);
-    return stored !== 'false'; // Default to true
+    // Default to FALSE per AEZUIR spec - user must explicitly enable
+    return stored === 'true';
   });
   
   const [voiceId, setVoiceIdState] = useState<VoiceId>(() => {
