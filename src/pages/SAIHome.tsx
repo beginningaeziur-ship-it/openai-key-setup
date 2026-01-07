@@ -64,12 +64,12 @@ const CARE_ACTIONS: CareAction[] = [
   { id: 'outside', label: 'Outside', icon: TreePine, needKey: 'movement' },
 ];
 
+// AEZUIR Room System - ONLY these rooms exist
 const SCENES = [
   { id: 'bedroom', label: 'Safe Home', icon: Home, route: '/sai-home' },
-  { id: 'cabin', label: 'Cabin', icon: Settings, route: '/cabin' },
-  { id: 'beach', label: 'Beach', icon: Waves, route: '/beach' },
-  { id: 'forest', label: 'Forest', icon: Trees, route: '/forest' },
-  { id: 'settings', label: 'Settings', icon: Wrench, route: '/settings' },
+  { id: 'beach', label: 'Tools', icon: Wrench, route: '/beach' },
+  { id: 'cabin', label: 'Log Cabin', icon: BookOpen, route: '/cabin' },
+  { id: 'settings', label: 'Settings', icon: Settings, route: '/settings' },
 ];
 
 const GREETINGS = [
@@ -104,6 +104,11 @@ export default function SAIHome() {
   const [showMorningCheckIn, setShowMorningCheckIn] = useState(false);
   const [showEveningCheckIn, setShowEveningCheckIn] = useState(false);
   const hasGreetedRef = useRef(false);
+
+  // AEZUIR: Mark that user has reached Safe House (enables mic option)
+  useEffect(() => {
+    localStorage.setItem('sai_reached_safe_house', 'true');
+  }, []);
 
   // Get random greeting
   const getGreeting = useCallback(() => {

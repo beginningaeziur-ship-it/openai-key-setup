@@ -40,8 +40,8 @@ import PlayRoom from "./pages/PlayRoom";
 import BedroomHome from "./pages/BedroomHome";
 import SAIHome from "./pages/SAIHome";
 import BeachScene from "./pages/BeachScene";
-import ForestScene from "./pages/ForestScene";
 import CabinScene from "./pages/CabinScene";
+// ForestScene removed - merged into CabinScene per AEZUIR spec
 
 const queryClient = new QueryClient();
 
@@ -79,16 +79,17 @@ const App = () => (
                                 {/* Main app with PIN gate */}
                                 <Route path="/bedroom" element={<BedroomHome />} />
                                 
-                                {/* Main app */}
-                                <Route path="/sai-room" element={<SAIRoom />} />
+                                {/* Main app - AEZUIR Room System */}
+                                <Route path="/sai-room" element={<SAIHome />} />
                                 <Route path="/sai-home" element={<SAIHome />} />
+                                <Route path="/bedroom" element={<SAIHome />} />
                                 <Route path="/dashboard" element={<Dashboard />} />
                                 <Route path="/chat" element={<Chat />} />
                                 <Route path="/settings" element={<Settings />} />
                                 <Route path="/watcher" element={<Watcher />} />
                                 <Route path="/beach" element={<BeachScene />} />
-                                <Route path="/forest" element={<ForestScene />} />
                                 <Route path="/cabin" element={<CabinScene />} />
+                                {/* /forest removed - merged into /cabin */}
                                 
                                 {/* Catch-all */}
                                 <Route path="*" element={<NotFound />} />

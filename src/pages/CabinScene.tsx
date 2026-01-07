@@ -15,24 +15,92 @@ import {
   Clock,
   Check,
   RefreshCw,
-  Trophy
+  Trophy,
+  Phone,
+  Shield,
+  ExternalLink,
+  Heart,
+  Users,
+  AlertCircle,
+  Lightbulb,
+  MapPin
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import cabinBg from '@/assets/cozy-cabin-bg.jpg';
 
 /**
- * CabinScene - Recovery tools and structured programs
+ * CabinScene - Log Cabin with Resources and Recovery Tools
  * 
- * Purpose: Focused space for recovery work
- * Features:
- * - 12-step program guides
- * - Sobriety/recovery trackers
- * - Daily affirmations
- * - Progress milestones
+ * AEZUIR Room System:
+ * - Resources tab: Crisis hotlines, support resources, safety plan access
+ * - Recovery Tools tab: 12-step references (no moral/religious framing), 
+ *   daily affirmations, progress tracking
  */
 
+// === RESOURCES (merged from ForestScene) ===
+interface Resource {
+  id: string;
+  name: string;
+  description: string;
+  phone?: string;
+  website?: string;
+  type: 'crisis' | 'support' | 'info';
+}
+
+const RESOURCES: Resource[] = [
+  {
+    id: 'suicide-prevention',
+    name: '988 Suicide & Crisis Lifeline',
+    description: 'Free, confidential support 24/7. Call or text.',
+    phone: '988',
+    website: 'https://988lifeline.org',
+    type: 'crisis',
+  },
+  {
+    id: 'crisis-text',
+    name: 'Crisis Text Line',
+    description: 'Text HOME to 741741 for free crisis counseling.',
+    phone: '741741',
+    website: 'https://crisistextline.org',
+    type: 'crisis',
+  },
+  {
+    id: 'samhsa',
+    name: 'SAMHSA Helpline',
+    description: 'Treatment referrals and information 24/7.',
+    phone: '1-800-662-4357',
+    website: 'https://samhsa.gov',
+    type: 'support',
+  },
+  {
+    id: 'nami',
+    name: 'NAMI Helpline',
+    description: 'Mental health support and resources.',
+    phone: '1-800-950-6264',
+    website: 'https://nami.org',
+    type: 'support',
+  },
+  {
+    id: 'warmlines',
+    name: 'Warmlines',
+    description: 'Peer support when you need to talk (not crisis).',
+    website: 'https://warmline.org',
+    type: 'info',
+  },
+];
+
+const SUPPORT_TIPS = [
+  "It's okay to ask for help. That's strength, not weakness.",
+  "You don't have to have all the answers right now.",
+  "Small steps count. Every one of them.",
+  "You've made it through hard days before.",
+  "Reaching out is always the right choice.",
+];
+
+// === RECOVERY TOOLS ===
 interface RecoveryTool {
   id: string;
   name: string;
@@ -67,25 +135,26 @@ const RECOVERY_TOOLS: RecoveryTool[] = [
   },
 ];
 
+// Non-religious, non-moral framing per AEZUIR spec
 const TWELVE_STEPS = [
-  "Admitted powerlessness and unmanageability.",
-  "Came to believe a Power greater could restore.",
-  "Made a decision to turn over will and life.",
-  "Made a searching and fearless moral inventory.",
-  "Admitted the exact nature of wrongs.",
-  "Were entirely ready for defects to be removed.",
-  "Humbly asked for shortcomings to be removed.",
-  "Made a list of persons harmed.",
-  "Made direct amends where possible.",
-  "Continued to take personal inventory.",
-  "Sought through prayer and meditation.",
-  "Carried this message to others.",
+  "Recognized that current patterns were causing harm.",
+  "Came to believe that change was possible.",
+  "Made a decision to pursue recovery.",
+  "Took an honest look at patterns and behaviors.",
+  "Shared honestly with someone trusted.",
+  "Became ready to work on changing harmful patterns.",
+  "Actively worked on changing behaviors.",
+  "Made a list of people who were affected.",
+  "Made amends where it was safe and appropriate.",
+  "Continued to be honest about progress and setbacks.",
+  "Sought inner peace through reflection and practice.",
+  "Supported others on similar journeys when able.",
 ];
 
 const AFFIRMATIONS = [
   "I am worthy of recovery and healing.",
   "Today, I choose progress over perfection.",
-  "I am stronger than my cravings.",
+  "I am stronger than my challenges.",
   "One day at a time is all I need.",
   "I deserve a life of peace and purpose.",
   "My past does not define my future.",
@@ -105,14 +174,19 @@ export default function CabinScene() {
   const navigate = useNavigate();
   const { speak, voiceEnabled, isSpeaking } = useVoiceSettings();
   const { userProfile } = useSAI();
-  const userName = userProfile?.nickname || 'Friend';
   
-  const [currentMessage, setCurrentMessage] = useState("Welcome to the cabin. This is your recovery space.");
+  const [currentMessage, setCurrentMessage] = useState("Welcome to the Log Cabin. Resources and recovery tools are here.");
+  const [activeTab, setActiveTab] = useState<'resources' | 'recovery'>('resources');
+  
+  // Recovery state
   const [showSteps, setShowSteps] = useState(false);
   const [showAffirmations, setShowAffirmations] = useState(false);
   const [showReflection, setShowReflection] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
+  const [showSafetyPlan, setShowSafetyPlan] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
+  
   const [daysCount, setDaysCount] = useState(() => {
     const saved = localStorage.getItem('recovery-days');
     return saved ? parseInt(saved, 10) : 0;
@@ -128,6 +202,42 @@ export default function CabinScene() {
     }
   }, [voiceEnabled, speak]);
 
+  // === Resource handlers ===
+  const handleResourceClick = useCallback((resource: Resource) => {
+    setSelectedResource(resource);
+    sayMessage(`${resource.name}. ${resource.description}`);
+  }, [sayMessage]);
+
+  const handleCall = useCallback((phone: string) => {
+    window.location.href = `tel:${phone}`;
+  }, []);
+
+  const handleWebsite = useCallback((url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }, []);
+
+  const getSupportTip = useCallback(() => {
+    const tip = SUPPORT_TIPS[Math.floor(Math.random() * SUPPORT_TIPS.length)];
+    sayMessage(tip);
+  }, [sayMessage]);
+
+  const getResourceIcon = (type: string) => {
+    switch (type) {
+      case 'crisis': return AlertCircle;
+      case 'support': return Users;
+      default: return Lightbulb;
+    }
+  };
+
+  const getResourceColor = (type: string) => {
+    switch (type) {
+      case 'crisis': return 'text-red-400 border-red-500/30';
+      case 'support': return 'text-amber-400 border-amber-500/30';
+      default: return 'text-green-400 border-green-500/30';
+    }
+  };
+
+  // === Recovery handlers ===
   const handleToolClick = useCallback((toolId: string) => {
     switch (toolId) {
       case 'steps':
@@ -214,7 +324,7 @@ export default function CabinScene() {
             </Button>
             <div className="flex items-center gap-2">
               <Flame className="w-5 h-5 text-amber-400" />
-              <span className="font-display font-semibold text-foreground">Cabin</span>
+              <span className="font-display font-semibold text-foreground">Log Cabin</span>
             </div>
           </div>
           <Button
@@ -233,7 +343,7 @@ export default function CabinScene() {
         <div className="max-w-lg mx-auto w-full flex flex-col">
           
           {/* SAI with Message */}
-          <div className="flex items-start gap-4 mb-6">
+          <div className="flex items-start gap-4 mb-4">
             <FullBodySAI 
               size="md" 
               state={isSpeaking ? 'speaking' : 'attentive'}
@@ -247,43 +357,191 @@ export default function CabinScene() {
             </div>
           </div>
 
-          {/* Daily Check-In Button */}
-          <Button
-            size="lg"
-            className="mb-6 h-14 bg-amber-600 hover:bg-amber-700"
-            onClick={checkInToday}
-          >
-            <Check className="w-5 h-5 mr-2" />
-            Check In Today ({daysCount} days)
-          </Button>
+          {/* Tabs - Resources / Recovery Tools */}
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'resources' | 'recovery')} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-card/50 backdrop-blur-sm">
+              <TabsTrigger value="resources" className="gap-2">
+                <Heart className="w-4 h-4" />
+                Resources
+              </TabsTrigger>
+              <TabsTrigger value="recovery" className="gap-2">
+                <Trophy className="w-4 h-4" />
+                Recovery
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Recovery Tools */}
-          <div className="grid grid-cols-2 gap-3">
-            {RECOVERY_TOOLS.map((tool) => {
-              const Icon = tool.icon;
-              return (
-                <Card
-                  key={tool.id}
-                  className="bg-card/70 backdrop-blur-sm cursor-pointer hover:bg-card/90 transition-all border-amber-500/30"
-                  onClick={() => handleToolClick(tool.id)}
+            {/* RESOURCES TAB */}
+            <TabsContent value="resources" className="mt-4 space-y-4">
+              {/* Quick Actions */}
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant="outline"
+                  className="h-14 bg-card/50 border-red-500/30 hover:bg-red-500/20"
+                  onClick={() => handleCall('988')}
                 >
-                  <CardHeader className="p-4">
-                    <Icon className="w-6 h-6 text-amber-400 mb-2" />
-                    <CardTitle className="text-sm">{tool.name}</CardTitle>
-                    <CardDescription className="text-xs">
-                      {tool.description}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              );
-            })}
-          </div>
+                  <Phone className="w-4 h-4 mr-2 text-red-400" />
+                  <span className="text-sm">Call 988</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-14 bg-card/50 border-amber-500/30 hover:bg-amber-500/20"
+                  onClick={() => setShowSafetyPlan(true)}
+                >
+                  <Shield className="w-4 h-4 mr-2 text-amber-400" />
+                  <span className="text-sm">Safety Plan</span>
+                </Button>
+              </div>
+
+              {/* Resources List */}
+              <div className="space-y-3">
+                <h2 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
+                  <Heart className="w-4 h-4" />
+                  Support Resources
+                </h2>
+                
+                {RESOURCES.map((resource) => {
+                  const Icon = getResourceIcon(resource.type);
+                  const colorClass = getResourceColor(resource.type);
+                  
+                  return (
+                    <Card
+                      key={resource.id}
+                      className={cn(
+                        "bg-card/70 backdrop-blur-sm cursor-pointer transition-all hover:bg-card/90",
+                        colorClass,
+                        selectedResource?.id === resource.id && "ring-1 ring-primary"
+                      )}
+                      onClick={() => handleResourceClick(resource)}
+                    >
+                      <CardHeader className="p-4 pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Icon className={cn("w-4 h-4", colorClass.split(' ')[0])} />
+                            {resource.name}
+                          </CardTitle>
+                        </div>
+                        <CardDescription className="text-xs">
+                          {resource.description}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="p-4 pt-0 flex gap-2">
+                        {resource.phone && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCall(resource.phone!);
+                            }}
+                          >
+                            <Phone className="w-3 h-3 mr-1" />
+                            Call
+                          </Button>
+                        )}
+                        {resource.website && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleWebsite(resource.website!);
+                            }}
+                          >
+                            <ExternalLink className="w-3 h-3 mr-1" />
+                            Website
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Encouragement */}
+              <Button
+                variant="ghost"
+                className="w-full text-foreground/50 hover:text-foreground"
+                onClick={getSupportTip}
+              >
+                <Lightbulb className="w-4 h-4 mr-2" />
+                A gentle reminder
+              </Button>
+            </TabsContent>
+
+            {/* RECOVERY TOOLS TAB */}
+            <TabsContent value="recovery" className="mt-4 space-y-4">
+              {/* Daily Check-In Button */}
+              <Button
+                size="lg"
+                className="w-full h-14 bg-amber-600 hover:bg-amber-700"
+                onClick={checkInToday}
+              >
+                <Check className="w-5 h-5 mr-2" />
+                Check In Today ({daysCount} days)
+              </Button>
+
+              {/* Recovery Tools */}
+              <div className="grid grid-cols-2 gap-3">
+                {RECOVERY_TOOLS.map((tool) => {
+                  const Icon = tool.icon;
+                  return (
+                    <Card
+                      key={tool.id}
+                      className="bg-card/70 backdrop-blur-sm cursor-pointer hover:bg-card/90 transition-all border-amber-500/30"
+                      onClick={() => handleToolClick(tool.id)}
+                    >
+                      <CardHeader className="p-4">
+                        <Icon className="w-6 h-6 text-amber-400 mb-2" />
+                        <CardTitle className="text-sm">{tool.name}</CardTitle>
+                        <CardDescription className="text-xs">
+                          {tool.description}
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  );
+                })}
+              </div>
+            </TabsContent>
+          </Tabs>
 
           <p className="text-foreground/40 text-xs text-center mt-6">
             One day at a time. The fire keeps burning.
           </p>
         </div>
       </main>
+
+      {/* Safety Plan Sheet */}
+      <Sheet open={showSafetyPlan} onOpenChange={setShowSafetyPlan}>
+        <SheetContent className="bg-card border-border">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-amber-400" />
+              Safety Plan
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-6 space-y-4">
+            <p className="text-muted-foreground text-sm">
+              Your personal safety plan helps you through difficult moments.
+            </p>
+            <Button
+              className="w-full"
+              onClick={() => navigate('/settings')}
+            >
+              <MapPin className="w-4 h-4 mr-2" />
+              View & Edit Safety Plan
+            </Button>
+            <div className="border-t border-border pt-4">
+              <p className="text-sm text-foreground/70 mb-3">Quick reminders:</p>
+              <ul className="text-sm text-muted-foreground space-y-2">
+                <li>• Reach out to someone you trust</li>
+                <li>• Use your grounding techniques</li>
+                <li>• Go to your safe place</li>
+                <li>• Call a crisis line if needed</li>
+              </ul>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* 12 Steps Sheet */}
       <Sheet open={showSteps} onOpenChange={setShowSteps}>
@@ -294,7 +552,10 @@ export default function CabinScene() {
               The 12 Steps
             </SheetTitle>
           </SheetHeader>
-          <div className="mt-6 space-y-3">
+          <p className="text-muted-foreground text-xs mt-2 mb-4">
+            Presented without moral or religious framing. Take what helps.
+          </p>
+          <div className="space-y-3">
             {TWELVE_STEPS.map((step, index) => (
               <div 
                 key={index}

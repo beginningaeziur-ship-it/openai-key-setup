@@ -39,10 +39,8 @@ const Index = () => {
   const handleSplashComplete = async () => {
     sessionStorage.setItem('splash_seen', 'true');
     
-    // Enable microphone before proceeding
-    if (isSupported) {
-      await enableMicrophone();
-    }
+    // AEZUIR RULE: Voice/mic disabled by default during onboarding
+    // Mic is NOT enabled until user explicitly enables it in Safe House
     
     // Navigate to waiting room where SAI appears
     navigate('/onboarding/waiting-room', { replace: true });
