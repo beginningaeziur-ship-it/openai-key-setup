@@ -11,6 +11,8 @@ import { useSAIDailyEngine } from '@/contexts/SAIDailyEngineContext';
 import { MorningCheckIn } from '@/components/checkin/MorningCheckIn';
 import { EveningCheckIn } from '@/components/checkin/EveningCheckIn';
 import { DailyTaskList } from '@/components/checkin/DailyTaskList';
+import { OnboardingResumeBanner } from '@/components/onboarding/OnboardingResumeBanner';
+import { persistence } from '@/lib/persistence';
 import { 
   UtensilsCrossed, 
   Droplets, 
@@ -21,7 +23,6 @@ import {
   Settings,
   Home,
   Wrench,
-  Waves,
   BookOpen,
   Trees,
   MessageCircle,
@@ -64,10 +65,11 @@ const CARE_ACTIONS: CareAction[] = [
   { id: 'outside', label: 'Outside', icon: TreePine, needKey: 'movement' },
 ];
 
-// AEZUIR Room System - ONLY these rooms exist
+// AEZUIR Room System - LOCKED 5 ITEMS ONLY
 const SCENES = [
-  { id: 'bedroom', label: 'Safe Home', icon: Home, route: '/sai-home' },
-  { id: 'beach', label: 'Tools', icon: Wrench, route: '/beach' },
+  { id: 'house', label: 'House', icon: Home, route: '/sai-home' },
+  { id: 'bedroom', label: 'Bedroom', icon: Heart, route: '/sai-home' },
+  { id: 'beach', label: 'Beach (Tools)', icon: Wrench, route: '/beach' },
   { id: 'cabin', label: 'Log Cabin', icon: BookOpen, route: '/cabin' },
   { id: 'settings', label: 'Settings', icon: Settings, route: '/settings' },
 ];
@@ -108,6 +110,8 @@ export default function SAIHome() {
   // AEZUIR: Mark that user has reached Safe House (enables mic option)
   useEffect(() => {
     localStorage.setItem('sai_reached_safe_house', 'true');
+    persistence.setIsSafeHouseUnlocked(true);
+    persistence.setLastVisitedRoom('bedroom');
   }, []);
 
   // Get random greeting
@@ -240,6 +244,9 @@ export default function SAIHome() {
 
   return (
     <>
+      {/* Onboarding resume banner (shows if skipped) */}
+      <OnboardingResumeBanner />
+      
       {/* Check-in Modals */}
       {showMorningCheckIn && (
         <MorningCheckIn onComplete={handleMorningCheckInComplete} />
