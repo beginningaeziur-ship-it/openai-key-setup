@@ -19,6 +19,7 @@ import { GlobalMicButton } from "@/components/voice/GlobalMicButton";
 import { MicrophoneActivationPrompt } from "@/components/voice/MicrophoneWarningDialog";
 import { CompanionCheckIn } from "@/components/companion/CompanionCheckIn";
 import { PendingRoutinePopup } from "@/components/routines/PendingRoutinePopup";
+import { OfflineStatusBanner } from "@/components/offline/OfflineStatusBanner";
 
 // Pages
 import Index from "./pages/Index";
@@ -103,6 +104,9 @@ const App = () => (
                               
                               {/* Pending routine popups */}
                               <PendingRoutinePopup />
+                              
+                              {/* Offline status banner */}
+                              <OfflineStatusBanner />
                               
                               {/* Microphone activation prompt */}
                               <MicrophoneActivationPrompt />
