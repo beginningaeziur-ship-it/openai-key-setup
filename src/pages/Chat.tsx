@@ -224,9 +224,9 @@ export default function Chat() {
           userContext: {
             userName,
             saiName,
-            categories: selectedCategories,
-            conditions: selectedConditions.flatMap(c => c.conditions),
-            symptoms: selectedSymptoms.flatMap(s => s.symptoms),
+            categories: selectedCategories.slice(0, 20),
+            conditions: selectedConditions.flatMap(c => c.conditions).slice(0, 50),
+            symptoms: selectedSymptoms.flatMap(s => s.symptoms).slice(0, 50),
             personality: saiPersonality,
             communicationStyle: buildCommunicationStyle(selectedCategories, selectedConditions, selectedSymptoms),
             stressContext: {
