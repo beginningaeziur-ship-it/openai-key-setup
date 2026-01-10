@@ -37,6 +37,15 @@ const KEYS = {
   // Skip reminder
   SKIP_REMINDER_DISMISSED_AT: 'aezuir_skip_reminder_dismissed_at',
   
+  // Life Anchor (identity/purpose)
+  LIFE_ANCHOR_PROFILE: 'aezuir_life_anchor_profile',
+  
+  // Active Plan (OUTPUT ONLY - no raw onboarding answers)
+  ACTIVE_PLAN: 'aezuir_active_plan',
+  
+  // Progress State
+  PROGRESS_STATE: 'aezuir_progress_state',
+  
   // Memos and local data (NOT synced)
   LOCAL_MEMOS: 'aezuir_local_memos',
   LOCAL_PREP_LISTS: 'aezuir_local_prep_lists',
@@ -279,6 +288,104 @@ export const persistence = {
     localStorage.setItem(KEYS.SAVED_RESOURCES, JSON.stringify(resources));
   },
   
+  // ============ LIFE ANCHOR (Identity/Purpose) ============
+  
+  getLifeAnchorProfile(): {
+    situation?: string;
+    interests: string[];
+    skills: string[];
+    incomeSource?: string;
+    purposeAnchor?: string;
+  } | null {
+    const data = localStorage.getItem(KEYS.LIFE_ANCHOR_PROFILE);
+    return data ? JSON.parse(data) : null;
+  },
+  
+  setLifeAnchorProfile(profile: {
+    situation?: string;
+    interests: string[];
+    skills: string[];
+    incomeSource?: string;
+    purposeAnchor?: string;
+  }): void {
+    localStorage.setItem(KEYS.LIFE_ANCHOR_PROFILE, JSON.stringify(profile));
+  },
+  
+  updateLifeAnchor(updates: Partial<{
+    situation?: string;
+    interests: string[];
+    skills: string[];
+    incomeSource?: string;
+    purposeAnchor?: string;
+  }>): void {
+    const current = persistence.getLifeAnchorProfile() || {
+      interests: [],
+      skills: [],
+    };
+    localStorage.setItem(KEYS.LIFE_ANCHOR_PROFILE, JSON.stringify({
+      ...current,
+      ...updates,
+    }));
+  },
+  
+  // ============ ACTIVE PLAN (Safe Memory - OUTPUT ONLY) ============
+  
+  getActivePlan(): {
+    coreGoal?: { id: string; title: string };
+    midGoals?: Array<{ id: string; title: string }>;
+    miniGoals?: Array<{ id: string; title: string }>;
+    weeklySchedule?: Record<string, string>;
+  } | null {
+    const data = localStorage.getItem(KEYS.ACTIVE_PLAN);
+    return data ? JSON.parse(data) : null;
+  },
+  
+  setActivePlan(plan: {
+    coreGoal?: { id: string; title: string };
+    midGoals?: Array<{ id: string; title: string }>;
+    miniGoals?: Array<{ id: string; title: string }>;
+    weeklySchedule?: Record<string, string>;
+  }): void {
+    localStorage.setItem(KEYS.ACTIVE_PLAN, JSON.stringify(plan));
+  },
+  
+  // ============ PROGRESS STATE ============
+  
+  getProgressState(): {
+    completedTasks: string[];
+    lastCheckInDate?: string;
+    isPaused: boolean;
+    isOverwhelmed: boolean;
+  } {
+    const data = localStorage.getItem(KEYS.PROGRESS_STATE);
+    return data ? JSON.parse(data) : {
+      completedTasks: [],
+      isPaused: false,
+      isOverwhelmed: false,
+    };
+  },
+  
+  setProgressState(state: {
+    completedTasks?: string[];
+    lastCheckInDate?: string;
+    isPaused?: boolean;
+    isOverwhelmed?: boolean;
+  }): void {
+    const current = persistence.getProgressState();
+    localStorage.setItem(KEYS.PROGRESS_STATE, JSON.stringify({
+      ...current,
+      ...state,
+    }));
+  },
+  
+  markTaskComplete(taskId: string): void {
+    const state = persistence.getProgressState();
+    if (!state.completedTasks.includes(taskId)) {
+      state.completedTasks.push(taskId);
+      localStorage.setItem(KEYS.PROGRESS_STATE, JSON.stringify(state));
+    }
+  },
+  
   // ============ RESET ============
   
   resetAll(): void {
@@ -319,9 +426,11 @@ export function getAppLaunchRoute(): string {
   const lastRoom = persistence.getLastVisitedRoom();
   const roomRoutes: Record<string, string> = {
     bedroom: '/sai-home',
-    beach: '/beach',
-    cabin: '/cabin',
-    settings: '/settings',
+    ocean: '/beach',
+    forest: '/forest',
+    cabin: '/settings',
+    beach: '/beach', // legacy support
+    settings: '/settings', // legacy support
   };
   
   return roomRoutes[lastRoom] || '/sai-home';
