@@ -65,13 +65,16 @@ const CARE_ACTIONS: CareAction[] = [
   { id: 'outside', label: 'Outside', icon: TreePine, needKey: 'movement' },
 ];
 
-// AEZUIR Room System - LOCKED 5 ITEMS ONLY
+// AEZUIR Room System - LOCKED 4 ITEMS (Clean dropdown, no overflow)
+// Safe House = goals/schedule/check-ins/safety plan
+// Ocean = tools (grounding, meditation, journaling)
+// Forest = resources (zip code search)
+// Cabin = settings/privacy/export/reset
 const SCENES = [
-  { id: 'house', label: 'House', icon: Home, route: '/sai-home' },
-  { id: 'bedroom', label: 'Bedroom', icon: Heart, route: '/sai-home' },
-  { id: 'beach', label: 'Beach (Tools)', icon: Wrench, route: '/beach' },
-  { id: 'cabin', label: 'Log Cabin', icon: BookOpen, route: '/cabin' },
-  { id: 'settings', label: 'Settings', icon: Settings, route: '/settings' },
+  { id: 'bedroom', label: 'Safe House (Bedroom)', icon: Heart, route: '/sai-home' },
+  { id: 'ocean', label: 'Ocean (Tools)', icon: Wrench, route: '/beach' },
+  { id: 'forest', label: 'Forest (Resources)', icon: Trees, route: '/forest' },
+  { id: 'cabin', label: 'Cabin (Settings)', icon: Settings, route: '/settings' },
 ];
 
 const GREETINGS = [

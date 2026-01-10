@@ -41,8 +41,8 @@ import PlayRoom from "./pages/PlayRoom";
 import BedroomHome from "./pages/BedroomHome";
 import SAIHome from "./pages/SAIHome";
 import BeachScene from "./pages/BeachScene";
-import CabinScene from "./pages/CabinScene";
-// ForestScene removed - merged into CabinScene per AEZUIR spec
+import ForestScene from "./pages/ForestScene";
+// CabinScene removed - Cabin now routes to Settings per AEZUIR spec
 
 const queryClient = new QueryClient();
 
@@ -89,8 +89,8 @@ const App = () => (
                                 <Route path="/settings" element={<Settings />} />
                                 <Route path="/watcher" element={<Watcher />} />
                                 <Route path="/beach" element={<BeachScene />} />
-                                <Route path="/cabin" element={<CabinScene />} />
-                                {/* /forest removed - merged into /cabin */}
+                                <Route path="/forest" element={<ForestScene />} />
+                                {/* /cabin now routes to /settings per AEZUIR spec */}
                                 
                                 {/* Catch-all */}
                                 <Route path="*" element={<NotFound />} />
