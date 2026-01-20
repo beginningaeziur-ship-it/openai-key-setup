@@ -375,7 +375,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <Button variant="outline" onClick={() => navigate('/watcher')}>
-                Open Watcher
+                Open Professional App
               </Button>
             </div>
           </CardContent>

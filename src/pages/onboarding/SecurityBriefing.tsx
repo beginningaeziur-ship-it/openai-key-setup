@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { FullBodySAI } from '@/components/sai/FullBodySAI';
 import { Shield, Eye, Lock, UserCheck, Volume2, VolumeX, Mic } from 'lucide-react';
 import { useSpeakThenListen } from '@/hooks/useSpeakThenListen';
+import { PROFESSIONAL_APP_LANGUAGE, getProfessionalAppExplanation } from '@/lib/traumaInformedLogic';
 import comfortOfficeBg from '@/assets/comfort-office-bg.jpg';
 
 /**
@@ -24,11 +25,11 @@ const SECURITY_MESSAGES = [
     icon: Shield,
   },
   {
-    text: "There's also something called the Watcher app. It's a separate view that a trusted person can access if you choose to set it up.",
+    text: `There's also something called the ${PROFESSIONAL_APP_LANGUAGE.name}. It's a separate view that your care team can access if you choose to set it up.`,
     icon: Eye,
   },
   {
-    text: "The Watcher can see your general wellbeing status — never your private conversations or details. You control who, if anyone, has access.",
+    text: `The ${PROFESSIONAL_APP_LANGUAGE.name} shows only your general stability and progress — never your private conversations or details. ${PROFESSIONAL_APP_LANGUAGE.controlNote}`,
     icon: UserCheck,
   },
   {
@@ -57,9 +58,9 @@ export default function SecurityBriefing() {
     const lowerTranscript = transcript.toLowerCase();
     
     if (lowerTranscript.includes('question') || lowerTranscript.includes('?') || 
-        lowerTranscript.includes('what') || lowerTranscript.includes('watcher') || 
-        lowerTranscript.includes('explain')) {
-      const response = "The Watcher is completely optional. It's just a way for someone you trust to check on your general wellbeing — they never see your private conversations. You're always in control.";
+        lowerTranscript.includes('what') || lowerTranscript.includes('professional') || 
+        lowerTranscript.includes('explain') || lowerTranscript.includes('care team')) {
+      const response = getProfessionalAppExplanation();
       setSaiResponse(response);
       setDisplayedText(response);
       speakThenListen(response, true);

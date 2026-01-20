@@ -65,7 +65,30 @@ export function getStep(number: number): AEZUIRNineStep | undefined {
   return AEZUIR_NINE_STEPS.find(s => s.number === number);
 }
 
+// Alias for getStep
+export function getStepByNumber(number: number): AEZUIRNineStep | undefined {
+  return getStep(number);
+}
+
 // Get all steps
 export function getAllSteps(): readonly AEZUIRNineStep[] {
   return AEZUIR_NINE_STEPS;
+}
+
+// Get step for specific situations
+export function getStepForSituation(situation: 'overwhelmed' | 'stuck' | 'urge' | 'crisis' | 'progress'): AEZUIRNineStep | undefined {
+  switch (situation) {
+    case 'overwhelmed':
+      return getStep(3); // Regulate first
+    case 'stuck':
+      return getStep(6); // Choose one small safer step
+    case 'urge':
+      return getStep(5); // Identify your real needs
+    case 'crisis':
+      return getStep(3); // Regulate first - calm always comes first
+    case 'progress':
+      return getStep(9); // Build your life forward
+    default:
+      return getStep(1); // Notice what's happening
+  }
 }
