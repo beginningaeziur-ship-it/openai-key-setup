@@ -3,15 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Phone, Heart } from 'lucide-react';
-import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
+import { Phone, Heart, Volume2, VolumeX } from 'lucide-react';
+import { useSpeakThenListen } from '@/hooks/useSpeakThenListen';
+import { cn } from '@/lib/utils';
 import comfortOfficeBg from '@/assets/comfort-office-bg.jpg';
 
 /**
  * SafetyPlan - Notebook paper on desk
  * 
- * Simple checklist with minimal fill-ins
  * SAI voice narrates but is not visually present
+ * No mic needed - user fills in form
  */
 
 const SAI_NARRATION = [
@@ -21,12 +22,10 @@ const SAI_NARRATION = [
 
 export default function SafetyPlan() {
   const navigate = useNavigate();
-  const { speak, voiceEnabled } = useVoiceSettings();
   const [narrationIndex, setNarrationIndex] = useState(0);
   const [narrationText, setNarrationText] = useState('');
   const [isNarrating, setIsNarrating] = useState(true);
   
-  // Track which narrations we've already spoken
   const hasSpokenRef = useRef<Set<number>>(new Set());
   
   // Checklist items
@@ -41,6 +40,14 @@ export default function SafetyPlan() {
   const [emergencyContact, setEmergencyContact] = useState('');
   const [safeLocation, setSafeLocation] = useState('');
 
+  const {
+    isSpeaking,
+    voiceEnabled,
+    speakOnly,
+    stopSpeaking,
+    setVoiceEnabled,
+  } = useSpeakThenListen();
+
   useEffect(() => {
     const text = SAI_NARRATION[narrationIndex];
     if (!text) return;
@@ -52,7 +59,7 @@ export default function SafetyPlan() {
     // Speak the narration if voice enabled and not already spoken
     if (voiceEnabled && !hasSpokenRef.current.has(narrationIndex)) {
       hasSpokenRef.current.add(narrationIndex);
-      speak(text);
+      speakOnly(text);
     }
 
     const typeInterval = setInterval(() => {
@@ -70,10 +77,16 @@ export default function SafetyPlan() {
     }, 30);
 
     return () => clearInterval(typeInterval);
-  }, [narrationIndex, speak, voiceEnabled]);
+  }, [narrationIndex, speakOnly, voiceEnabled]);
 
   const handleContinue = () => {
+    stopSpeaking();
     navigate('/onboarding/exit');
+  };
+
+  const toggleVoice = () => {
+    if (voiceEnabled) stopSpeaking();
+    setVoiceEnabled(!voiceEnabled);
   };
 
   return (
@@ -87,12 +100,31 @@ export default function SafetyPlan() {
     >
       <div className="absolute inset-0 bg-black/60" />
       
+      {/* Voice control */}
+      <div className="absolute top-4 right-4 z-20">
+        <button
+          onClick={toggleVoice}
+          className={cn(
+            "p-2.5 rounded-full transition-all",
+            "bg-black/40 backdrop-blur-md border border-white/10",
+            "hover:bg-black/60",
+            isSpeaking && "ring-2 ring-primary/50"
+          )}
+        >
+          {voiceEnabled ? (
+            <Volume2 className={cn("w-5 h-5", isSpeaking ? "text-primary animate-pulse" : "text-white/80")} />
+          ) : (
+            <VolumeX className="w-5 h-5 text-white/50" />
+          )}
+        </button>
+      </div>
+      
       <div className="relative z-10 w-full max-w-2xl">
         {/* SAI narration */}
         <div className="bg-card/80 backdrop-blur-sm rounded-t-xl p-4 border-x border-t border-border/50">
           <p className="text-sm text-muted-foreground italic text-center min-h-[40px]">
             {narrationText}
-            {isNarrating && <span className="animate-pulse">|</span>}
+            {isSpeaking && <span className="animate-pulse">|</span>}
           </p>
         </div>
 
