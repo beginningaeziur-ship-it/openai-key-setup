@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { ConversationalScreen } from './ConversationalScreen';
 import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
+import { PROFESSIONAL_APP_LANGUAGE, getProfessionalAppExplanation } from '@/lib/traumaInformedLogic';
 
 interface OnboardingExplanationProps {
   onContinue: () => void;
@@ -14,7 +15,7 @@ export const OnboardingExplanation: React.FC<OnboardingExplanationProps> = ({
   const { speak, stopSpeaking } = useVoiceSettings();
 
   // SAI explains privacy - voice-first, minimal text
-  const privacyScript = `Let me explain how I protect you. I do not store your personal information. Nothing leaves your device. Nothing is sent anywhere. If you later connect to the Watcher app, your professionals only see a stability percentage and trend — never your private thoughts or conversations. Do you have any questions about your privacy?`;
+  const privacyScript = `Let me explain how I protect you. I do not store your personal information. Nothing leaves your device. Nothing is sent anywhere. If you later connect to the ${PROFESSIONAL_APP_LANGUAGE.name}, your care team only sees a stability percentage and trend — never your private thoughts or conversations. Do you have any questions about your privacy?`;
 
   const handleSpeechComplete = () => {
     setIsReady(true);
@@ -24,8 +25,8 @@ export const OnboardingExplanation: React.FC<OnboardingExplanationProps> = ({
     const lower = transcript.toLowerCase();
     
     // Check for questions
-    if (lower.includes('what') || lower.includes('how') || lower.includes('who') || lower.includes('?') || lower.includes('watcher')) {
-      await speak("The Watcher is an optional feature for your care team. They only see if you're stable, trending up or down. They never see what we talk about, your symptoms, or your private thoughts. You control everything. Ready to continue?");
+    if (lower.includes('what') || lower.includes('how') || lower.includes('who') || lower.includes('?') || lower.includes('professional') || lower.includes('care team')) {
+      await speak(getProfessionalAppExplanation());
     }
     // Affirmative responses
     else if (lower.includes('yes') || lower.includes('ready') || lower.includes('continue') || lower.includes('okay') || lower.includes('understand') || lower.includes('got it')) {

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, TrendingUp, TrendingDown, Minus, AlertTriangle, Shield, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PROFESSIONAL_APP_LANGUAGE } from "@/lib/traumaInformedLogic";
 
 type RiskLevel = 'stable' | 'building' | 'attention' | 'support';
 type Trend = 'up' | 'down' | 'stable';
@@ -18,7 +19,17 @@ interface CategoryOverview {
   riskLevel: RiskLevel;
 }
 
-const Watcher = () => {
+/**
+ * Professional App View - Care Team Portal
+ * 
+ * Privacy-protected view showing only:
+ * - Stability percentages
+ * - Trend direction
+ * - Category labels (no details)
+ * 
+ * NEVER shows: conversations, symptoms, urges, or personal details
+ */
+const ProfessionalAppView = () => {
   const { selectedCategories, progressMetrics } = useSAI();
   const [alertSent, setAlertSent] = useState(false);
 
@@ -270,4 +281,4 @@ const Watcher = () => {
   );
 };
 
-export default Watcher;
+export default ProfessionalAppView;

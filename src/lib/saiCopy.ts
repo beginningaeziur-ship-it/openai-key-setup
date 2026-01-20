@@ -46,10 +46,11 @@ export const EMERGENCY_LANGUAGE = {
   yourChoice: "What feels right for you right now?",
 } as const;
 
-// Watcher/professional view language
-export const WATCHER_LANGUAGE = {
+// Professional App (care team view) language
+export const PROFESSIONAL_APP_COPY = {
+  name: "Professional App",
   pinPurpose: "The PIN protects your goals and progress, not your identity.",
-  watcherPurpose: "Staff see only a percentage of your progress — not behavior, symptoms, or personal information.",
+  appPurpose: "Your care team sees only a percentage of your progress — not behavior, symptoms, or personal information.",
   neverShared: "Content, conversations, urges, and personal details are never shared.",
   progressOnly: "Progress only, not details.",
 } as const;
