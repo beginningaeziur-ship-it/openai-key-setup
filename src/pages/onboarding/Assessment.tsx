@@ -3,20 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
+import { useSpeakThenListen } from '@/hooks/useSpeakThenListen';
+import { Volume2, VolumeX } from 'lucide-react';
 import comfortOfficeBg from '@/assets/comfort-office-bg.jpg';
+
 /**
  * Assessment - Notebook paper on desk (no dog visible)
  * 
- * Flow:
- * 1. Initial question with two checkboxes
- * 2. If disabilities checked → show disabilities list
- * 3. Then symptoms for those disabilities
- * 4. If circumstances checked → show circumstances list
- * 5. More detailed options for what they chose
- * 
- * SAI voice narrates but is not visually present
- * NO DATA STORAGE - just builds goals/path
+ * SAI voice narrates each phase
+ * Mic is NOT active during assessment - user selects with checkboxes
  */
 
 type AssessmentPhase = 
@@ -84,7 +79,6 @@ const SAI_NARRATION = {
 
 export default function Assessment() {
   const navigate = useNavigate();
-  const { speak, isSpeaking, voiceEnabled } = useVoiceSettings();
   const [phase, setPhase] = useState<AssessmentPhase>('initial');
   const [narrationText, setNarrationText] = useState('');
   const [isNarrating, setIsNarrating] = useState(true);
@@ -100,7 +94,15 @@ export default function Assessment() {
   const [selectedCircumstances, setSelectedCircumstances] = useState<string[]>([]);
   const [selectedDetails, setSelectedDetails] = useState<string[]>([]);
 
-  // Typewriter for SAI narration + voice
+  const {
+    isSpeaking,
+    voiceEnabled,
+    speakOnly,
+    stopSpeaking,
+    setVoiceEnabled,
+  } = useSpeakThenListen();
+
+  // Speak narration when phase changes
   useEffect(() => {
     const text = SAI_NARRATION[phase];
     if (!text) return;
@@ -112,7 +114,7 @@ export default function Assessment() {
     // Speak the narration if voice enabled and not already spoken
     if (voiceEnabled && !hasSpokenRef.current.has(phase)) {
       hasSpokenRef.current.add(phase);
-      speak(text);
+      speakOnly(text);
     }
 
     const typeInterval = setInterval(() => {
@@ -126,7 +128,12 @@ export default function Assessment() {
     }, 30);
 
     return () => clearInterval(typeInterval);
-  }, [phase, speak, voiceEnabled]);
+  }, [phase, speakOnly, voiceEnabled]);
+
+  const toggleVoice = () => {
+    if (voiceEnabled) stopSpeaking();
+    setVoiceEnabled(!voiceEnabled);
+  };
 
   const handleInitialContinue = () => {
     if (hasDisabilities) {
@@ -197,13 +204,32 @@ export default function Assessment() {
     >
       <div className="absolute inset-0 bg-black/60" />
       
+      {/* Voice control */}
+      <div className="absolute top-4 right-4 z-20">
+        <button
+          onClick={toggleVoice}
+          className={cn(
+            "p-2.5 rounded-full transition-all",
+            "bg-black/40 backdrop-blur-md border border-white/10",
+            "hover:bg-black/60",
+            isSpeaking && "ring-2 ring-primary/50"
+          )}
+        >
+          {voiceEnabled ? (
+            <Volume2 className={cn("w-5 h-5", isSpeaking ? "text-primary animate-pulse" : "text-white/80")} />
+          ) : (
+            <VolumeX className="w-5 h-5 text-white/50" />
+          )}
+        </button>
+      </div>
+      
       {/* Notebook paper on desk */}
       <div className="relative z-10 w-full max-w-2xl">
         {/* SAI narration at top */}
         <div className="bg-card/80 backdrop-blur-sm rounded-t-xl p-4 border-x border-t border-border/50">
           <p className="text-sm text-muted-foreground italic text-center min-h-[40px]">
             {narrationText}
-            {isNarrating && <span className="animate-pulse">|</span>}
+            {isSpeaking && <span className="animate-pulse">|</span>}
           </p>
         </div>
 

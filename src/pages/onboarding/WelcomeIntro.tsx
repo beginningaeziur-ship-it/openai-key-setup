@@ -1,17 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { RobotDogAvatar } from '@/components/sai/RobotDogAvatar';
-import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
+import { useSpeakThenListen } from '@/hooks/useSpeakThenListen';
 import { Volume2, VolumeX } from 'lucide-react';
 import comfortOfficeBg from '@/assets/comfort-office-bg.jpg';
 
 /**
  * WelcomeIntro - SAI introduces itself for the first time
  * 
- * This is where SAI first appears after the logo splash.
- * Office environment, SAI speaks, user continues.
+ * SAI speaks with voice, mic only activates if needed for response
  */
 
 const INTRO_MESSAGES = [
@@ -22,11 +21,22 @@ const INTRO_MESSAGES = [
 
 export default function WelcomeIntro() {
   const navigate = useNavigate();
-  const { speak, voiceEnabled, setVoiceEnabled, isSpeaking, stopSpeaking } = useVoiceSettings();
   const [messageIndex, setMessageIndex] = useState(0);
   const [introComplete, setIntroComplete] = useState(false);
+  const hasStartedRef = useRef(false);
+
+  const {
+    isSpeaking,
+    voiceEnabled,
+    speakOnly,
+    stopSpeaking,
+    setVoiceEnabled,
+  } = useSpeakThenListen();
 
   useEffect(() => {
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
+
     if (!voiceEnabled) {
       setIntroComplete(true);
       return;
@@ -36,7 +46,7 @@ export default function WelcomeIntro() {
     const speakSequence = async () => {
       for (let i = 0; i < INTRO_MESSAGES.length; i++) {
         setMessageIndex(i);
-        await speak(INTRO_MESSAGES[i]);
+        await speakOnly(INTRO_MESSAGES[i]);
         await new Promise(resolve => setTimeout(resolve, 500));
       }
       setIntroComplete(true);
@@ -50,7 +60,7 @@ export default function WelcomeIntro() {
       clearTimeout(timer);
       stopSpeaking();
     };
-  }, [voiceEnabled]);
+  }, [voiceEnabled, speakOnly, stopSpeaking]);
 
   const handleContinue = () => {
     stopSpeaking();
@@ -118,6 +128,7 @@ export default function WelcomeIntro() {
         <div className="max-w-md bg-black/50 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/10 mb-8">
           <p className="text-white/90 text-lg text-center leading-relaxed">
             {INTRO_MESSAGES[messageIndex]}
+            {isSpeaking && <span className="animate-pulse ml-1">|</span>}
           </p>
         </div>
 
@@ -136,7 +147,9 @@ export default function WelcomeIntro() {
         </Button>
         
         <p className="text-white/40 text-sm text-center mt-4">
-          {voiceEnabled ? "Say 'ready' or tap the button" : "Tap to continue"}
+          {voiceEnabled 
+            ? (introComplete ? "Tap to continue" : "SAI is speaking...")
+            : "Voice is off. Tap to continue"}
         </p>
       </div>
     </div>
