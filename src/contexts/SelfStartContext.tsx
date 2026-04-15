@@ -148,7 +148,7 @@ export function SelfStartProvider({ children }: { children: ReactNode }) {
 
   const [pendingRoutines, setPendingRoutines] = useState<PendingRoutine[]>([]);
   
-  const intervalRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const intervalRefs = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const lastCheckRef = useRef<Map<string, string>>(new Map());
 
   // Persist routines
