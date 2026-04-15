@@ -20,7 +20,7 @@ export const LogoSplash = ({ onComplete }: LogoSplashProps) => {
   const [phase, setPhase] = useState<'fade-in' | 'visible' | 'fade-out'>('fade-in');
   const [isVisible, setIsVisible] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const failsafeRef = useRef<NodeJS.Timeout | null>(null);
+  const failsafeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     // Create audio element

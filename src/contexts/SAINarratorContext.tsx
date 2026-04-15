@@ -48,7 +48,7 @@ export function SAINarratorProvider({ children }: { children: React.ReactNode })
   });
   
   const lastNarrationRef = useRef<string>('');
-  const listeningTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const listeningTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Clear listening timeout on unmount
   useEffect(() => {

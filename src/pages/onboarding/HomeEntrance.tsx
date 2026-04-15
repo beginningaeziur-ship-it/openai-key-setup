@@ -222,17 +222,18 @@ export default function HomeEntrance() {
     >
       <div className="absolute inset-0 bg-black/50" />
       
-      <div className="relative z-10 flex flex-col lg:flex-row items-center gap-8 max-w-4xl mx-auto">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-4xl flex-col justify-end gap-4 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-20 sm:px-6 sm:pt-24 lg:flex-row lg:items-end lg:gap-8">
         {/* SAI at the door */}
-        <div className="flex-shrink-0">
+        <div className="order-2 flex min-h-[180px] flex-shrink-0 items-end justify-center lg:order-1 lg:min-h-[320px]">
           <FullBodySAI 
             size="lg" 
             state={saiState} 
+            className="origin-bottom translate-y-2 scale-95 sm:translate-y-4 sm:scale-100"
           />
         </div>
 
         {/* Door with pin pad */}
-        <div className="flex-1 max-w-md">
+        <div className="order-1 flex-1 max-w-md lg:order-2">
           {/* SAI speech */}
           <div className="bg-card/90 backdrop-blur-sm rounded-xl p-4 mb-6 border border-border/50">
             <p className="text-center text-foreground min-h-[50px]">

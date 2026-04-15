@@ -54,7 +54,7 @@ export function MicrophoneProvider({ children }: { children: ReactNode }) {
   
   // Refs
   const recognitionRef = useRef<SpeechRecognitionType | null>(null);
-  const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const restartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const isActiveRef = useRef<boolean>(false);
   const isRestartingRef = useRef<boolean>(false);

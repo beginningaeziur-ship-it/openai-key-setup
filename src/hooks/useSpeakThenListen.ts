@@ -32,7 +32,7 @@ export function useSpeakThenListen(options: UseSpeakThenListenOptions = {}) {
   
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
   const [hasSpoken, setHasSpoken] = useState(false);
-  const listenTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const listenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastProcessedRef = useRef<string>('');
 
   // Ensure voice is enabled for onboarding

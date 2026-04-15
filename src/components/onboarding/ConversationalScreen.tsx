@@ -42,7 +42,7 @@ export const ConversationalScreen: React.FC<ConversationalScreenProps> = ({
 }) => {
   const [phase, setPhase] = useState<'entering' | 'speaking' | 'listening' | 'waiting'>('entering');
   const [showContent, setShowContent] = useState(false);
-  const [silenceTimer, setSilenceTimer] = useState<NodeJS.Timeout | null>(null);
+  const [silenceTimer, setSilenceTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [hasDetectedHesitation, setHasDetectedHesitation] = useState(false);
   
   const { speak, stopSpeaking, isSpeaking, voiceEnabled, setVoiceEnabled, isLoading } = useVoiceSettings();

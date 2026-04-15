@@ -119,19 +119,17 @@ export default function WaitingRoom() {
   const saiState = isSpeaking ? 'speaking' : isWaitingForResponse ? 'listening' : 'attentive';
 
   return (
-    <div 
-      className="min-h-screen relative flex items-center justify-center"
+    <div
+      className="relative min-h-screen overflow-hidden"
       style={{
         backgroundImage: `url(${comfortWaitingBg})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
-      {/* Overlay for readability */}
       <div className="absolute inset-0 bg-black/40" />
-      
-      {/* Voice/Mic controls */}
-      <div className="absolute top-4 right-4 z-20 flex gap-2">
+
+      <div className="absolute right-4 top-4 z-20 flex gap-2 sm:right-6 sm:top-6">
         <button
           onClick={toggleVoice}
           className={cn(
@@ -147,8 +145,7 @@ export default function WaitingRoom() {
             <VolumeX className="w-5 h-5 text-white/50" />
           )}
         </button>
-        
-        {/* Mic indicator - shows when listening */}
+
         {isWaitingForResponse && (
           <div className={cn(
             "p-2.5 rounded-full",
@@ -159,65 +156,75 @@ export default function WaitingRoom() {
           </div>
         )}
       </div>
-      
-      <div className="relative z-10 flex flex-col items-center gap-8 px-6 max-w-2xl mx-auto text-center">
-        {/* Full-bodied SAI */}
-        <FullBodySAI 
-          size="lg" 
-          state={saiState} 
-          className="mb-4"
-        />
-        
-        {/* Listening indicator */}
-        {isWaitingForResponse && (
-          <div className="flex items-center gap-2 text-primary animate-pulse">
-            <div className="w-3 h-3 rounded-full bg-primary animate-ping" />
-            <span className="text-sm">SAI is listening...</span>
-          </div>
-        )}
-        
-        {/* Speech bubble */}
-        <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-border/50 min-h-[120px] flex items-center justify-center">
-          <p className="text-lg md:text-xl text-foreground leading-relaxed">
-            {displayedText}
-            {isSpeaking && <span className="animate-pulse ml-1">|</span>}
-          </p>
-        </div>
 
-        {/* Progress dots */}
-        <div className="flex gap-2">
-          {INTRO_MESSAGES.map((_, index) => (
-            <div 
-              key={index}
-              className={cn(
-                "w-2 h-2 rounded-full transition-all duration-300",
-                index === currentMessageIndex 
-                  ? "bg-primary w-6" 
-                  : index < currentMessageIndex 
-                    ? "bg-primary/60" 
-                    : "bg-muted"
+      <div className="relative z-10 flex min-h-screen flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-20 sm:px-6 sm:pt-24">
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-end">
+          <div className="space-y-4">
+            {isWaitingForResponse && (
+              <div className="flex items-center justify-center gap-2 text-primary animate-pulse">
+                <div className="w-3 h-3 rounded-full bg-primary animate-ping" />
+                <span className="text-sm">SAI is listening...</span>
+              </div>
+            )}
+
+            <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-5 shadow-xl border border-border/50 min-h-[104px] flex items-center justify-center sm:min-h-[120px] sm:p-6">
+              <p className="text-base text-center text-foreground leading-relaxed sm:text-lg md:text-xl">
+                {displayedText}
+                {isSpeaking && <span className="animate-pulse ml-1">|</span>}
+              </p>
+            </div>
+
+            <div className="flex justify-center gap-2">
+              {INTRO_MESSAGES.map((_, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    "w-2 h-2 rounded-full transition-all duration-300",
+                    index === currentMessageIndex
+                      ? "bg-primary w-6"
+                      : index < currentMessageIndex
+                        ? "bg-primary/60"
+                        : "bg-muted"
+                  )}
+                />
+              ))}
+            </div>
+
+            <div className="rounded-2xl border border-border/50 bg-card/80 p-3 backdrop-blur-sm">
+              <Button
+                size="lg"
+                onClick={handleContinue}
+                disabled={!showContinue}
+                className={cn(
+                  "h-12 w-full rounded-xl text-base sm:h-14 sm:text-lg",
+                  showContinue && "animate-fade-in"
+                )}
+              >
+                Next
+              </Button>
+
+              {!showContinue && (
+                <p className="mt-2 text-center text-xs text-muted-foreground">
+                  Next unlocks here when SAI is ready for you.
+                </p>
               )}
+
+              {!voiceEnabled && (
+                <p className="mt-2 text-center text-xs text-muted-foreground">
+                  Voice is off. Tap the speaker icon if you want to hear SAI.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 flex min-h-[180px] items-end justify-center sm:min-h-[220px]">
+            <FullBodySAI
+              size="lg"
+              state={saiState}
+              className="origin-bottom translate-y-2 scale-95 sm:translate-y-4 sm:scale-100"
             />
-          ))}
+          </div>
         </div>
-        
-        {/* Continue button */}
-        {showContinue && (
-          <Button 
-            size="lg"
-            onClick={handleContinue}
-            className="animate-fade-in"
-          >
-            Continue
-          </Button>
-        )}
-        
-        {/* Voice off hint */}
-        {!voiceEnabled && (
-          <p className="text-muted-foreground text-sm">
-            Voice is off. Tap speaker icon to enable SAI's voice.
-          </p>
-        )}
       </div>
     </div>
   );
