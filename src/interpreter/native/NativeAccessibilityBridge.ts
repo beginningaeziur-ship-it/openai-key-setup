@@ -1,6 +1,9 @@
 // ── Native Accessibility Bridge — Runtime wrapper ─────────────────────────────
-// Detects if running in Capacitor (mobile) or browser, and routes accordingly.
-// All callers use this — they never import Capacitor directly.
+// Detects platform at runtime:
+//   • Electron (Windows desktop) → routes through WindowsAccessibilityBridge
+//   • Capacitor (Android/iOS)    → routes through AccessibilityBridgePlugin
+//   • Browser                    → returns null / no-ops
+// All callers use this — they never import platform SDKs directly.
 
 import type {
   AccessibilityBridgePlugin,
@@ -10,9 +13,18 @@ import type {
   AppInfo,
   ContactInfo,
 } from './AccessibilityBridgePlugin';
+import { windowsBridge } from './WindowsAccessibilityBridge';
+
+// ── Platform Detection ─────────────────────────────────────────────────────────
+
+function isElectron(): boolean {
+  return typeof window !== 'undefined' && 'aria' in window &&
+    !!(window as { aria?: { isElectron?: boolean } }).aria?.isElectron;
+}
 
 // Lazily load Capacitor to avoid breaking web builds
 async function getPlugin(): Promise<AccessibilityBridgePlugin | null> {
+  if (isElectron()) return null; // Electron uses Windows bridge instead
   try {
     // @ts-ignore — Capacitor is injected at runtime on native platforms
     const { Capacitor, Plugins } = await import('@capacitor/core');
@@ -31,9 +43,16 @@ export class NativeAccessibilityBridge {
 
   async init(): Promise<boolean> {
     if (this.initialized) return this.serviceEnabled;
-    this.plugin = await getPlugin();
     this.initialized = true;
 
+    // Electron/Windows path
+    if (isElectron()) {
+      this.serviceEnabled = await windowsBridge.init();
+      return this.serviceEnabled;
+    }
+
+    // Capacitor/Android path
+    this.plugin = await getPlugin();
     if (!this.plugin) return false;
 
     try {
@@ -41,7 +60,6 @@ export class NativeAccessibilityBridge {
       this.serviceEnabled = enabled;
 
       if (enabled) {
-        // Listen for screen changes on any app
         await this.plugin.addListener('screenChanged', (data) => {
           const content = data as NativeScreenContent;
           this.screenChangeListeners.forEach(l => l(content));
@@ -55,12 +73,14 @@ export class NativeAccessibilityBridge {
   }
 
   get isNative(): boolean {
+    if (isElectron()) return windowsBridge.isAvailable;
     return this.plugin !== null && this.serviceEnabled;
   }
 
   // ── Service Setup ──────────────────────────────────────────────────────────
 
   async requestServiceEnable(): Promise<void> {
+    if (isElectron()) return; // Electron doesn't need an accessibility service toggle
     if (!this.plugin) return;
     await this.plugin.openAccessibilitySettings();
   }
@@ -68,6 +88,7 @@ export class NativeAccessibilityBridge {
   // ── Screen Reading ─────────────────────────────────────────────────────────
 
   async getScreenContent(): Promise<NativeScreenContent | null> {
+    if (isElectron()) return windowsBridge.getScreenContent();
     if (!this.plugin) return null;
     try {
       return await this.plugin.getScreenContent();
@@ -77,6 +98,7 @@ export class NativeAccessibilityBridge {
   }
 
   async getFocusedElement(): Promise<NativeElement | null> {
+    if (isElectron()) return windowsBridge.getFocusedElement();
     if (!this.plugin) return null;
     try {
       return await this.plugin.getFocusedElement();
@@ -88,6 +110,7 @@ export class NativeAccessibilityBridge {
   // ── UI Automation ──────────────────────────────────────────────────────────
 
   async clickElement(label: string): Promise<NativeActionResult> {
+    if (isElectron()) return windowsBridge.clickElement(label);
     if (!this.plugin) return { success: false, message: 'Native bridge not available' };
     try {
       return await this.plugin.clickElement({ label });
@@ -106,6 +129,7 @@ export class NativeAccessibilityBridge {
   }
 
   async typeText(text: string): Promise<NativeActionResult> {
+    if (isElectron()) return windowsBridge.typeText(text);
     if (!this.plugin) return { success: false, message: 'Native bridge not available' };
     try {
       return await this.plugin.typeText({ text });
@@ -115,6 +139,7 @@ export class NativeAccessibilityBridge {
   }
 
   async scroll(direction: 'up' | 'down'): Promise<NativeActionResult> {
+    if (isElectron()) return windowsBridge.scroll(direction);
     if (!this.plugin) return { success: false, message: 'Native bridge not available' };
     try {
       return direction === 'up'
@@ -126,11 +151,13 @@ export class NativeAccessibilityBridge {
   }
 
   async pressBack(): Promise<NativeActionResult> {
+    if (isElectron()) return windowsBridge.pressKey('backspace');
     if (!this.plugin) return { success: false, message: 'Native bridge not available' };
     return this.plugin.pressBack();
   }
 
   async pressHome(): Promise<NativeActionResult> {
+    if (isElectron()) return windowsBridge.pressKey('home');
     if (!this.plugin) return { success: false, message: 'Native bridge not available' };
     return this.plugin.pressHome();
   }
@@ -138,6 +165,7 @@ export class NativeAccessibilityBridge {
   // ── App Control ────────────────────────────────────────────────────────────
 
   async getInstalledApps(): Promise<AppInfo[]> {
+    if (isElectron()) return windowsBridge.getInstalledApps();
     if (!this.plugin) return [];
     try {
       const { apps } = await this.plugin.getInstalledApps();
@@ -148,9 +176,9 @@ export class NativeAccessibilityBridge {
   }
 
   async launchApp(packageNameOrName: string): Promise<NativeActionResult> {
+    if (isElectron()) return windowsBridge.launchApp(packageNameOrName);
     if (!this.plugin) return { success: false, message: 'Native bridge not available' };
     try {
-      // Try exact package name first, then search by display name
       const { apps } = await this.plugin.getInstalledApps();
       const match = apps.find(a =>
         a.packageName === packageNameOrName ||
@@ -164,6 +192,7 @@ export class NativeAccessibilityBridge {
   }
 
   async getCurrentApp(): Promise<{ packageName: string; appName: string } | null> {
+    if (isElectron()) return windowsBridge.getCurrentApp();
     if (!this.plugin) return null;
     try {
       return await this.plugin.getCurrentApp();
@@ -175,6 +204,7 @@ export class NativeAccessibilityBridge {
   // ── Contacts ───────────────────────────────────────────────────────────────
 
   async getContacts(): Promise<ContactInfo[]> {
+    if (isElectron()) return windowsBridge.getContacts();
     if (!this.plugin) return [];
     try {
       const { contacts } = await this.plugin.getContacts();
@@ -185,6 +215,7 @@ export class NativeAccessibilityBridge {
   }
 
   async findContact(name: string): Promise<ContactInfo | null> {
+    if (isElectron()) return windowsBridge.findContact(name);
     const contacts = await this.getContacts();
     return contacts.find(c =>
       c.name.toLowerCase().includes(name.toLowerCase())
@@ -194,6 +225,7 @@ export class NativeAccessibilityBridge {
   // ── Notifications ──────────────────────────────────────────────────────────
 
   async getNotifications(): Promise<Array<{ app: string; title: string; text: string }>> {
+    if (isElectron()) return windowsBridge.getNotifications();
     if (!this.plugin) return [];
     try {
       const { notifications } = await this.plugin.getNotifications();
