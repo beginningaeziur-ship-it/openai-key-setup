@@ -22,6 +22,7 @@ import { PendingRoutinePopup } from "@/components/routines/PendingRoutinePopup";
 import { OfflineStatusBanner } from "@/components/offline/OfflineStatusBanner";
 
 // Pages
+import AIInterpreter from "./pages/AIInterpreter";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
@@ -92,6 +93,9 @@ const App = () => (
                                 <Route path="/forest" element={<ForestScene />} />
                                 {/* /cabin now routes to /settings per AEZUIR spec */}
                                 
+                                {/* AI Interpreter */}
+                                <Route path="/interpreter" element={<AIInterpreter />} />
+
                                 {/* Catch-all */}
                                 <Route path="*" element={<NotFound />} />
                               </Routes>
