@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Accessibility Service configuration for Aria Interpreter.
+  Place this file at:
+    android/app/src/main/res/xml/interpreter_accessibility_service.xml
+
+  canRetrieveWindowContent   — lets Aria read any screen
+  canPerformGestures         — lets Aria tap and swipe
+  flagRetrieveInteractiveWindows — reads content behind dialogs too
+-->
+<accessibility-service
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeAllMask"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="
+        flagDefault|
+        flagRetrieveInteractiveWindows|
+        flagRequestTouchExplorationMode|
+        flagReportViewIds"
+    android:canPerformGestures="true"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/accessibility_service_description"
+    android:notificationTimeout="100"
+    android:settingsActivity=".MainActivity"
+    android:summary="@string/accessibility_service_summary" />

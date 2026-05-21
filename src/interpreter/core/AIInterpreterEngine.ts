@@ -18,6 +18,8 @@ import { MultiAIOrchestrator } from '../providers/MultiAIOrchestrator';
 import { NavigationWorkflow } from '../workflows/NavigationWorkflow';
 import { ShoppingWorkflow } from '../workflows/ShoppingWorkflow';
 import { CommunicationWorkflow } from '../workflows/CommunicationWorkflow';
+import { DeviceControlWorkflow } from '../workflows/DeviceControlWorkflow';
+import { nativeBridge } from '../native/NativeAccessibilityBridge';
 
 type StateListener = (state: InterpreterState) => void;
 type SpeakFn = (text: string) => Promise<void>;
@@ -32,6 +34,7 @@ export class AIInterpreterEngine {
   readonly navigation: NavigationWorkflow;
   readonly shopping: ShoppingWorkflow;
   readonly communication: CommunicationWorkflow;
+  readonly deviceControl: DeviceControlWorkflow;
 
   private state: InterpreterState;
   private listeners: StateListener[] = [];
@@ -60,9 +63,11 @@ export class AIInterpreterEngine {
     this.navigation = new NavigationWorkflow(this.accessibility, this.automation, this.ai);
     this.shopping = new ShoppingWorkflow(this.accessibility, this.automation, this.ai);
     this.communication = new CommunicationWorkflow(this.accessibility, this.automation, this.ai);
+    this.deviceControl = new DeviceControlWorkflow(this.ai);
 
     this.wireVoiceProcessor();
     this.wireDynamicContent();
+    this.initNativeBridge();
   }
 
   static getInstance(config?: InterpreterConfig): AIInterpreterEngine {
@@ -209,9 +214,25 @@ Be specific about colors, layout, and important details. Under 3 sentences.`;
       case 'navigate': {
         this.updateState({ currentWorkflow: 'navigation' });
         if (!target) return 'Where would you like to go?';
+        // Try native device navigation first (opens any phone app)
+        if (nativeBridge.isNative) {
+          const native = await this.deviceControl.openApp(target);
+          if (native.success) return native.message;
+        }
         const result = await this.navigation.navigateToApp(target);
         return result.success ? `Navigating to ${target}` : result.message;
       }
+
+      case 'switch_app': {
+        this.updateState({ currentWorkflow: 'navigation' });
+        const appName = target || query || value;
+        if (!appName) return 'Which app would you like to open?';
+        if (nativeBridge.isNative) {
+          return (await this.deviceControl.openApp(appName)).message;
+        }
+        return `On mobile: say "open ${appName}" after enabling the accessibility service.`;
+      }
+
 
       case 'search': {
         this.updateState({ currentWorkflow: 'search' });
@@ -360,6 +381,28 @@ Message: "Text Sarah: I'll be late"
 Navigate: "Go to settings"
 Switch AI: "Use Claude" or "Use ChatGPT"
 Say "stop" to deactivate.`;
+  }
+
+  // ── Native Bridge Init ─────────────────────────────────────────────────────
+
+  private async initNativeBridge(): Promise<void> {
+    const ready = await nativeBridge.init();
+    if (ready) {
+      const unsub = nativeBridge.onScreenChange((content) => {
+        // When user switches to another app, optionally announce it
+        if (this.state.config.screenReaderMode) {
+          const summary = `Now in ${content.appName}. ${content.elements.length} elements.`;
+          this.accessibility.announce(summary);
+        }
+      });
+      this.cleanupFns.push(unsub);
+    } else {
+      // Check if we should prompt user to enable the service
+      const { instructions } = await this.deviceControl.checkSetup();
+      if (instructions.includes('Settings')) {
+        console.info('[Interpreter] Native accessibility service not enabled:', instructions);
+      }
+    }
   }
 
   // ── Wiring ─────────────────────────────────────────────────────────────────
