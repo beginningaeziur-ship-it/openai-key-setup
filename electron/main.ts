@@ -32,8 +32,6 @@ function createWindow(): BrowserWindow {
       // Allow microphone and speech APIs
       experimentalFeatures: true,
     },
-    // Accessibility
-    accessibleTitle: 'Aria Interpreter — Voice-Activated AI Assistant',
   });
 
   // Enable full accessibility support (required for screen readers like NVDA)
