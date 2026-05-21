@@ -36,32 +36,7 @@ function validateTTSInput(data: unknown): {
 }
 
 // CORS configuration with origin restriction
-const ALLOWED_ORIGINS = [
-  'https://lovable.dev',
-  'https://www.lovable.dev',
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:5174',
-];
-
-function getCorsHeaders(origin: string | null): Record<string, string> {
-  const isLovablePreview = origin && (
-    origin.endsWith('.lovableproject.com') || 
-    origin.endsWith('.lovable.app') ||
-    origin.includes('hypccwbfzuefwxlccxye')
-  );
-  
-  const allowedOrigin = origin && (ALLOWED_ORIGINS.includes(origin) || isLovablePreview)
-    ? origin
-    : ALLOWED_ORIGINS[0];
-  
-  return {
-    'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Credentials': 'true',
-  };
-}
+import { getCorsHeaders } from "../_shared/cors.ts";
 
 // Map SAI voice preferences to ElevenLabs voices
 const voiceMap: Record<string, string> = {
