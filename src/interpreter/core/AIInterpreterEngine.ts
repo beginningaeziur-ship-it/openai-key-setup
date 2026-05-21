@@ -19,6 +19,7 @@ import { NavigationWorkflow } from '../workflows/NavigationWorkflow';
 import { ShoppingWorkflow } from '../workflows/ShoppingWorkflow';
 import { CommunicationWorkflow } from '../workflows/CommunicationWorkflow';
 import { DeviceControlWorkflow } from '../workflows/DeviceControlWorkflow';
+import { ConversationalBrain } from './ConversationalBrain';
 import { nativeBridge } from '../native/NativeAccessibilityBridge';
 
 type StateListener = (state: InterpreterState) => void;
@@ -35,12 +36,12 @@ export class AIInterpreterEngine {
   readonly shopping: ShoppingWorkflow;
   readonly communication: CommunicationWorkflow;
   readonly deviceControl: DeviceControlWorkflow;
+  readonly brain: ConversationalBrain;
 
   private state: InterpreterState;
   private listeners: StateListener[] = [];
   private speakFn: SpeakFn | null = null;
   private lastResponse: string | null = null;
-  private conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
   private cleanupFns: Array<() => void> = [];
 
   private constructor(config: InterpreterConfig) {
@@ -64,6 +65,11 @@ export class AIInterpreterEngine {
     this.shopping = new ShoppingWorkflow(this.accessibility, this.automation, this.ai);
     this.communication = new CommunicationWorkflow(this.accessibility, this.automation, this.ai);
     this.deviceControl = new DeviceControlWorkflow(this.ai);
+    this.brain = new ConversationalBrain(this.ai, {
+      name: config.name,
+      primaryAI: config.primaryAI,
+      personality: config.personality,
+    });
 
     this.wireVoiceProcessor();
     this.wireDynamicContent();
@@ -89,7 +95,9 @@ export class AIInterpreterEngine {
     this.updateState({ isActive: true, error: null });
     this.voice.start();
 
-    const greeting = `${this.state.config.name} is active. Say a command or "help" to get started.`;
+    const { name, primaryAI } = this.state.config;
+    const aiLabel = this.ai.getProviderDisplayName(primaryAI);
+    const greeting = `Hi, I'm ${name}, powered by ${aiLabel}. I'm listening — just tell me what you'd like to do.`;
     this.speak(greeting);
     this.accessibility.announce(greeting);
   }
@@ -142,26 +150,21 @@ export class AIInterpreterEngine {
     this.updateState({ currentIntent: intent, isProcessing: true, error: null });
 
     try {
-      const response = await this.dispatch(intent);
+      const rawResult = await this.dispatch(intent);
+
+      // Run every response through the conversational brain so it sounds natural
+      const response = await this.brain.narrate(rawResult, intent.category);
+
       this.lastResponse = response;
       this.updateState({ lastResponse: response, isProcessing: false });
-
-      // Add to conversation history
-      this.conversationHistory.push(
-        { role: 'user', content: intent.rawText },
-        { role: 'assistant', content: response }
-      );
-      // Keep last 20 exchanges
-      if (this.conversationHistory.length > 40) {
-        this.conversationHistory = this.conversationHistory.slice(-40);
-      }
 
       await this.speak(response);
       this.accessibility.announce(response);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'An error occurred';
+      const spokenErr = `Sorry, something went wrong — ${errMsg}. Please try again.`;
       this.updateState({ error: errMsg, isProcessing: false });
-      await this.speak(`Error: ${errMsg}`);
+      await this.speak(spokenErr);
     }
   }
 
@@ -178,17 +181,20 @@ export class AIInterpreterEngine {
     switch (category) {
       case 'read_screen': {
         this.updateState({ currentWorkflow: 'screen-reader' });
-        return this.navigation.readCurrentScreen();
+        // Use native bridge if available (any app), else web DOM
+        if (nativeBridge.isNative) {
+          const nativeDesc = await this.deviceControl.readAnyScreen();
+          const screen = this.accessibility.getScreenState();
+          return this.brain.describeScreen({ ...screen, mainContent: nativeDesc });
+        }
+        const screenState = this.accessibility.getScreenState();
+        return this.brain.describeScreen(screenState);
       }
 
       case 'describe_visual': {
         this.updateState({ currentWorkflow: 'visual-description' });
-        const screen = this.accessibility.getScreenState();
-        const prompt = `Describe what a blind user needs to know about this screen.
-Title: ${screen.title}
-Content: ${screen.mainContent?.slice(0, 500)}
-Be specific about colors, layout, and important details. Under 3 sentences.`;
-        return this.ai.complete(prompt, 'describe_visual');
+        const screenState = this.accessibility.getScreenState();
+        return this.brain.describeScreen(screenState);
       }
 
       case 'click': {
@@ -275,10 +281,12 @@ Be specific about colors, layout, and important details. Under 3 sentences.`;
         const provider = (value || target) as AIProvider;
         if (provider && ['claude', 'openai', 'google', 'auto'].includes(provider)) {
           this.ai.setPreferredProvider(provider);
+          this.brain.updateConfig({ primaryAI: provider });
           this.updateState({ config: { ...this.state.config, primaryAI: provider } });
-          return `Switched to ${this.ai.getProviderDisplayName(provider)}`;
+          const displayName = this.ai.getProviderDisplayName(provider);
+          return `Switched! I'm now powered by ${displayName}. You'll notice a different voice and style from here on.`;
         }
-        return 'Say "use Claude", "use ChatGPT", or "use Google" to switch AI assistants.';
+        return 'You can say "use Claude", "use ChatGPT", "use Gemini", or "use auto" to pick your AI.';
       }
 
       case 'set_preference': {
@@ -286,34 +294,30 @@ Be specific about colors, layout, and important details. Under 3 sentences.`;
       }
 
       case 'help': {
-        return this.getHelpText();
+        return this.brain.getHelpText();
       }
 
       case 'stop': {
         this.deactivate();
-        return `${this.state.config.name} stopped. Say "activate Aria" to restart.`;
+        return `Okay, I'm going quiet now. Just say "activate ${this.state.config.name}" whenever you need me again.`;
       }
 
       case 'repeat': {
-        if (this.lastResponse) {
-          return this.lastResponse;
-        }
-        return 'Nothing to repeat yet.';
+        if (this.lastResponse) return this.lastResponse;
+        return "I don't have anything to repeat yet — ask me something first.";
       }
 
       default: {
-        // Fallback to conversational AI with screen context
+        // Everything else goes to the brain for a natural conversational response
         this.updateState({ currentWorkflow: 'conversation' });
         const screen = this.accessibility.getScreenState();
-        const context = `Current screen: ${screen.title}. ${screen.mainContent?.slice(0, 200) || ''}`;
+        const screenContext = `${screen.title}. ${screen.mainContent?.slice(0, 200) || ''}`;
 
         const messages = [
-          ...this.conversationHistory.slice(-6),
           { role: 'user' as const, content: intent.rawText },
         ];
 
-        const response = await this.ai.chat(messages, 'unknown', this.buildSystemPrompt(context));
-        return response.content;
+        return this.brain.chat(intent.rawText, screenContext);
       }
     }
   }
@@ -353,35 +357,6 @@ Be specific about colors, layout, and important details. Under 3 sentences.`;
   }
 
   // ── System Prompt ──────────────────────────────────────────────────────────
-
-  private buildSystemPrompt(screenContext: string): string {
-    return `You are ${this.state.config.name}, a voice-activated AI interpreter for a blind user.
-
-Current screen context: ${screenContext}
-
-Guidelines:
-- Be concise — responses should be speakable in under 10 seconds
-- Describe UI elements using position and role (e.g. "top button", "text field labeled Name")
-- Never use visual metaphors like "you can see" or "as shown below"
-- Confirm before taking irreversible actions (purchases, calls, deletions)
-- If you don't know something on the screen, say so clearly
-- Use the user's name if you know it`;
-  }
-
-  // ── Help Text ──────────────────────────────────────────────────────────────
-
-  private getHelpText(): string {
-    return `I'm ${this.state.config.name}, your AI interpreter. Here's what I can do:
-Read screen: "What's on the screen?"
-Click things: "Click the submit button"
-Fill forms: "Type John into the name field"
-Shop: "What product is this?" or "Add to cart"
-Call: "Call Mom"
-Message: "Text Sarah: I'll be late"
-Navigate: "Go to settings"
-Switch AI: "Use Claude" or "Use ChatGPT"
-Say "stop" to deactivate.`;
-  }
 
   // ── Native Bridge Init ─────────────────────────────────────────────────────
 
@@ -454,6 +429,11 @@ Say "stop" to deactivate.`;
     const newConfig = { ...this.state.config, ...config };
     this.updateState({ config: newConfig });
     this.voice.updateConfig(newConfig);
+    this.brain.updateConfig({
+      name: newConfig.name,
+      primaryAI: newConfig.primaryAI,
+      personality: newConfig.personality,
+    });
     if (config.primaryAI) {
       this.ai.setPreferredProvider(config.primaryAI);
     }

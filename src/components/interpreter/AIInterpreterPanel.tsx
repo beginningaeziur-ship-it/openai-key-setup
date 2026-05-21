@@ -1,4 +1,14 @@
 import { useState, useCallback } from 'react';
+import type { AIProvider } from '@/interpreter/types/interpreter.types';
+
+function getAILabel(provider: AIProvider): string {
+  switch (provider) {
+    case 'claude': return 'Powered by Claude';
+    case 'openai': return 'Powered by ChatGPT';
+    case 'google': return 'Powered by Gemini';
+    default:       return 'Auto AI';
+  }
+}
 import { Power, Volume2, VolumeX, Settings2, Keyboard, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -59,22 +69,23 @@ export function AIInterpreterPanel({ className, speakFn }: AIInterpreterPanelPro
     >
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <div
             className={cn(
-              'w-2.5 h-2.5 rounded-full transition-colors',
+              'w-2.5 h-2.5 rounded-full flex-shrink-0 transition-colors',
               interpreter.isActive ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground'
             )}
             aria-hidden
           />
-          <h2 className="font-semibold text-foreground">
-            {interpreter.config.name}
-          </h2>
-          {interpreter.currentWorkflow && (
-            <span className="text-xs text-muted-foreground">
-              · {interpreter.currentWorkflow}
-            </span>
-          )}
+          <div className="min-w-0">
+            <h2 className="font-semibold text-foreground leading-none">
+              {interpreter.config.name}
+            </h2>
+            <p className="text-xs text-muted-foreground leading-none mt-0.5">
+              {getAILabel(interpreter.config.primaryAI)}
+              {interpreter.currentWorkflow && ` · ${interpreter.currentWorkflow}`}
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-1">
