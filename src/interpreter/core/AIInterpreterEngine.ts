@@ -20,6 +20,7 @@ import { ShoppingWorkflow } from '../workflows/ShoppingWorkflow';
 import { CommunicationWorkflow } from '../workflows/CommunicationWorkflow';
 import { DeviceControlWorkflow } from '../workflows/DeviceControlWorkflow';
 import { ConversationalBrain } from './ConversationalBrain';
+import { statelessManager } from './StatelessSessionManager';
 import { nativeBridge } from '../native/NativeAccessibilityBridge';
 
 type StateListener = (state: InterpreterState) => void;
@@ -74,6 +75,9 @@ export class AIInterpreterEngine {
     this.wireVoiceProcessor();
     this.wireDynamicContent();
     this.initNativeBridge();
+
+    // Register engine-level wipe with the stateless manager
+    statelessManager.register(() => this.wipeSession());
   }
 
   static getInstance(config?: InterpreterConfig): AIInterpreterEngine {
@@ -439,9 +443,29 @@ export class AIInterpreterEngine {
     }
   }
 
+  // ── Stateless Session Wipe ─────────────────────────────────────────────────
+
+  /**
+   * Wipes all in-memory session data immediately.
+   * Called automatically by StatelessSessionManager on beforeunload / pagehide.
+   * Can also be called manually (e.g. "forget everything" command).
+   */
+  wipeSession(): void {
+    this.brain.wipe();
+    this.lastResponse = null;
+    this.updateState({
+      currentIntent: null,
+      currentWorkflow: null,
+      lastResponse: null,
+      isProcessing: false,
+      isSpeaking: false,
+    });
+  }
+
   // ── Cleanup ────────────────────────────────────────────────────────────────
 
   destroy(): void {
+    this.wipeSession();
     this.voice.stop();
     this.accessibility.destroy();
     this.cleanupFns.forEach(fn => fn());

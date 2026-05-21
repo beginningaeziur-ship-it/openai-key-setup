@@ -5,6 +5,7 @@
 
 import type { AIMessage, AIProvider, IntentCategory, ScreenState } from '../types/interpreter.types';
 import type { MultiAIOrchestrator } from '../providers/MultiAIOrchestrator';
+import { statelessManager } from './StatelessSessionManager';
 
 export interface BrainConfig {
   name: string;                       // e.g. "Aria"
@@ -19,7 +20,10 @@ export class ConversationalBrain {
   constructor(
     private ai: MultiAIOrchestrator,
     private config: BrainConfig
-  ) {}
+  ) {
+    // Register with the stateless manager so history is wiped on session end
+    statelessManager.register(() => this.wipe());
+  }
 
   updateConfig(config: Partial<BrainConfig>): void {
     this.config = { ...this.config, ...config };
@@ -130,8 +134,16 @@ Say "stop" when you want me to go quiet.
 What would you like to do?`;
   }
 
-  clearHistory(): void {
+  /** Wipe all in-memory conversation data. Called by StatelessSessionManager on session end. */
+  wipe(): void {
+    // Overwrite before clearing so GC cannot read residual values
+    this.history.forEach(m => { m.content = ''; });
     this.history = [];
+    this.lastScreenDescription = '';
+  }
+
+  clearHistory(): void {
+    this.wipe();
   }
 
   // ── System prompt: the "personality" injected into every AI call ───────────
