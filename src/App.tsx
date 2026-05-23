@@ -45,6 +45,13 @@ import BeachScene from "./pages/BeachScene";
 import ForestScene from "./pages/ForestScene";
 // CabinScene removed - Cabin now routes to Settings per AEZUIR spec
 
+// Aezuir UI Shell
+import AezuirHome from "./pages/AezuirHome";
+import Bedroom from "./pages/rooms/Bedroom";
+import Beach from "./pages/rooms/Beach";
+import Forest from "./pages/rooms/Forest";
+import Camping from "./pages/rooms/Camping";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -95,6 +102,13 @@ const App = () => (
                                 
                                 {/* AI Interpreter */}
                                 <Route path="/interpreter" element={<AIInterpreter />} />
+
+                                {/* Aezuir UI Shell — four rooms */}
+                                <Route path="/aezuir" element={<AezuirHome />} />
+                                <Route path="/rooms/bedroom" element={<Bedroom />} />
+                                <Route path="/rooms/beach" element={<Beach />} />
+                                <Route path="/rooms/forest" element={<Forest />} />
+                                <Route path="/rooms/cabin" element={<Camping />} />
 
                                 {/* Catch-all */}
                                 <Route path="*" element={<NotFound />} />

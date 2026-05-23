@@ -334,10 +334,10 @@ export default function Bedroom() {
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-white text-base flex items-center gap-2">
-                    {React.createElement(activeSession.Icon, {
-                      className: cn('w-4 h-4', activeSession.color),
-                      'aria-hidden': true,
-                    })}
+                    {(() => {
+                      const Icon = activeSession.Icon;
+                      return <Icon className={cn('w-4 h-4', activeSession.color)} aria-hidden="true" />;
+                    })()}
                     {activeSession.label}
                   </CardTitle>
                   <span className="text-white/50 text-xs">
@@ -650,6 +650,3 @@ export default function Bedroom() {
     </div>
   );
 }
-
-// React needs to be in scope for JSX in createElement call
-import React from 'react';
