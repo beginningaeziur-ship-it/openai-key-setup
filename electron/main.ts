@@ -39,7 +39,7 @@ function createWindow(): BrowserWindow {
 
   // Load the React app
   if (isDev) {
-    win.loadURL('http://localhost:5173');
+    win.loadURL('http://localhost:8080');
     win.webContents.openDevTools({ mode: 'detach' });
   } else {
     win.loadFile(path.join(__dirname, '../dist/index.html'));

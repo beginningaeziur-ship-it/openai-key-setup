@@ -10,7 +10,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:8080 && electron .\"",
     "electron:build": "vite build && tsc -p tsconfig.electron.json && electron-builder --config electron-builder.config.json",
     "electron:compile": "tsc -p tsconfig.electron.json",
     "electron:pack": "electron-builder --config electron-builder.config.json --dir"
