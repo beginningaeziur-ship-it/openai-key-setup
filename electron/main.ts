@@ -9,10 +9,13 @@ import { UIAutomation } from './windows/ui-automation.js';
 import { WindowsSpeech } from './windows/speech.js';
 import { WindowsApps } from './windows/apps.js';
 
+import { existsSync } from 'fs';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const isDev = process.env.NODE_ENV === 'development';
+// Dev mode: no built dist folder exists yet
+const isDev = !existsSync(path.join(__dirname, '../dist/index.html'));
 const uia = new UIAutomation();
 const speech = new WindowsSpeech();
 const apps = new WindowsApps();
