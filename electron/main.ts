@@ -4,9 +4,13 @@
 
 import { app, BrowserWindow, ipcMain, systemPreferences, session } from 'electron';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import { UIAutomation } from './windows/ui-automation.js';
 import { WindowsSpeech } from './windows/speech.js';
 import { WindowsApps } from './windows/apps.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const isDev = process.env.NODE_ENV === 'development';
 const uia = new UIAutomation();
