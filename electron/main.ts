@@ -4,9 +4,9 @@
 
 import { app, BrowserWindow, ipcMain, systemPreferences, session } from 'electron';
 import * as path from 'path';
-import { UIAutomation } from './windows/ui-automation';
-import { WindowsSpeech } from './windows/speech';
-import { WindowsApps } from './windows/apps';
+import { UIAutomation } from './windows/ui-automation.js';
+import { WindowsSpeech } from './windows/speech.js';
+import { WindowsApps } from './windows/apps.js';
 
 const isDev = process.env.NODE_ENV === 'development';
 const uia = new UIAutomation();
