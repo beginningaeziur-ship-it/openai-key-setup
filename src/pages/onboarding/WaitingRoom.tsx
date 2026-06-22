@@ -133,55 +133,55 @@ export default function WaitingRoom() {
         <button
           onClick={toggleVoice}
           className={cn(
-            "p-2.5 rounded-full transition-all",
+            "p-2 rounded-full transition-all",
             "bg-black/40 backdrop-blur-md border border-white/10",
             "hover:bg-black/60",
             isSpeaking && "ring-2 ring-primary/50"
           )}
         >
           {voiceEnabled ? (
-            <Volume2 className={cn("w-5 h-5", isSpeaking ? "text-primary animate-pulse" : "text-white/80")} />
+            <Volume2 className={cn("w-4 h-4 sm:w-5 sm:h-5", isSpeaking ? "text-primary animate-pulse" : "text-white/80")} />
           ) : (
-            <VolumeX className="w-5 h-5 text-white/50" />
+            <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white/50" />
           )}
         </button>
 
         {isWaitingForResponse && (
           <div className={cn(
-            "p-2.5 rounded-full",
+            "p-2 rounded-full",
             "bg-primary/80 backdrop-blur-md border border-primary/30",
             "animate-pulse"
           )}>
-            <Mic className="w-5 h-5 text-white" />
+            <Mic className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
         )}
       </div>
 
-      <div className="relative z-10 flex min-h-screen flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-20 sm:px-6 sm:pt-24">
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-end">
-          <div className="space-y-4">
+      <div className="relative z-10 flex h-screen flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-14 sm:px-6 sm:pt-20">
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-end min-h-0">
+          <div className="flex flex-col justify-end min-h-0">
             {isWaitingForResponse && (
-              <div className="flex items-center justify-center gap-2 text-primary animate-pulse">
-                <div className="w-3 h-3 rounded-full bg-primary animate-ping" />
-                <span className="text-sm">SAI is listening...</span>
+              <div className="mb-2 flex items-center justify-center gap-2 text-primary animate-pulse">
+                <div className="w-2 h-2 rounded-full bg-primary animate-ping" />
+                <span className="text-xs sm:text-sm">SAI is listening...</span>
               </div>
             )}
 
-            <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-5 shadow-xl border border-border/50 min-h-[104px] flex items-center justify-center sm:min-h-[120px] sm:p-6">
-              <p className="text-base text-center text-foreground leading-relaxed sm:text-lg md:text-xl">
+            <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-border/50 sm:p-5">
+              <p className="text-sm text-center text-foreground leading-relaxed sm:text-base md:text-lg">
                 {displayedText}
                 {isSpeaking && <span className="animate-pulse ml-1">|</span>}
               </p>
             </div>
 
-            <div className="flex justify-center gap-2">
+            <div className="mt-2 flex justify-center gap-2">
               {INTRO_MESSAGES.map((_, index) => (
                 <div
                   key={index}
                   className={cn(
-                    "w-2 h-2 rounded-full transition-all duration-300",
+                    "w-1.5 h-1.5 rounded-full transition-all duration-300 sm:w-2 sm:h-2",
                     index === currentMessageIndex
-                      ? "bg-primary w-6"
+                      ? "bg-primary w-4 sm:w-6"
                       : index < currentMessageIndex
                         ? "bg-primary/60"
                         : "bg-muted"
@@ -190,13 +190,13 @@ export default function WaitingRoom() {
               ))}
             </div>
 
-            <div className="rounded-2xl border border-border/50 bg-card/80 p-3 backdrop-blur-sm">
+            <div className="mt-2 rounded-2xl border border-border/50 bg-card/80 p-2.5 backdrop-blur-sm sm:p-3">
               <Button
                 size="lg"
                 onClick={handleContinue}
                 disabled={!showContinue}
                 className={cn(
-                  "h-12 w-full rounded-xl text-base sm:h-14 sm:text-lg",
+                  "h-11 w-full rounded-xl text-sm sm:h-12 sm:text-base",
                   showContinue && "animate-fade-in"
                 )}
               >
@@ -204,24 +204,24 @@ export default function WaitingRoom() {
               </Button>
 
               {!showContinue && (
-                <p className="mt-2 text-center text-xs text-muted-foreground">
+                <p className="mt-1.5 text-center text-xs text-muted-foreground">
                   Next unlocks here when SAI is ready for you.
                 </p>
               )}
 
               {!voiceEnabled && (
-                <p className="mt-2 text-center text-xs text-muted-foreground">
+                <p className="mt-1.5 text-center text-xs text-muted-foreground">
                   Voice is off. Tap the speaker icon if you want to hear SAI.
                 </p>
               )}
             </div>
           </div>
 
-          <div className="mt-4 flex min-h-[180px] items-end justify-center sm:min-h-[220px]">
+          <div className="mt-2 flex h-[120px] flex-shrink-0 items-end justify-center sm:h-[160px]">
             <FullBodySAI
               size="lg"
               state={saiState}
-              className="origin-bottom translate-y-2 scale-95 sm:translate-y-4 sm:scale-100"
+              className="w-28 h-36 sm:w-48 sm:h-56 origin-bottom translate-y-1"
             />
           </div>
         </div>
