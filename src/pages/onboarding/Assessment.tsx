@@ -195,7 +195,7 @@ export default function Assessment() {
 
   return (
     <div 
-      className="min-h-screen relative flex items-center justify-center p-4"
+      className="min-h-screen relative flex items-center justify-center p-2 sm:p-4"
       style={{
         backgroundImage: `url(${comfortOfficeBg})`,
         backgroundSize: 'cover',
@@ -205,29 +205,29 @@ export default function Assessment() {
       <div className="absolute inset-0 bg-black/60" />
       
       {/* Voice control */}
-      <div className="absolute top-4 right-4 z-20">
+      <div className="absolute top-3 right-3 z-20 sm:top-4 sm:right-4">
         <button
           onClick={toggleVoice}
           className={cn(
-            "p-2.5 rounded-full transition-all",
+            "p-2 rounded-full transition-all",
             "bg-black/40 backdrop-blur-md border border-white/10",
             "hover:bg-black/60",
             isSpeaking && "ring-2 ring-primary/50"
           )}
         >
           {voiceEnabled ? (
-            <Volume2 className={cn("w-5 h-5", isSpeaking ? "text-primary animate-pulse" : "text-white/80")} />
+            <Volume2 className={cn("w-4 h-4 sm:w-5 sm:h-5", isSpeaking ? "text-primary animate-pulse" : "text-white/80")} />
           ) : (
-            <VolumeX className="w-5 h-5 text-white/50" />
+            <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white/50" />
           )}
         </button>
       </div>
       
       {/* Notebook paper on desk */}
-      <div className="relative z-10 w-full max-w-2xl">
+      <div className="relative z-10 w-full max-w-2xl flex flex-col max-h-[calc(100vh-1rem)]">
         {/* SAI narration at top */}
-        <div className="bg-card/80 backdrop-blur-sm rounded-t-xl p-4 border-x border-t border-border/50">
-          <p className="text-sm text-muted-foreground italic text-center min-h-[40px]">
+        <div className="bg-card/80 backdrop-blur-sm rounded-t-xl p-3 border-x border-t border-border/50 sm:p-4 flex-shrink-0">
+          <p className="text-xs text-muted-foreground italic text-center sm:text-sm">
             {narrationText}
             {isSpeaking && <span className="animate-pulse">|</span>}
           </p>
@@ -235,7 +235,7 @@ export default function Assessment() {
 
         {/* Paper texture */}
         <div 
-          className="bg-amber-50 dark:bg-amber-100/90 rounded-b-xl p-6 shadow-2xl min-h-[400px]"
+          className="bg-amber-50 dark:bg-amber-100/90 rounded-b-xl p-4 shadow-2xl overflow-y-auto sm:p-6"
           style={{
             backgroundImage: 'repeating-linear-gradient(transparent, transparent 27px, #91d1d3 28px)',
             backgroundPosition: '0 10px',
@@ -243,36 +243,36 @@ export default function Assessment() {
         >
           {/* Initial question */}
           {phase === 'initial' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">
+            <div className="space-y-4 sm:space-y-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-3 sm:text-xl sm:mb-6">
                 What brings you here today?
               </h2>
               
-              <label className="flex items-start gap-4 p-4 rounded-lg hover:bg-white/50 cursor-pointer transition-colors">
+              <label className="flex items-start gap-3 p-3 rounded-lg hover:bg-white/50 cursor-pointer transition-colors sm:gap-4 sm:p-4">
                 <Checkbox 
                   checked={hasDisabilities}
                   onCheckedChange={(checked) => setHasDisabilities(!!checked)}
-                  className="mt-1 border-gray-400"
+                  className="mt-0.5 border-gray-400"
                 />
                 <div>
-                  <span className="text-gray-800 font-medium">Medical or Mental Health Disabilities</span>
-                  <p className="text-sm text-gray-600 mt-1">Physical health, mental health, or neurodevelopmental conditions</p>
+                  <span className="text-sm text-gray-800 font-medium sm:text-base">Medical or Mental Health Disabilities</span>
+                  <p className="text-xs text-gray-600 mt-1 sm:text-sm">Physical health, mental health, or neurodevelopmental conditions</p>
                 </div>
               </label>
 
-              <label className="flex items-start gap-4 p-4 rounded-lg hover:bg-white/50 cursor-pointer transition-colors">
+              <label className="flex items-start gap-3 p-3 rounded-lg hover:bg-white/50 cursor-pointer transition-colors sm:gap-4 sm:p-4">
                 <Checkbox 
                   checked={hasCircumstances}
                   onCheckedChange={(checked) => setHasCircumstances(!!checked)}
-                  className="mt-1 border-gray-400"
+                  className="mt-0.5 border-gray-400"
                 />
                 <div>
-                  <span className="text-gray-800 font-medium">Life Circumstances</span>
-                  <p className="text-sm text-gray-600 mt-1">Housing, financial, legal, criminal, or relational challenges</p>
+                  <span className="text-sm text-gray-800 font-medium sm:text-base">Life Circumstances</span>
+                  <p className="text-xs text-gray-600 mt-1 sm:text-sm">Housing, financial, legal, criminal, or relational challenges</p>
                 </div>
               </label>
 
-              <div className="flex justify-end pt-4">
+              <div className="flex justify-end pt-2 sm:pt-4">
                 <Button onClick={handleInitialContinue} disabled={isNarrating}>
                   Continue
                 </Button>
@@ -282,17 +282,17 @@ export default function Assessment() {
 
           {/* Disabilities list */}
           {phase === 'disabilities' && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            <div className="space-y-3 sm:space-y-4">
+              <h2 className="text-lg font-semibold text-gray-800 mb-2 sm:text-xl sm:mb-4">
                 Check all that apply
               </h2>
               
-              <div className="max-h-[350px] overflow-y-auto space-y-2 pr-2">
+              <div className="max-h-[35vh] overflow-y-auto space-y-1.5 pr-2 sm:max-h-[45vh] sm:space-y-2">
                 {DISABILITY_OPTIONS.map(option => (
                   <label 
                     key={option.id}
                     className={cn(
-                      "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors",
+                      "flex items-start gap-3 p-2.5 rounded-lg cursor-pointer transition-colors sm:p-3",
                       selectedDisabilities.includes(option.id) 
                         ? "bg-primary/10" 
                         : "hover:bg-white/50"
@@ -304,15 +304,15 @@ export default function Assessment() {
                       className="mt-0.5 border-gray-400"
                     />
                     <div>
-                      <span className="text-gray-800 font-medium">{option.label}</span>
-                      <p className="text-xs text-gray-600">{option.description}</p>
+                      <span className="text-sm text-gray-800 font-medium sm:text-base">{option.label}</span>
+                      <p className="text-xs text-gray-600 sm:text-sm">{option.description}</p>
                     </div>
                   </label>
                 ))}
               </div>
 
-              <div className="flex justify-between pt-4">
-                <Button variant="ghost" onClick={() => setPhase('initial')} className="text-gray-600">
+              <div className="flex justify-between pt-2 sm:pt-4">
+                <Button variant="ghost" onClick={() => setPhase('initial')} className="text-gray-600 text-sm sm:text-base">
                   Back
                 </Button>
                 <Button onClick={handleDisabilitiesContinue} disabled={isNarrating}>
@@ -324,17 +324,17 @@ export default function Assessment() {
 
           {/* Symptoms list */}
           {phase === 'symptoms' && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            <div className="space-y-3 sm:space-y-4">
+              <h2 className="text-lg font-semibold text-gray-800 mb-2 sm:text-xl sm:mb-4">
                 Common experiences — check what feels familiar
               </h2>
               
-              <div className="max-h-[350px] overflow-y-auto space-y-2 pr-2">
+              <div className="max-h-[35vh] overflow-y-auto space-y-1.5 pr-2 sm:max-h-[45vh] sm:space-y-2">
                 {availableSymptoms.map(({ symptom, from }, index) => (
                   <label 
                     key={`${from}-${symptom}-${index}`}
                     className={cn(
-                      "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors",
+                      "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors sm:p-3",
                       selectedSymptoms.includes(symptom) 
                         ? "bg-primary/10" 
                         : "hover:bg-white/50"
@@ -345,13 +345,13 @@ export default function Assessment() {
                       onCheckedChange={() => toggleSelection(symptom, selectedSymptoms, setSelectedSymptoms)}
                       className="border-gray-400"
                     />
-                    <span className="text-gray-800">{symptom}</span>
+                    <span className="text-sm text-gray-800 sm:text-base">{symptom}</span>
                   </label>
                 ))}
               </div>
 
-              <div className="flex justify-between pt-4">
-                <Button variant="ghost" onClick={() => setPhase('disabilities')} className="text-gray-600">
+              <div className="flex justify-between pt-2 sm:pt-4">
+                <Button variant="ghost" onClick={() => setPhase('disabilities')} className="text-gray-600 text-sm sm:text-base">
                   Back
                 </Button>
                 <Button onClick={handleSymptomsContinue} disabled={isNarrating}>
@@ -363,17 +363,17 @@ export default function Assessment() {
 
           {/* Circumstances list */}
           {phase === 'circumstances' && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            <div className="space-y-3 sm:space-y-4">
+              <h2 className="text-lg font-semibold text-gray-800 mb-2 sm:text-xl sm:mb-4">
                 Life circumstances — check all that apply
               </h2>
               
-              <div className="max-h-[350px] overflow-y-auto space-y-2 pr-2">
+              <div className="max-h-[35vh] overflow-y-auto space-y-1.5 pr-2 sm:max-h-[45vh] sm:space-y-2">
                 {CIRCUMSTANCE_OPTIONS.map(option => (
                   <label 
                     key={option.id}
                     className={cn(
-                      "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors",
+                      "flex items-start gap-3 p-2.5 rounded-lg cursor-pointer transition-colors sm:p-3",
                       selectedCircumstances.includes(option.id) 
                         ? "bg-primary/10" 
                         : "hover:bg-white/50"
@@ -385,18 +385,18 @@ export default function Assessment() {
                       className="mt-0.5 border-gray-400"
                     />
                     <div>
-                      <span className="text-gray-800 font-medium">{option.label}</span>
-                      <p className="text-xs text-gray-600">{option.description}</p>
+                      <span className="text-sm text-gray-800 font-medium sm:text-base">{option.label}</span>
+                      <p className="text-xs text-gray-600 sm:text-sm">{option.description}</p>
                     </div>
                   </label>
                 ))}
               </div>
 
-              <div className="flex justify-between pt-4">
+              <div className="flex justify-between pt-2 sm:pt-4">
                 <Button 
                   variant="ghost" 
                   onClick={() => hasDisabilities && selectedDisabilities.length > 0 ? setPhase('symptoms') : setPhase('initial')} 
-                  className="text-gray-600"
+                  className="text-gray-600 text-sm sm:text-base"
                 >
                   Back
                 </Button>
@@ -409,17 +409,17 @@ export default function Assessment() {
 
           {/* Circumstance details */}
           {phase === 'circumstance-details' && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            <div className="space-y-3 sm:space-y-4">
+              <h2 className="text-lg font-semibold text-gray-800 mb-2 sm:text-xl sm:mb-4">
                 Tell me more about your situation
               </h2>
               
-              <div className="max-h-[350px] overflow-y-auto space-y-2 pr-2">
+              <div className="max-h-[35vh] overflow-y-auto space-y-1.5 pr-2 sm:max-h-[45vh] sm:space-y-2">
                 {availableDetails.map(({ detail, from }, index) => (
                   <label 
                     key={`${from}-${detail}-${index}`}
                     className={cn(
-                      "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors",
+                      "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors sm:p-3",
                       selectedDetails.includes(detail) 
                         ? "bg-primary/10" 
                         : "hover:bg-white/50"
@@ -430,13 +430,13 @@ export default function Assessment() {
                       onCheckedChange={() => toggleSelection(detail, selectedDetails, setSelectedDetails)}
                       className="border-gray-400"
                     />
-                    <span className="text-gray-800">{detail}</span>
+                    <span className="text-sm text-gray-800 sm:text-base">{detail}</span>
                   </label>
                 ))}
               </div>
 
-              <div className="flex justify-between pt-4">
-                <Button variant="ghost" onClick={() => setPhase('circumstances')} className="text-gray-600">
+              <div className="flex justify-between pt-2 sm:pt-4">
+                <Button variant="ghost" onClick={() => setPhase('circumstances')} className="text-gray-600 text-sm sm:text-base">
                   Back
                 </Button>
                 <Button onClick={handleDetailsContinue} disabled={isNarrating}>

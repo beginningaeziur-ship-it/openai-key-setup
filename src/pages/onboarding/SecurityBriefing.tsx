@@ -148,56 +148,56 @@ export default function SecurityBriefing() {
         <button
           onClick={toggleVoice}
           className={cn(
-            "p-2.5 rounded-full transition-all",
+            "p-2 rounded-full transition-all",
             "bg-black/40 backdrop-blur-md border border-white/10",
             "hover:bg-black/60",
             isSpeaking && "ring-2 ring-primary/50"
           )}
         >
           {voiceEnabled ? (
-            <Volume2 className={cn("w-5 h-5", isSpeaking ? "text-primary animate-pulse" : "text-white/80")} />
+            <Volume2 className={cn("w-4 h-4 sm:w-5 sm:h-5", isSpeaking ? "text-primary animate-pulse" : "text-white/80")} />
           ) : (
-            <VolumeX className="w-5 h-5 text-white/50" />
+            <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white/50" />
           )}
         </button>
 
         {isWaitingForResponse && (
           <div className={cn(
-            "p-2.5 rounded-full",
+            "p-2 rounded-full",
             "bg-primary/80 backdrop-blur-md border border-primary/30",
             "animate-pulse"
           )}>
-            <Mic className="w-5 h-5 text-white" />
+            <Mic className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
         )}
       </div>
 
-      <div className="relative z-10 flex min-h-screen flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-20 sm:px-6 sm:pt-24">
-        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-end gap-4 lg:flex-row lg:items-end lg:gap-8">
+      <div className="relative z-10 flex h-screen flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-14 sm:px-6 sm:pt-20">
+        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-end gap-2 min-h-0 lg:flex-row lg:items-end lg:gap-6">
           <div className="order-1 flex-1 max-w-xl lg:order-2 lg:max-w-none">
-            <div className="bg-card/95 backdrop-blur-sm rounded-2xl p-5 shadow-xl border border-border/50 sm:p-6">
+            <div className="bg-card/95 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-border/50 sm:p-5">
               {CurrentIcon && (
-                <div className="flex justify-center mb-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                    <CurrentIcon className="w-6 h-6 text-primary" />
+                <div className="flex justify-center mb-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center sm:w-12 sm:h-12">
+                    <CurrentIcon className="w-5 h-5 text-primary sm:w-6 sm:h-6" />
                   </div>
                 </div>
               )}
 
-              <p className="text-base text-center text-foreground leading-relaxed min-h-[80px] sm:text-lg">
+              <p className="text-sm text-center text-foreground leading-relaxed sm:text-base sm:min-h-[60px]">
                 {displayedText}
                 {isSpeaking && <span className="animate-pulse ml-1">|</span>}
               </p>
             </div>
 
-            <div className="mt-4 flex justify-center gap-2">
+            <div className="mt-2 flex justify-center gap-2">
               {SECURITY_MESSAGES.map((_, index) => (
                 <div
                   key={index}
                   className={cn(
-                    "w-2 h-2 rounded-full transition-all duration-300",
+                    "w-1.5 h-1.5 rounded-full transition-all duration-300 sm:w-2 sm:h-2",
                     index === currentMessageIndex
-                      ? "bg-primary w-6"
+                      ? "bg-primary w-4 sm:w-6"
                       : index < currentMessageIndex
                         ? "bg-primary/60"
                         : "bg-muted"
@@ -206,13 +206,13 @@ export default function SecurityBriefing() {
               ))}
             </div>
 
-            <div className="mt-4 rounded-2xl border border-border/50 bg-card/80 p-3 backdrop-blur-sm">
+            <div className="mt-2 rounded-2xl border border-border/50 bg-card/80 p-2.5 backdrop-blur-sm sm:p-3">
               <Button
                 size="lg"
                 onClick={handleContinue}
                 disabled={!showContinue}
                 className={cn(
-                  "h-12 w-full rounded-xl text-base sm:h-14 sm:text-lg",
+                  "h-11 w-full rounded-xl text-sm sm:h-12 sm:text-base",
                   showContinue && "animate-fade-in"
                 )}
               >
@@ -220,28 +220,19 @@ export default function SecurityBriefing() {
               </Button>
 
               {!showContinue && (
-                <p className="mt-2 text-center text-xs text-muted-foreground">
+                <p className="mt-1.5 text-center text-xs text-muted-foreground">
                   Next unlocks here when SAI is ready for you.
                 </p>
               )}
             </div>
           </div>
 
-          <div className="order-2 flex min-h-[180px] flex-shrink-0 items-end justify-center lg:order-1 lg:min-h-[320px]">
-            <div className="flex flex-col items-center">
-              <FullBodySAI
-                size="lg"
-                state={saiState}
-                className="origin-bottom translate-y-2 scale-95 sm:translate-y-4 sm:scale-100"
-              />
-
-              {isWaitingForResponse && (
-                <div className="mt-4 flex items-center justify-center gap-2 text-primary animate-pulse">
-                  <div className="w-3 h-3 rounded-full bg-primary animate-ping" />
-                  <span className="text-sm">SAI is listening...</span>
-                </div>
-              )}
-            </div>
+          <div className="order-2 flex h-[130px] flex-shrink-0 items-end justify-center lg:order-1 lg:min-h-[320px]">
+            <FullBodySAI
+              size="lg"
+              state={saiState}
+              className="w-32 h-40 sm:w-52 sm:h-60 origin-bottom translate-y-1 lg:translate-y-0"
+            />
           </div>
         </div>
       </div>
