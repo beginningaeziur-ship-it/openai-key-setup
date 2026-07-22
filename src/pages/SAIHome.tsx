@@ -12,6 +12,7 @@ import { MorningCheckIn } from '@/components/checkin/MorningCheckIn';
 import { EveningCheckIn } from '@/components/checkin/EveningCheckIn';
 import { DailyTaskList } from '@/components/checkin/DailyTaskList';
 import { OnboardingResumeBanner } from '@/components/onboarding/OnboardingResumeBanner';
+import { StateIndicator } from '@/engine/StateIndicator';
 import { persistence } from '@/lib/persistence';
 import { 
   UtensilsCrossed, 
@@ -285,6 +286,8 @@ export default function SAIHome() {
           </div>
           
           <div className="flex items-center gap-2">
+            <StateIndicator />
+
             {/* Voice Toggle */}
             <Button
               variant="ghost"
