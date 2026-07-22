@@ -20,6 +20,8 @@ import { MicrophoneActivationPrompt } from "@/components/voice/MicrophoneWarning
 import { CompanionCheckIn } from "@/components/companion/CompanionCheckIn";
 import { PendingRoutinePopup } from "@/components/routines/PendingRoutinePopup";
 import { OfflineStatusBanner } from "@/components/offline/OfflineStatusBanner";
+import { StateEngineProvider } from "@/engine/StateEngineContext";
+import { StateDebugCycler } from "@/engine/StateDebugCycler";
 
 // Pages
 import Index from "./pages/Index";
@@ -49,6 +51,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AccessibilityProvider>
+      <StateEngineProvider>
       <SAIProvider>
         <EmotionalStateProvider>
           <SupportMapProvider>
@@ -110,6 +113,9 @@ const App = () => (
                               
                               {/* Microphone activation prompt */}
                               <MicrophoneActivationPrompt />
+
+                              {/* TEMPORARY debug cycler — remove once state transitions are wired to real signals */}
+                              <StateDebugCycler />
                             </TourProvider>
                           </BrowserRouter>
                           </TooltipProvider>
@@ -123,6 +129,7 @@ const App = () => (
           </SupportMapProvider>
         </EmotionalStateProvider>
       </SAIProvider>
+      </StateEngineProvider>
     </AccessibilityProvider>
   </QueryClientProvider>
 );
