@@ -88,7 +88,7 @@ const App = () => (
                                 <Route path="/sai-home" element={<SAIHome />} />
                                 <Route path="/bedroom" element={<SAIHome />} />
                                 <Route path="/dashboard" element={<Dashboard />} />
-                                <Route path="/chat" element={<Chat />} />
+                                <Route path="/chat" element={<SAIChat />} />
                                 <Route path="/settings" element={<Settings />} />
                                 <Route path="/watcher" element={<Watcher />} />
                                 <Route path="/beach" element={<BeachScene />} />
