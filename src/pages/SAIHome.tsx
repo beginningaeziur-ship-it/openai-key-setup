@@ -66,6 +66,15 @@ export default function SAIHome() {
             Hey. SAI is here.
           </h1>
           <p className="mt-3 text-lg text-white/70">{getTimeGreeting()}</p>
+          <button
+            type="button"
+            onClick={() => navigate("/chat")}
+            aria-label="Talk to SAI"
+            className="mt-6 min-h-[56px] w-full rounded-2xl text-white text-lg font-semibold px-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            style={{ backgroundColor: ACCENT }}
+          >
+            Talk to SAI
+          </button>
         </section>
 
         {/* Rooms */}
