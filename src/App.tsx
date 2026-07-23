@@ -28,7 +28,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
 import SAIRoom from "./pages/SAIRoom";
-import Chat from "./pages/Chat";
+import SAIChat from "./pages/SAIChat";
 import Settings from "./pages/Settings";
 import Watcher from "./pages/Watcher";
 
@@ -88,7 +88,7 @@ const App = () => (
                                 <Route path="/sai-home" element={<SAIHome />} />
                                 <Route path="/bedroom" element={<SAIHome />} />
                                 <Route path="/dashboard" element={<Dashboard />} />
-                                <Route path="/chat" element={<Chat />} />
+                                <Route path="/chat" element={<SAIChat />} />
                                 <Route path="/settings" element={<Settings />} />
                                 <Route path="/watcher" element={<Watcher />} />
                                 <Route path="/beach" element={<BeachScene />} />
