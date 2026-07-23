@@ -114,8 +114,8 @@ const App = () => (
                               {/* Microphone activation prompt */}
                               <MicrophoneActivationPrompt />
 
-                              {/* TEMPORARY debug cycler — remove once state transitions are wired to real signals */}
-                              <StateDebugCycler />
+                              {/* Dev-only state cycler */}
+                              {import.meta.env.DEV && <StateDebugCycler />}
                             </TourProvider>
                           </BrowserRouter>
                           </TooltipProvider>
