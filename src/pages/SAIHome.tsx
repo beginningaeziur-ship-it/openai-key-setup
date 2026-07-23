@@ -1,442 +1,140 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { FullBodySAI } from '@/components/sai/FullBodySAI';
-import { useVoiceSettings } from '@/contexts/VoiceSettingsContext';
-import { useServiceDog } from '@/contexts/ServiceDogContext';
-import { useSAI } from '@/contexts/SAIContext';
-import { useSAINarrator } from '@/contexts/SAINarratorContext';
-import { useSAIDailyEngine } from '@/contexts/SAIDailyEngineContext';
-import { MorningCheckIn } from '@/components/checkin/MorningCheckIn';
-import { EveningCheckIn } from '@/components/checkin/EveningCheckIn';
-import { DailyTaskList } from '@/components/checkin/DailyTaskList';
-import { OnboardingResumeBanner } from '@/components/onboarding/OnboardingResumeBanner';
-import { StateIndicator } from '@/engine/StateIndicator';
-import { persistence } from '@/lib/persistence';
-import { 
-  UtensilsCrossed, 
-  Droplets, 
-  TreePine, 
-  Heart,
-  Volume2,
-  VolumeX,
-  Settings,
-  Home,
-  Wrench,
-  BookOpen,
-  Trees,
-  MessageCircle,
-  Menu,
-  X,
-  Sun,
-  Moon
-} from 'lucide-react';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { StateIndicator } from "@/engine/StateIndicator";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from '@/components/ui/dropdown-menu';
-import cozyBedroomBg from '@/assets/cozy-bedroom-bg.jpg';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 /**
- * SAIHome - Main interactive space with SAI
- * 
- * Features:
- * - Morning and evening check-ins
- * - Daily task management
- * - Voice toggle (text shows when voice off)
- * - Care actions: feed, water, take outside
- * - Navigation menu to different scenes
+ * SAIHome — Safe, accessible home screen.
+ * Dark background, teal accent, high-contrast white text.
+ * Persistent SOS at bottom center. Dev-only debug lives in App.tsx.
  */
 
-interface CareAction {
-  id: 'food' | 'water' | 'outside';
-  label: string;
-  icon: typeof UtensilsCrossed;
-  needKey: 'food' | 'water' | 'movement';
+const BG = "#0A1628";
+const ACCENT = "#028090";
+
+function getTimeGreeting(): string {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return "Good morning";
+  if (h >= 12 && h < 17) return "Good afternoon";
+  if (h >= 17 && h < 22) return "Good evening";
+  return "You're up late.";
 }
 
-const CARE_ACTIONS: CareAction[] = [
-  { id: 'food', label: 'Feed', icon: UtensilsCrossed, needKey: 'food' },
-  { id: 'water', label: 'Water', icon: Droplets, needKey: 'water' },
-  { id: 'outside', label: 'Outside', icon: TreePine, needKey: 'movement' },
-];
+interface Room {
+  id: string;
+  emoji: string;
+  label: string;
+  sub: string;
+  route: string;
+}
 
-// AEZUIR Room System - LOCKED 4 ITEMS (Clean dropdown, no overflow)
-// Safe House = goals/schedule/check-ins/safety plan
-// Ocean = tools (grounding, meditation, journaling)
-// Forest = resources (zip code search)
-// Cabin = settings/privacy/export/reset
-const SCENES = [
-  { id: 'bedroom', label: 'Safe House (Bedroom)', icon: Heart, route: '/sai-home' },
-  { id: 'ocean', label: 'Ocean (Tools)', icon: Wrench, route: '/beach' },
-  { id: 'forest', label: 'Forest (Resources)', icon: Trees, route: '/forest' },
-  { id: 'cabin', label: 'Cabin (Settings)', icon: Settings, route: '/settings' },
-];
-
-const GREETINGS = [
-  "I'm here with you.",
-  "It's good to see you.",
-  "Take your time, I'm not going anywhere.",
-  "How are you feeling today?",
-  "I'm glad you're here.",
+const ROOMS: Room[] = [
+  { id: "bedroom", emoji: "🛏️", label: "Bedroom", sub: "Daily grounding", route: "/bedroom" },
+  { id: "ocean", emoji: "🌊", label: "Ocean", sub: "Calm & regulate", route: "/beach" },
+  { id: "forest", emoji: "🌲", label: "Forest", sub: "Goals & learning", route: "/forest" },
+  { id: "cabin", emoji: "🏡", label: "Cabin", sub: "Settings", route: "/settings" },
 ];
 
 export default function SAIHome() {
   const navigate = useNavigate();
-  const { speak, isSpeaking, voiceEnabled, setVoiceEnabled, stopSpeaking } = useVoiceSettings();
-  const { fulfillNeed, dogState } = useServiceDog();
-  const { userProfile } = useSAI();
-  const { startListeningWindow, isListening } = useSAINarrator();
-  const { 
-    needsMorningCheckIn, 
-    needsEveningCheckIn, 
-    todaysTasks,
-    todaysFocus,
-    morningCheckInComplete 
-  } = useSAIDailyEngine();
-  
-  const saiName = userProfile?.saiNickname || 'SAI';
-  const userName = userProfile?.nickname || 'Friend';
-  
-  const [currentMessage, setCurrentMessage] = useState('');
-  const [showMenu, setShowMenu] = useState(false);
-  const [lastCareAction, setLastCareAction] = useState<string | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [showMorningCheckIn, setShowMorningCheckIn] = useState(false);
-  const [showEveningCheckIn, setShowEveningCheckIn] = useState(false);
-  const hasGreetedRef = useRef(false);
-
-  // AEZUIR: Mark that user has reached Safe House (enables mic option)
-  useEffect(() => {
-    localStorage.setItem('sai_reached_safe_house', 'true');
-    persistence.setIsSafeHouseUnlocked(true);
-    persistence.setLastVisitedRoom('bedroom');
-  }, []);
-
-  // Get random greeting
-  const getGreeting = useCallback(() => {
-    const greeting = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
-    return `${greeting}`;
-  }, []);
-
-  // Prompt for check-in on mount if needed
-  useEffect(() => {
-    if (!isInitialized && !hasGreetedRef.current) {
-      hasGreetedRef.current = true;
-      
-      // Check if we need morning or evening check-in
-      if (needsMorningCheckIn) {
-        setShowMorningCheckIn(true);
-      } else if (needsEveningCheckIn) {
-        setShowEveningCheckIn(true);
-      } else {
-        const greeting = getGreeting();
-        setCurrentMessage(greeting);
-        if (voiceEnabled) {
-          speak(greeting);
-        }
-      }
-      
-      setTimeout(() => setIsInitialized(true), 500);
-    }
-  }, [isInitialized, voiceEnabled, speak, getGreeting, needsMorningCheckIn, needsEveningCheckIn]);
-
-  // Handle care action with consent-based language
-  const handleCareAction = useCallback(async (action: CareAction) => {
-    fulfillNeed(action.needKey);
-    
-    // Consent-based, gentle responses
-    const gentleResponses: Record<string, string[]> = {
-      food: [
-        `If you'd like, we can think about nourishment together.`,
-        `Eating can be hard sometimes. No pressure here.`,
-        `When you're ready, we can talk about food in a way that feels manageable.`,
-      ],
-      water: [
-        `Hydration can help. No pressure, just a gentle reminder.`,
-        `Water is here when you're ready.`,
-      ],
-      outside: [
-        `If your body feels ready, fresh air can help. Only if it feels right.`,
-        `Movement is here when you want it. No rush.`,
-      ],
-    };
-    
-    const responses = gentleResponses[action.id];
-    const message = responses[Math.floor(Math.random() * responses.length)];
-    setCurrentMessage(message);
-    setLastCareAction(action.id);
-    
-    if (voiceEnabled) {
-      await speak(message);
-    }
-    
-    // Clear action highlight after a moment
-    setTimeout(() => setLastCareAction(null), 2000);
-  }, [fulfillNeed, voiceEnabled, speak]);
-
-  // Toggle voice on/off
-  const handleVoiceToggle = useCallback(() => {
-    if (voiceEnabled) {
-      stopSpeaking();
-    }
-    setVoiceEnabled(!voiceEnabled);
-    
-    const message = !voiceEnabled 
-      ? "Voice enabled. I'll speak to you now."
-      : "Voice disabled. My words will appear here instead.";
-    setCurrentMessage(message);
-    
-    if (!voiceEnabled) {
-      // Will speak since we're enabling
-      setTimeout(() => speak(message), 100);
-    }
-  }, [voiceEnabled, setVoiceEnabled, stopSpeaking, speak]);
-
-  // Navigate to chat
-  const handleTalkToSAI = useCallback(() => {
-    navigate('/chat');
-  }, [navigate]);
-
-  // Navigate to a scene
-  const handleSceneNavigate = (route: string) => {
-    setShowMenu(false);
-    if (route.startsWith('/')) {
-      navigate(route);
-    }
-  };
-
-  // Handle check-in completion
-  const handleMorningCheckInComplete = useCallback(() => {
-    setShowMorningCheckIn(false);
-    const message = "You've got this. I'm here with you.";
-    setCurrentMessage(message);
-    if (voiceEnabled) {
-      speak(message);
-    }
-  }, [voiceEnabled, speak]);
-
-  const handleEveningCheckInComplete = useCallback(() => {
-    setShowEveningCheckIn(false);
-    const message = "Rest well. I'll be here tomorrow.";
-    setCurrentMessage(message);
-    if (voiceEnabled) {
-      speak(message);
-    }
-  }, [voiceEnabled, speak]);
-
-  // Determine SAI state
-  const getSAIState = () => {
-    if (isSpeaking) return 'speaking';
-    if (isListening) return 'listening';
-    return 'attentive';
-  };
-
-  // Get time-based indicator
-  const getTimeIcon = () => {
-    const hour = new Date().getHours();
-    if (hour >= 6 && hour < 18) {
-      return <Sun className="w-4 h-4 text-amber-500" />;
-    }
-    return <Moon className="w-4 h-4 text-indigo-400" />;
-  };
+  const [sosOpen, setSosOpen] = useState(false);
 
   return (
-    <>
-      {/* Onboarding resume banner (shows if skipped) */}
-      <OnboardingResumeBanner />
-      
-      {/* Check-in Modals */}
-      {showMorningCheckIn && (
-        <MorningCheckIn onComplete={handleMorningCheckInComplete} />
-      )}
-      {showEveningCheckIn && (
-        <EveningCheckIn onComplete={handleEveningCheckInComplete} />
-      )}
-
-      <div 
-        className="min-h-screen relative flex flex-col"
-        style={{
-          backgroundImage: `url(${cozyBedroomBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
-      
+    <div
+      className="min-h-dvh flex flex-col text-white"
+      style={{ backgroundColor: BG }}
+    >
       {/* Header */}
-      <header className="relative z-20 bg-card/30 backdrop-blur-sm border-b border-border/20">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-              {getTimeIcon()}
-            </div>
-            <div>
-              <span className="font-display font-semibold text-foreground">Safe Home</span>
-              {morningCheckInComplete && todaysFocus && (
-                <p className="text-xs text-muted-foreground">{todaysFocus.icon} {todaysFocus.label}</p>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <StateIndicator />
-
-            {/* Voice Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleVoiceToggle}
-              className={cn(
-                "text-foreground/70 hover:text-foreground transition-all",
-                voiceEnabled && "text-primary"
-              )}
-            >
-              {voiceEnabled ? (
-                <Volume2 className="w-5 h-5" />
-              ) : (
-                <VolumeX className="w-5 h-5" />
-              )}
-            </Button>
-            
-            {/* Navigation Menu */}
-            <DropdownMenu open={showMenu} onOpenChange={setShowMenu}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-foreground/70 hover:text-foreground"
-                >
-                  {showMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-card/95 backdrop-blur-md border-border shadow-xl z-50">
-                <DropdownMenuLabel>Navigate To</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {SCENES.map((scene) => {
-                  const Icon = scene.icon;
-                  return (
-                    <DropdownMenuItem
-                      key={scene.id}
-                      onClick={() => handleSceneNavigate(scene.route)}
-                      className="gap-3 cursor-pointer"
-                    >
-                      <Icon className="w-4 h-4" />
-                      {scene.label}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
+      <header className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <span className="text-sm font-medium text-white/70">SAI</span>
+        <StateIndicator />
       </header>
 
-      {/* Main Content */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-end pb-8 p-4">
-        <div className="max-w-lg mx-auto w-full flex flex-col items-center">
-          
-          {/* SAI Dog - positioned lower to sit on floor */}
-          <div className="mb-2">
-            <FullBodySAI 
-              size="xl" 
-              state={getSAIState()}
-              showBreathing={!isSpeaking}
-            />
-          </div>
-
-          {/* Speech Bubble / Text Display */}
-          <div className={cn(
-            "bg-card/90 backdrop-blur-sm rounded-xl p-5 mb-4 border border-border/50 max-w-md w-full",
-            "transition-all duration-300",
-            currentMessage ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-          )}>
-            <p className="text-foreground text-lg leading-relaxed text-center">
-              {currentMessage}
-              {isSpeaking && <span className="animate-pulse ml-1">|</span>}
-            </p>
-            {!voiceEnabled && currentMessage && (
-              <p className="text-muted-foreground text-xs text-center mt-2">
-                (Voice is off - text only)
-              </p>
-            )}
-          </div>
-
-          {/* Talk to SAI Button */}
-          <Button
-            onClick={handleTalkToSAI}
-            size="lg"
-            className="h-12 px-6 rounded-2xl text-base shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all mb-4"
+      <main className="flex-1 flex flex-col px-5 pt-8 pb-40 max-w-xl w-full mx-auto">
+        {/* Greeting */}
+        <section aria-labelledby="sai-greeting" className="mb-10">
+          <h1
+            id="sai-greeting"
+            className="text-4xl sm:text-5xl font-semibold tracking-tight"
           >
-            <MessageCircle className="w-5 h-5 mr-2" />
-            Talk to {saiName}
-          </Button>
+            Hey. SAI is here.
+          </h1>
+          <p className="mt-3 text-lg text-white/70">{getTimeGreeting()}</p>
+        </section>
 
-          {/* Daily Tasks (if morning check-in done) */}
-          {morningCheckInComplete && todaysTasks.length > 0 && (
-            <div className="w-full max-w-xs mb-4">
-              <DailyTaskList compact />
-            </div>
-          )}
-
-          {/* Care Actions */}
-          <div className="grid grid-cols-3 gap-3 w-full max-w-xs">
-            {CARE_ACTIONS.map((action) => {
-              const Icon = action.icon;
-              const needLevel = dogState.needLevels[action.needKey] || 100;
-              const isLow = needLevel < 40;
-              const wasJustUsed = lastCareAction === action.id;
-              
-              return (
-                <Button
-                  key={action.id}
-                  variant={wasJustUsed ? "default" : isLow ? "secondary" : "outline"}
-                  size="lg"
-                  className={cn(
-                    "h-24 flex-col gap-1 transition-all relative",
-                    wasJustUsed && "ring-2 ring-primary ring-offset-2",
-                    isLow && "animate-pulse"
-                  )}
-                  onClick={() => handleCareAction(action)}
-                  disabled={isSpeaking}
-                >
-                  <Icon className={cn(
-                    "w-6 h-6",
-                    wasJustUsed && "text-primary-foreground"
-                  )} />
-                  <span className="text-xs">{action.label}</span>
-                  <span className="text-[10px] text-muted-foreground">Skipping is okay</span>
-                  
-                  {/* Need indicator */}
-                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className={cn(
-                        "h-full transition-all",
-                        needLevel > 60 ? "bg-progress-stable" : 
-                        needLevel > 30 ? "bg-progress-attention" : 
-                        "bg-destructive"
-                      )}
-                      style={{ width: `${needLevel}%` }}
-                    />
-                  </div>
-                </Button>
-              );
-            })}
-          </div>
-
-          {/* Gentle reminder */}
-          <p className="text-foreground/40 text-xs mt-4 text-center max-w-xs">
-            Take your time. {saiName} is always here.
-          </p>
-        </div>
+        {/* Rooms */}
+        <nav aria-label="Rooms" className="flex flex-col gap-3">
+          {ROOMS.map((room) => (
+            <button
+              key={room.id}
+              type="button"
+              role="button"
+              aria-label={`${room.label} — ${room.sub}`}
+              onClick={() => navigate(room.route)}
+              className="min-h-[72px] w-full flex items-center gap-4 px-5 rounded-2xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A1628] transition-colors text-left"
+              style={{ ["--tw-ring-color" as string]: ACCENT }}
+            >
+              <span aria-hidden="true" className="text-3xl">
+                {room.emoji}
+              </span>
+              <span className="flex flex-col">
+                <span className="text-lg font-medium">{room.label}</span>
+                <span className="text-sm text-white/60">{room.sub}</span>
+              </span>
+            </button>
+          ))}
+        </nav>
       </main>
+
+      {/* SOS — always visible */}
+      <div className="fixed bottom-0 inset-x-0 pb-[max(env(safe-area-inset-bottom),1rem)] pt-3 px-4 flex justify-center pointer-events-none z-50">
+        <button
+          type="button"
+          aria-label="SOS — get immediate help"
+          onClick={() => setSosOpen(true)}
+          className="pointer-events-auto min-h-[64px] px-10 rounded-full bg-red-600 hover:bg-red-700 text-white text-xl font-bold shadow-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60"
+        >
+          SOS
+        </button>
+      </div>
+
+      <Dialog open={sosOpen} onOpenChange={setSosOpen}>
+        <DialogContent className="bg-[#0A1628] border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">You're not alone.</DialogTitle>
+            <DialogDescription className="text-white/70">
+              Choose one.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-2">
+            <a
+              href="tel:988"
+              className="min-h-[64px] flex items-center justify-center rounded-2xl bg-red-600 hover:bg-red-700 text-white text-lg font-semibold px-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              aria-label="Call a crisis counselor at 988"
+            >
+              Talk to a crisis counselor (988)
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                setSosOpen(false);
+                navigate("/onboarding/safety-plan");
+              }}
+              className="min-h-[64px] rounded-2xl text-white text-lg font-semibold px-5 focus:outline-none focus-visible:ring-2"
+              style={{ backgroundColor: ACCENT }}
+              aria-label="Build an immediate safety plan"
+            >
+              Build an immediate safety plan
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
-    </>
   );
 }
