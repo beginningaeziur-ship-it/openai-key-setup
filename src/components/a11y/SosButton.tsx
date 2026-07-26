@@ -39,7 +39,7 @@ export function SosButton({ onSafetyPlan, children }: SosButtonProps) {
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
     // Return focus to the trigger when the dialog closes.
-    if (!next) window.setTimeout(() => triggerRef.current?.focus(), 0);
+    if (!next) window.setTimeout(() => triggerRef.current?.focus(), 120);
   };
 
   return (
