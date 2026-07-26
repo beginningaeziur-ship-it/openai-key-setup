@@ -49,17 +49,26 @@ export const GlobalMicButton: React.FC<GlobalMicButtonProps> = ({
 
   const isActive = isMicEnabled && !isMicMuted;
 
+  const micLabel = !isMicEnabled
+    ? 'Microphone off, tap to enable'
+    : isMicMuted
+      ? 'Microphone muted, tap to unmute'
+      : 'Microphone on, tap to mute';
+
   if (variant === 'floating') {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            type="button"
+            aria-label={micLabel}
+            aria-pressed={isActive}
             onClick={handleClick}
             className={cn(
-              "fixed bottom-6 right-6 z-50 rounded-full shadow-lg",
+              "fixed bottom-6 right-6 z-[60] rounded-full shadow-lg",
               "transition-all duration-300 transform hover:scale-105",
               "flex items-center justify-center",
-              sizeClasses.lg,
+              'min-h-[48px] min-w-[48px]',
               isActive
                 ? "bg-primary text-primary-foreground shadow-primary/30"
                 : "bg-card text-muted-foreground border border-border hover:text-foreground",
@@ -68,13 +77,13 @@ export const GlobalMicButton: React.FC<GlobalMicButtonProps> = ({
             )}
           >
             {isActive ? (
-              <Mic className={iconSizes.lg} />
+              <Mic className={iconSizes.lg} aria-hidden="true" />
             ) : (
-              <MicOff className={iconSizes.lg} />
+              <MicOff className={iconSizes.lg} aria-hidden="true" />
             )}
             {/* Active listening indicator */}
             {isListening && (
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background animate-pulse" />
+              <span aria-hidden="true" className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background animate-pulse" />
             )}
           </button>
         </TooltipTrigger>
@@ -93,11 +102,14 @@ export const GlobalMicButton: React.FC<GlobalMicButtonProps> = ({
     <Tooltip>
       <TooltipTrigger asChild>
         <button
+          type="button"
+          aria-label={micLabel}
+          aria-pressed={isActive}
           onClick={handleClick}
           className={cn(
             "rounded-full transition-all duration-300",
             "flex items-center justify-center",
-            sizeClasses[size],
+            'min-h-[48px] min-w-[48px]',
             isActive
               ? "bg-primary/20 text-primary hover:bg-primary/30"
               : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -106,13 +118,13 @@ export const GlobalMicButton: React.FC<GlobalMicButtonProps> = ({
           )}
         >
           {isActive ? (
-            <Mic className={iconSizes[size]} />
+            <Mic className={iconSizes[size]} aria-hidden="true" />
           ) : (
-            <MicOff className={iconSizes[size]} />
+            <MicOff className={iconSizes[size]} aria-hidden="true" />
           )}
           {/* Active listening indicator */}
           {isListening && (
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
           )}
         </button>
       </TooltipTrigger>
