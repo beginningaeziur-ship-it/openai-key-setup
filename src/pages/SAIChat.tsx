@@ -94,7 +94,7 @@ export default function SAIChat() {
 
     if (nextMode === "crisis") {
       pushSai("I'm right here. You're not alone. Choose one.");
-      setSosOpen(true);
+      openSOS();
       return;
     }
 
