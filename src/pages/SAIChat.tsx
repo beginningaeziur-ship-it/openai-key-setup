@@ -5,13 +5,10 @@ import { StateIndicator } from "@/engine/StateIndicator";
 import { useAppState } from "@/engine/StateEngineContext";
 import { detectMode, ventReply, type ChatMode } from "@/lib/ventMode";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { SosButton } from "@/components/a11y/SosButton";
+import { LoadingSpinner } from "@/components/a11y/LoadingSpinner";
+import { usePageTitle } from "@/hooks/usePageTitle";
+import { useGlobalA11yShortcuts } from "@/hooks/useGlobalA11yShortcuts";
 
 const BG = "#0A1628";
 const ACCENT = "#028090";
@@ -26,6 +23,8 @@ const uid = () => Math.random().toString(36).slice(2);
 
 export default function SAIChat() {
   const navigate = useNavigate();
+  usePageTitle("SAI - Chat");
+  useGlobalA11yShortcuts();
   const { uiConfig } = useAppState();
   const [messages, setMessages] = useState<Msg[]>([
     { id: uid(), role: "sai", text: "I'm here. Say whatever you need." },
@@ -33,8 +32,8 @@ export default function SAIChat() {
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<ChatMode>("normal");
   const [sending, setSending] = useState(false);
-  const [sosOpen, setSosOpen] = useState(false);
   const [safetyPlan, setSafetyPlan] = useState("");
+
 
   const listRef = useRef<HTMLUListElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
