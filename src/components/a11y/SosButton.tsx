@@ -36,10 +36,13 @@ export function SosButton({ onSafetyPlan, children }: SosButtonProps) {
     return () => document.removeEventListener(SOS_EVENT, handler);
   }, []);
 
+  const setOpenState = (_next: boolean) => {
+    // Focus restoration is handled by onCloseAutoFocus below.
+  };
+
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
-    // Return focus to the trigger when the dialog closes.
-    if (!next) window.setTimeout(() => triggerRef.current?.focus(), 120);
+    setOpenState(next);
   };
 
   return (
@@ -64,6 +67,10 @@ export function SosButton({ onSafetyPlan, children }: SosButtonProps) {
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            triggerRef.current?.focus();
+          }}
           className="border-white/20 text-white"
           style={{ backgroundColor: BG, zIndex: 10000 }}
         >
