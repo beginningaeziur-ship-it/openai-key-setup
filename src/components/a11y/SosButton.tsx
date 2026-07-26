@@ -36,14 +36,10 @@ export function SosButton({ onSafetyPlan, children }: SosButtonProps) {
     return () => document.removeEventListener(SOS_EVENT, handler);
   }, []);
 
-  const setOpenState = (_next: boolean) => {
-    // Focus restoration is handled by onCloseAutoFocus below.
-  };
-
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
-    setOpenState(next);
   };
+
 
   return (
     <>
