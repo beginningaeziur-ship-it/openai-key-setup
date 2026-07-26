@@ -125,17 +125,20 @@ export default function SAIChat() {
   return (
     <div className="min-h-dvh flex flex-col text-white" style={{ backgroundColor: BG }}>
       {/* Header */}
-      <header className="flex items-center justify-between px-3 py-3 border-b border-white/10 sticky top-0 bg-[#0A1628]/95 backdrop-blur z-30">
+      <header className="flex items-center justify-between px-3 py-3 border-b border-white/15 sticky top-0 bg-[#0A1628]/95 backdrop-blur z-30">
         <Link
           to="/sai-home"
           aria-label="Back to home"
-          className="p-2 -ml-2 rounded-lg hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+          className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-lg hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
         >
-          <ArrowLeft className="w-5 h-5" aria-hidden="true" />
+          <ArrowLeft className="w-6 h-6" aria-hidden="true" />
         </Link>
-        <h1 className="text-lg font-semibold">SAI</h1>
+        <h1 className="text-xl font-semibold">SAI</h1>
         <StateIndicator />
       </header>
+
+      <main role="main" aria-label="Chat with SAI" className="flex-1 flex flex-col">
+
 
       {/* Vent mode indicator */}
       {mode === "vent" && (
