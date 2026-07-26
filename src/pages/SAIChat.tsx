@@ -262,47 +262,14 @@ export default function SAIChat() {
         </form>
       )}
 
-      {/* SOS — always visible */}
-      <div className="fixed bottom-0 inset-x-0 pb-[max(env(safe-area-inset-bottom),1rem)] pt-3 px-4 flex justify-center pointer-events-none z-40">
-        <button
-          type="button"
-          aria-label="SOS — get immediate help"
-          onClick={() => setSosOpen(true)}
-          className="pointer-events-auto min-h-[56px] px-8 rounded-full bg-red-600 hover:bg-red-700 text-white text-lg font-bold shadow-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60"
-        >
-          SOS
-        </button>
-      </div>
-
-      <Dialog open={sosOpen} onOpenChange={setSosOpen}>
-        <DialogContent className="bg-[#0A1628] border-white/10 text-white">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">You're not alone.</DialogTitle>
-            <DialogDescription className="text-white/70">Choose one.</DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-3 mt-2">
-            <a
-              href="tel:988"
-              className="min-h-[64px] flex items-center justify-center rounded-2xl bg-red-600 hover:bg-red-700 text-white text-lg font-semibold px-5"
-              aria-label="Call a crisis counselor at 988"
-            >
-              Talk to a crisis counselor (988)
-            </a>
-            <button
-              type="button"
-              onClick={() => {
-                setSosOpen(false);
-                setMode("crisis");
-                pushSai("Let's make a plan together, right now.");
-              }}
-              className="min-h-[64px] rounded-2xl text-white text-lg font-semibold px-5"
-              style={{ backgroundColor: ACCENT }}
-            >
-              Build an immediate safety plan
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* SOS — rendered last so it is the final element in tab order */}
+      <SosButton
+        onSafetyPlan={() => {
+          setMode("crisis");
+          pushSai("Let's make a plan together, right now.");
+        }}
+      />
     </div>
   );
 }
+
