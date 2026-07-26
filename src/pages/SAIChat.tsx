@@ -206,8 +206,8 @@ export default function SAIChat() {
           >
             Talk to a crisis counselor (988)
           </a>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-            <label htmlFor="crisis-plan" className="block text-sm text-white/70 mb-2">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.06] p-3">
+            <label htmlFor="crisis-plan" className="block text-base text-[#B0BEC5] mb-2">
               Build an immediate safety plan — type any steps that help right now.
             </label>
             <textarea
@@ -215,11 +215,10 @@ export default function SAIChat() {
               value={safetyPlan}
               onChange={(e) => setSafetyPlan(e.target.value)}
               rows={4}
-              className="w-full rounded-lg bg-[#0A1628] border border-white/15 p-3 text-white text-[18px] focus:outline-none focus-visible:ring-2"
+              className="w-full rounded-lg bg-[#0A1628] border border-white/20 p-3 text-white text-[18px] focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
               placeholder="One safe person I can text. One place I can go. One thing I can do with my hands."
-              aria-label="Your safety plan"
             />
-            <p className="text-xs text-white/50 mt-2">
+            <p className="text-base text-[#B0BEC5] mt-2">
               This stays on your device unless you choose to save it.
             </p>
           </div>
@@ -229,10 +228,11 @@ export default function SAIChat() {
               setMode("normal");
               pushSai("Okay. I'm still here. Take it slow.");
             }}
-            className="text-white/60 text-sm underline underline-offset-4 hover:text-white/90 focus:outline-none focus-visible:ring-2 rounded"
+            className="min-h-[48px] text-[#B0BEC5] text-base underline underline-offset-4 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
           >
             I'm feeling calmer — exit crisis mode
           </button>
+
         </div>
       ) : (
         <form
