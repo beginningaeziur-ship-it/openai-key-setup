@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SosButton } from "@/components/a11y/SosButton";
 import { LoadingSpinner } from "@/components/a11y/LoadingSpinner";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { useGlobalA11yShortcuts } from "@/hooks/useGlobalA11yShortcuts";
+import { useGlobalA11yShortcuts, openSOS } from "@/hooks/useGlobalA11yShortcuts";
 
 const BG = "#0A1628";
 const ACCENT = "#028090";
