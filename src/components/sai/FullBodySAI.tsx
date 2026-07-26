@@ -61,11 +61,17 @@ export function FullBodySAI({
   const earRotation = getEarRotation();
 
   return (
-    <div className={cn(
-      'relative flex items-end justify-center',
-      sizeConfig[size],
-      className
-    )}>
+    <div
+      aria-hidden="true"
+      role="presentation"
+      tabIndex={-1}
+      className={cn(
+        'relative flex items-end justify-center pointer-events-none select-none',
+        sizeConfig[size],
+        className
+      )}
+    >
+
       {/* Ground shadow */}
       <div 
         className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-4 bg-black/20 rounded-full blur-md"
