@@ -142,8 +142,8 @@ export default function SAIChat() {
         <div
           role="status"
           aria-live="polite"
-          className="mx-auto mt-3 px-3 py-1 rounded-full text-xs font-medium border"
-          style={{ color: ACCENT, borderColor: `${ACCENT}66`, backgroundColor: `${ACCENT}1A` }}
+          className="mx-auto mt-3 px-4 py-2 rounded-full text-base font-medium border"
+          style={{ color: "#7FD8E0", borderColor: `${ACCENT}99`, backgroundColor: `${ACCENT}33` }}
         >
           Listening mode
         </div>
@@ -152,7 +152,7 @@ export default function SAIChat() {
         <div
           role="status"
           aria-live="assertive"
-          className="mx-auto mt-3 px-3 py-1 rounded-full text-xs font-semibold bg-red-600/20 text-red-200 border border-red-500/50"
+          className="mx-auto mt-3 px-4 py-2 rounded-full text-base font-semibold bg-red-600/30 text-red-100 border border-red-400"
         >
           You matter. Choose one option below.
         </div>
@@ -161,10 +161,12 @@ export default function SAIChat() {
       {/* Messages */}
       <ul
         ref={listRef}
-        role="list"
+        role="log"
+        aria-live="polite"
         aria-label="Conversation with SAI"
         className="flex-1 overflow-y-auto px-4 py-4 space-y-3 max-w-2xl w-full mx-auto"
       >
+
         {messages.map((m) => (
           <li
             key={m.id}
@@ -185,12 +187,13 @@ export default function SAIChat() {
         ))}
         {sending && (
           <li role="listitem" className="flex justify-start">
-            <div className="rounded-2xl px-4 py-3 text-white/60 text-[18px] bg-white/[0.04] border border-white/10">
-              …
+            <div className="rounded-2xl px-4 py-3 bg-white/[0.06] border border-white/15">
+              <LoadingSpinner label="SAI is thinking" />
             </div>
           </li>
         )}
       </ul>
+
 
       {/* Crisis lock: hide input, show only 2 options */}
       {mode === "crisis" ? (
