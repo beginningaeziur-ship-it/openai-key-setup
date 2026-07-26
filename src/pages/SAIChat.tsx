@@ -259,13 +259,15 @@ export default function SAIChat() {
               className="min-h-[52px] min-w-[52px] flex items-center justify-center rounded-2xl text-white disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
               style={{ backgroundColor: ACCENT }}
             >
-              <Send className="w-5 h-5" aria-hidden="true" />
+              <Send className="w-6 h-6" aria-hidden="true" />
             </button>
           </div>
         </form>
       )}
+      </main>
 
       {/* SOS — rendered last so it is the final element in tab order */}
+
       <SosButton
         onSafetyPlan={() => {
           setMode("crisis");
