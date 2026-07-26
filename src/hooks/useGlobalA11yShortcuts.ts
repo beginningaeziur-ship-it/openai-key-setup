@@ -30,16 +30,24 @@ export function useGlobalA11yShortcuts(homePath = '/sai-home') {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let lastDialogSeenAt = 0;
+
     const onKeyDown = (e: KeyboardEvent) => {
-      const dialogOpen = !!document.querySelector('[role="dialog"][data-state="open"]');
+      const dialogOpen = !!document.querySelector(
+        '[role="dialog"],[role="alertdialog"]'
+      );
+      if (dialogOpen) lastDialogSeenAt = Date.now();
+      // A dialog closing on this same Escape must not also navigate home.
+      const dialogJustClosed = Date.now() - lastDialogSeenAt < 400;
 
       if (e.key === 'Escape') {
-        if (dialogOpen || isTypingTarget(e.target)) return;
+        if (dialogOpen || dialogJustClosed || isTypingTarget(e.target)) return;
         if (window.location.pathname !== homePath) {
           navigate(homePath);
         }
         return;
       }
+
 
       if ((e.key === 's' || e.key === 'S') && !e.metaKey && !e.ctrlKey && !e.altKey) {
         if (dialogOpen || isTypingTarget(e.target)) return;
