@@ -136,15 +136,16 @@ export default function WaitingRoom() {
         className="pointer-events-none absolute inset-x-0 bottom-0 h-[38vh] bg-gradient-to-t from-black/70 via-black/35 to-transparent"
       />
 
-      {/* Decorative SAI — background layer, offset to the left, paws on the floor line */}
+      {/* Decorative SAI — sits on the floor band at the bottom-left of the room.
+          Reserved space below the UI means he can never overlap a control. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 left-0 z-0 flex items-end sm:left-2"
+        className="pointer-events-none absolute bottom-0 left-2 z-0 flex items-end sm:left-6"
       >
         <FullBodySAI
           size="lg"
           state={saiState}
-          className="w-24 h-32 origin-bottom opacity-90 sm:w-40 sm:h-52 lg:w-56 lg:h-64"
+          className="w-[92px] h-[104px] origin-bottom sm:w-[150px] sm:h-[168px]"
         />
       </div>
 
@@ -184,7 +185,7 @@ export default function WaitingRoom() {
       <main
         role="main"
         aria-label="SAI waiting room"
-        className="relative z-10 flex min-h-dvh flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-16 sm:px-6 sm:pt-20"
+        className="relative z-10 flex min-h-dvh flex-col px-4 pt-16 pb-[calc(env(safe-area-inset-bottom)+112px)] sm:px-6 sm:pt-20 sm:pb-[calc(env(safe-area-inset-bottom)+176px)]"
       >
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-end">
           {isWaitingForResponse && (
