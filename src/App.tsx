@@ -67,6 +67,9 @@ const App = () => (
                           <Sonner />
                           <BrowserRouter>
                             <TourProvider>
+                              {/* Global floating mic — rendered before routes so the
+                                  page's SOS button stays last in tab order */}
+                              <GlobalMicButton variant="floating" />
                               <Routes>
                                 {/* Main entry - logo splash */}
                                 <Route path="/" element={<Index />} />
@@ -98,9 +101,6 @@ const App = () => (
                                 {/* Catch-all */}
                                 <Route path="*" element={<NotFound />} />
                               </Routes>
-                              
-                              {/* Global floating mic button */}
-                              <GlobalMicButton variant="floating" />
                               
                               {/* Companion check-in */}
                               <CompanionCheckIn />

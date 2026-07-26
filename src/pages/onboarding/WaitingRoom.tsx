@@ -4,14 +4,20 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { FullBodySAI } from '@/components/sai/FullBodySAI';
 import { useSpeakThenListen } from '@/hooks/useSpeakThenListen';
-import { Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
+import { usePageTitle } from '@/hooks/usePageTitle';
+import { Volume2, VolumeX, Mic } from 'lucide-react';
 import comfortWaitingBg from '@/assets/comfort-waiting-bg.jpg';
 
 /**
  * WaitingRoom - First screen where SAI appears
- * 
- * SAI speaks intro messages with voice
- * Mic ONLY activates after SAI finishes speaking and asks a question
+ *
+ * SAI speaks intro messages with voice.
+ * Mic ONLY activates after SAI finishes speaking and asks a question.
+ *
+ * Layout rules (accessibility):
+ * - SAI sits on the floor plane of the room (bottom-left), never floating.
+ * - SAI is a decorative background layer (z-0, aria-hidden, pointer-events-none).
+ * - All interactive controls live in a z-10 column and always render ABOVE SAI.
  */
 
 const INTRO_MESSAGES = [
@@ -25,35 +31,34 @@ const INTRO_MESSAGES = [
 
 export default function WaitingRoom() {
   const navigate = useNavigate();
-  
+  usePageTitle('SAI - Waiting Room');
+
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState('');
   const [showContinue, setShowContinue] = useState(false);
-  const [saiResponse, setSaiResponse] = useState<string | null>(null);
-  
+
   const hasSpokenRef = useRef<Set<number>>(new Set());
   const isAdvancingRef = useRef(false);
+
+  const handleContinueRef = useRef<() => void>(() => {});
 
   // Handle user voice responses
   const handleTranscript = useCallback((transcript: string) => {
     const lowerTranscript = transcript.toLowerCase();
-    
-    // Check for questions or concerns
-    if (lowerTranscript.includes('question') || lowerTranscript.includes('?') || 
-        lowerTranscript.includes('what') || lowerTranscript.includes('how') || 
+
+    if (lowerTranscript.includes('question') || lowerTranscript.includes('?') ||
+        lowerTranscript.includes('what') || lowerTranscript.includes('how') ||
         lowerTranscript.includes('why')) {
       const response = "That's a great question. I'm here to support you through whatever you're facing. We'll take this one step at a time, and you can always ask me anything along the way. Ready to continue?";
-      setSaiResponse(response);
       setDisplayedText(response);
       speakThenListen(response, true);
-    } else if (lowerTranscript.includes('yes') || lowerTranscript.includes('ready') || 
-               lowerTranscript.includes('continue') || lowerTranscript.includes('okay') || 
+    } else if (lowerTranscript.includes('yes') || lowerTranscript.includes('ready') ||
+               lowerTranscript.includes('continue') || lowerTranscript.includes('okay') ||
                lowerTranscript.includes('ok')) {
-      handleContinue();
-    } else if (lowerTranscript.includes('no') || lowerTranscript.includes('wait') || 
+      handleContinueRef.current();
+    } else if (lowerTranscript.includes('no') || lowerTranscript.includes('wait') ||
                lowerTranscript.includes('not sure')) {
       const response = "Take all the time you need. There's no rush here. Just let me know when you're ready.";
-      setSaiResponse(response);
       setDisplayedText(response);
       speakThenListen(response, true);
     }
@@ -75,23 +80,18 @@ export default function WaitingRoom() {
   // Speak current message
   const speakCurrentMessage = useCallback(async () => {
     if (isAdvancingRef.current) return;
-    
+
     const message = INTRO_MESSAGES[currentMessageIndex];
     setDisplayedText(message);
-    
-    // Only speak if we haven't spoken this message yet
+
     if (!hasSpokenRef.current.has(currentMessageIndex)) {
       hasSpokenRef.current.add(currentMessageIndex);
-      
-      // Last message - speak then listen for response
+
       if (currentMessageIndex === INTRO_MESSAGES.length - 1) {
         await speakThenListen(message, true);
         setShowContinue(true);
       } else {
-        // Not last message - speak only, then auto-advance
         await speakOnly(message);
-        
-        // Auto-advance after speaking
         isAdvancingRef.current = true;
         setTimeout(() => {
           setCurrentMessageIndex(prev => prev + 1);
@@ -101,15 +101,16 @@ export default function WaitingRoom() {
     }
   }, [currentMessageIndex, speakThenListen, speakOnly]);
 
-  // Speak message when index changes
   useEffect(() => {
     speakCurrentMessage();
   }, [currentMessageIndex, speakCurrentMessage]);
 
-  const handleContinue = () => {
+  const handleContinue = useCallback(() => {
     stopSpeaking();
     navigate('/onboarding/security');
-  };
+  }, [stopSpeaking, navigate]);
+
+  handleContinueRef.current = handleContinue;
 
   const toggleVoice = () => {
     if (voiceEnabled) stopSpeaking();
@@ -120,112 +121,136 @@ export default function WaitingRoom() {
 
   return (
     <div
-      className="relative min-h-screen overflow-hidden"
+      className="relative min-h-dvh overflow-hidden"
       style={{
         backgroundImage: `url(${comfortWaitingBg})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
-      <div className="absolute inset-0 bg-black/40" />
+      <div className="absolute inset-0 bg-black/50" aria-hidden="true" />
 
-      <div className="absolute right-4 top-4 z-20 flex gap-2 sm:right-6 sm:top-6">
+      {/* Floor plane — SAI stands on this, he never floats */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[38vh] bg-gradient-to-t from-black/70 via-black/35 to-transparent"
+      />
+
+      {/* Decorative SAI — sits on the floor band at the bottom-left of the room.
+          Reserved space below the UI means he can never overlap a control. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-0 left-2 z-0 flex items-end sm:left-6"
+      >
+        <FullBodySAI
+          size="lg"
+          state={saiState}
+          className="w-[92px] h-[104px] origin-bottom sm:w-[150px] sm:h-[168px]"
+        />
+      </div>
+
+      {/* Voice controls */}
+      <div className="absolute right-3 top-3 z-20 flex gap-2 sm:right-6 sm:top-6">
         <button
+          type="button"
           onClick={toggleVoice}
+          aria-label={voiceEnabled ? "SAI's voice is on, tap to turn off" : "SAI's voice is off, tap to turn on"}
+          aria-pressed={voiceEnabled}
           className={cn(
-            "p-2 rounded-full transition-all",
-            "bg-black/40 backdrop-blur-md border border-white/10",
-            "hover:bg-black/60",
-            isSpeaking && "ring-2 ring-primary/50"
+            'flex h-12 w-12 items-center justify-center rounded-full transition-all',
+            'bg-black/60 backdrop-blur-md border border-white/20',
+            'hover:bg-black/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white',
+            isSpeaking && 'ring-2 ring-primary/60'
           )}
         >
           {voiceEnabled ? (
-            <Volume2 className={cn("w-4 h-4 sm:w-5 sm:h-5", isSpeaking ? "text-primary animate-pulse" : "text-white/80")} />
+            <Volume2 className={cn('h-6 w-6', isSpeaking ? 'text-primary' : 'text-white')} aria-hidden="true" />
           ) : (
-            <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white/50" />
+            <VolumeX className="h-6 w-6 text-white" aria-hidden="true" />
           )}
         </button>
 
         {isWaitingForResponse && (
-          <div className={cn(
-            "p-2 rounded-full",
-            "bg-primary/80 backdrop-blur-md border border-primary/30",
-            "animate-pulse"
-          )}>
-            <Mic className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          <div
+            role="status"
+            aria-live="polite"
+            aria-label="Microphone on, SAI is listening for your answer"
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/90 backdrop-blur-md border border-primary"
+          >
+            <Mic className="h-6 w-6 text-white" aria-hidden="true" />
           </div>
         )}
       </div>
 
-      <div className="relative z-10 flex h-screen flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-14 sm:px-6 sm:pt-20">
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-end min-h-0">
-          <div className="flex flex-col justify-end min-h-0">
-            {isWaitingForResponse && (
-              <div className="mb-2 flex items-center justify-center gap-2 text-primary animate-pulse">
-                <div className="w-2 h-2 rounded-full bg-primary animate-ping" />
-                <span className="text-xs sm:text-sm">SAI is listening...</span>
-              </div>
+      <main
+        role="main"
+        aria-label="SAI waiting room"
+        className="relative z-10 flex min-h-dvh flex-col px-4 pt-16 pb-[calc(env(safe-area-inset-bottom)+112px)] sm:px-6 sm:pt-20 sm:pb-[calc(env(safe-area-inset-bottom)+176px)]"
+      >
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-end">
+          {isWaitingForResponse && (
+            <p className="mb-2 text-center text-base text-white" role="status" aria-live="polite">
+              SAI is listening…
+            </p>
+          )}
+
+          <div
+            className="rounded-2xl border border-white/20 bg-[#0A1628]/95 p-4 shadow-xl backdrop-blur-sm sm:p-5"
+            role="status"
+            aria-live="polite"
+          >
+            <h1 className="sr-only">SAI is introducing herself</h1>
+            <p className="text-center text-base leading-relaxed text-white sm:text-lg">
+              {displayedText}
+            </p>
+          </div>
+
+          {/* Progress dots (decorative) */}
+          <div className="mt-3 flex justify-center gap-2" aria-hidden="true">
+            {INTRO_MESSAGES.map((_, index) => (
+              <span
+                key={index}
+                className={cn(
+                  'h-2 rounded-full transition-all duration-300',
+                  index === currentMessageIndex
+                    ? 'w-6 bg-primary'
+                    : index < currentMessageIndex
+                      ? 'w-2 bg-primary/60'
+                      : 'w-2 bg-white/40'
+                )}
+              />
+            ))}
+          </div>
+          <p className="sr-only" aria-live="polite">
+            Step {currentMessageIndex + 1} of {INTRO_MESSAGES.length}
+          </p>
+
+          {/* Primary action — always above SAI, never covered */}
+          <div className="relative z-20 mt-3 rounded-2xl border border-white/20 bg-[#0A1628]/95 p-3 backdrop-blur-sm">
+            <Button
+              size="lg"
+              onClick={handleContinue}
+              disabled={!showContinue}
+              aria-describedby={!showContinue ? 'next-help' : undefined}
+              className="h-14 w-full rounded-xl text-lg font-semibold"
+            >
+              Next
+            </Button>
+
+            {!showContinue && (
+              <p id="next-help" className="mt-2 text-center text-base text-[#B0BEC5]">
+                Next unlocks when SAI is ready for you.
+              </p>
             )}
 
-            <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-border/50 sm:p-5">
-              <p className="text-sm text-center text-foreground leading-relaxed sm:text-base md:text-lg">
-                {displayedText}
-                {isSpeaking && <span className="animate-pulse ml-1">|</span>}
+            {!voiceEnabled && (
+              <p className="mt-2 text-center text-base text-[#B0BEC5]">
+                Voice is off. Use the speaker button to hear SAI.
               </p>
-            </div>
-
-            <div className="mt-2 flex justify-center gap-2">
-              {INTRO_MESSAGES.map((_, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full transition-all duration-300 sm:w-2 sm:h-2",
-                    index === currentMessageIndex
-                      ? "bg-primary w-4 sm:w-6"
-                      : index < currentMessageIndex
-                        ? "bg-primary/60"
-                        : "bg-muted"
-                  )}
-                />
-              ))}
-            </div>
-
-            <div className="mt-2 rounded-2xl border border-border/50 bg-card/80 p-2.5 backdrop-blur-sm sm:p-3">
-              <Button
-                size="lg"
-                onClick={handleContinue}
-                disabled={!showContinue}
-                className={cn(
-                  "h-11 w-full rounded-xl text-sm sm:h-12 sm:text-base",
-                  showContinue && "animate-fade-in"
-                )}
-              >
-                Next
-              </Button>
-
-              {!showContinue && (
-                <p className="mt-1.5 text-center text-xs text-muted-foreground">
-                  Next unlocks here when SAI is ready for you.
-                </p>
-              )}
-
-              {!voiceEnabled && (
-                <p className="mt-1.5 text-center text-xs text-muted-foreground">
-                  Voice is off. Tap the speaker icon if you want to hear SAI.
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-2 flex h-[120px] flex-shrink-0 items-end justify-center sm:h-[160px]">
-            <FullBodySAI
-              size="lg"
-              state={saiState}
-              className="w-28 h-36 sm:w-48 sm:h-56 origin-bottom translate-y-1"
-            />
+            )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
