@@ -44,7 +44,18 @@ import BedroomHome from "./pages/BedroomHome";
 import SAIHome from "./pages/SAIHome";
 import BeachScene from "./pages/BeachScene";
 import ForestScene from "./pages/ForestScene";
-// CabinScene removed - Cabin now routes to Settings per AEZUIR spec
+
+// Six-room system
+import LivingRoom from "./pages/rooms/LivingRoom";
+import Playroom from "./pages/rooms/Playroom";
+import ToolsSuite from "./pages/rooms/ToolsSuite";
+import Advocacy from "./pages/rooms/Advocacy";
+import SettingsRoom, { applyPrefs, loadPrefs } from "./pages/rooms/SettingsRoom";
+import InnerSanctum from "./pages/rooms/InnerSanctum";
+
+// Apply saved comfort preferences before first paint of the tree
+applyPrefs(loadPrefs());
+
 
 const queryClient = new QueryClient();
 
