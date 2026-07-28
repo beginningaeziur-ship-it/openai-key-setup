@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+
 import { ArrowLeft, Send } from "lucide-react";
 import { StateIndicator } from "@/engine/StateIndicator";
 import { useAppState } from "@/engine/StateEngineContext";
@@ -30,7 +31,11 @@ export default function SAIChat() {
     { id: uid(), role: "sai", text: "I'm here. Say whatever you need." },
   ]);
   const [input, setInput] = useState("");
-  const [mode, setMode] = useState<ChatMode>("normal");
+  const [searchParams] = useSearchParams();
+  const [mode, setMode] = useState<ChatMode>(
+    searchParams.get("mode") === "vent" ? "vent" : "normal",
+  );
+
   const [sending, setSending] = useState(false);
   const [safetyPlan, setSafetyPlan] = useState("");
 

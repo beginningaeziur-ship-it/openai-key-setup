@@ -44,7 +44,18 @@ import BedroomHome from "./pages/BedroomHome";
 import SAIHome from "./pages/SAIHome";
 import BeachScene from "./pages/BeachScene";
 import ForestScene from "./pages/ForestScene";
-// CabinScene removed - Cabin now routes to Settings per AEZUIR spec
+
+// Six-room system
+import LivingRoom from "./pages/rooms/LivingRoom";
+import Playroom from "./pages/rooms/Playroom";
+import ToolsSuite from "./pages/rooms/ToolsSuite";
+import Advocacy from "./pages/rooms/Advocacy";
+import SettingsRoom, { applyPrefs, loadPrefs } from "./pages/rooms/SettingsRoom";
+import InnerSanctum from "./pages/rooms/InnerSanctum";
+
+// Apply saved comfort preferences before first paint of the tree
+applyPrefs(loadPrefs());
+
 
 const queryClient = new QueryClient();
 
@@ -83,20 +94,25 @@ const App = () => (
                                 <Route path="/onboarding/play-room" element={<PlayRoom />} />
                                 <Route path="/onboarding/home-entrance" element={<HomeEntrance />} />
                                 
-                                {/* Main app with PIN gate */}
-                                <Route path="/bedroom" element={<BedroomHome />} />
-                                
-                                {/* Main app - AEZUIR Room System */}
+                                {/* Six-room system */}
+                                <Route path="/living-room" element={<LivingRoom />} />
+                                <Route path="/playroom" element={<Playroom />} />
+                                <Route path="/tools" element={<ToolsSuite />} />
+                                <Route path="/advocacy" element={<Advocacy />} />
+                                <Route path="/settings" element={<SettingsRoom />} />
+                                <Route path="/bedroom" element={<InnerSanctum />} />
+
+                                {/* Main app */}
                                 <Route path="/sai-room" element={<SAIHome />} />
                                 <Route path="/sai-home" element={<SAIHome />} />
-                                <Route path="/bedroom" element={<SAIHome />} />
                                 <Route path="/dashboard" element={<Dashboard />} />
                                 <Route path="/chat" element={<SAIChat />} />
-                                <Route path="/settings" element={<Settings />} />
+                                <Route path="/settings/advanced" element={<Settings />} />
+                                <Route path="/legacy-bedroom" element={<BedroomHome />} />
                                 <Route path="/watcher" element={<Watcher />} />
                                 <Route path="/beach" element={<BeachScene />} />
                                 <Route path="/forest" element={<ForestScene />} />
-                                {/* /cabin now routes to /settings per AEZUIR spec */}
+
                                 
                                 {/* Catch-all */}
                                 <Route path="*" element={<NotFound />} />

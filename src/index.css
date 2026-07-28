@@ -457,3 +457,17 @@
     transform: scale(1.05);
   }
 }
+
+/* Comfort preferences from the Settings room */
+.sai-low-stimulus *,
+.sai-low-stimulus *::before,
+.sai-low-stimulus *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+.sai-low-contrast {
+  filter: brightness(0.9) contrast(0.9);
+}
