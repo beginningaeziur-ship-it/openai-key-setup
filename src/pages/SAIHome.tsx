@@ -31,11 +31,14 @@ interface Room {
 }
 
 const ROOMS: Room[] = [
-  { id: "bedroom", emoji: "🛏️", label: "Bedroom", sub: "Daily grounding", route: "/bedroom" },
-  { id: "ocean", emoji: "🌊", label: "Ocean", sub: "Calm & regulate", route: "/beach" },
-  { id: "forest", emoji: "🌲", label: "Forest", sub: "Goals & learning", route: "/forest" },
-  { id: "cabin", emoji: "🏡", label: "Cabin", sub: "Settings", route: "/settings" },
+  { id: "living-room", emoji: "🛋️", label: "Living Room", sub: "Vent, check in, and reset", route: "/living-room" },
+  { id: "playroom", emoji: "🐕", label: "Playroom", sub: "Your companion and daily care", route: "/playroom" },
+  { id: "tools", emoji: "🧰", label: "Tools Suite", sub: "Grounding and calming tools", route: "/tools" },
+  { id: "advocacy", emoji: "📁", label: "Advocacy", sub: "Resources, documents, and help", route: "/advocacy" },
+  { id: "settings", emoji: "⚙️", label: "Settings", sub: "Comfort, contrast, and privacy", route: "/settings" },
+  { id: "bedroom", emoji: "🛏️", label: "Bedroom", sub: "Your private inner sanctum (PIN)", route: "/bedroom" },
 ];
+
 
 export default function SAIHome() {
   const navigate = useNavigate();
@@ -81,7 +84,7 @@ export default function SAIHome() {
               type="button"
               aria-label={`${room.label} — ${room.sub}`}
               onClick={() => navigate(room.route)}
-              className="min-h-[72px] w-full flex items-center gap-4 px-5 rounded-2xl border border-white/15 bg-white/[0.06] hover:bg-white/[0.12] focus:outline-none focus-visible:ring-4 focus-visible:ring-white transition-colors text-left"
+              className="min-h-[72px] w-full flex items-center gap-4 px-5 py-3 rounded-2xl border border-white/15 bg-white/[0.06] hover:bg-white/[0.12] focus:outline-none focus-visible:ring-4 focus-visible:ring-white transition-colors text-left"
             >
               <span aria-hidden="true" className="text-3xl">
                 {room.emoji}
