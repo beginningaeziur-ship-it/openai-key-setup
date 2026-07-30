@@ -1,73 +1,32 @@
-# Welcome to your Lovable project
+# SAI — an accessibility-first companion, powered by Aezuir
 
-## Project info
+SAI is an accessibility-first companion app for blind and disabled users, built by a blind founder. It is screen-reader-native: semantic landmarks on every page, real labels on every control, live-region announcements, 48px+ touch targets, and an emergency SOS control that is always the last focusable element in tab order. Keyboard shortcuts work everywhere (`S` opens SOS, `Escape` returns home).
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Who it is for
 
-## How can I edit this code?
+People living with blindness, disability, chronic illness, trauma, or life instability who need support that can be reached and completed by voice or keyboard alone. SAI is not a doctor, therapist, or lawyer.
 
-There are several ways of editing your application.
+## Room-based structure
 
-**Use Lovable**
+The home screen is a set of large, labeled room buttons:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- **Living Room** — vent entry, morning roadmap, afternoon check-in, Three Good Things. Text is volatile; nothing is retained.
+- **Playroom** — the animated companion plus non-punitive care actions (feed, water, medication check-off). The companion never dies, degrades, or guilt-trips.
+- **Tools Suite** — working 4-4-4-4 box-breathing orb and 5-4-3-2-1 sensory grounding grid. Binaural anchors, vagal audio, HRV monitor, TENS timer, thermal reminders, micro-stretch cards, tactile biofeedback, and flashback-disruption audio are planned, not shipped.
+- **Advocacy** — a local-only (device storage) vital document vault. The resource atlas and legal templates are planned.
+- **Settings** — persisted comfort toggles (low contrast, low stimulus, larger text, on-device storage) and a JSON export of local data.
+- **Bedroom / Inner Sanctum** — a 4-digit PIN gate (hashed) protecting a brain-dump journal that purges on exit unless exported.
 
-Changes made via Lovable will be committed automatically to this repo.
+## Conversation
 
-**Use your preferred IDE**
+SAI Chat supports a normal mode, a **vent mode** that validates without problem-solving, and a **crisis mode** safety switch that locks the interface to exactly two options: a 988 crisis-counselor handoff or building an immediate safety plan.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Other systems
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Goal fracturing** — long goals break down into medium, micro, and mini-micro steps; uncompleted goals roll forward with no failure marker.
+- **State engine** — a Normal / Reduced / Support / Offline state that adapts tone, choice count, and text size.
+- **Privacy** — journals and entries are save-to-device or discarded; they are not stored in the cloud.
 
-Follow these steps:
+## Tech
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Vite, React, TypeScript, Tailwind CSS, shadcn-ui, with a Lovable Cloud backend for chat, speech-to-text, and text-to-speech functions.
