@@ -102,6 +102,10 @@ const App = () => (
                                 <Route path="/settings" element={<SettingsRoom />} />
                                 <Route path="/bedroom" element={<InnerSanctum />} />
 
+                                {/* Home room aliases */}
+                                <Route path="/ocean" element={<BeachScene />} />
+                                <Route path="/cabin" element={<SettingsRoom />} />
+
                                 {/* Main app */}
                                 <Route path="/sai-room" element={<SAIHome />} />
                                 <Route path="/sai-home" element={<SAIHome />} />
